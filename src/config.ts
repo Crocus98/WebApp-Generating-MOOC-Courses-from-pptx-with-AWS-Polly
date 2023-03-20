@@ -9,6 +9,7 @@ class Config {
   public readonly LOG_LEVEL: Level
   public readonly ENV: "production" | "development"
   public readonly DB_AUTH: DB_CONFIG = { NAME: '', USER: '', PASS: '', HOST: '', PORT: 3306}
+  public readonly SERVER_PORT: number
 
   static getInstance(): Config {
     if(!this.instance) this.instance = new Config();
@@ -22,6 +23,16 @@ class Config {
     if(!process.env.NODE_ENV || process.env.NODE_ENV.includes('dev')) this.ENV = "development";
     this.LOG_LEVEL = this.parseLogLevel()
     this.DB_AUTH = this.parseDBConfig()
+    this.SERVER_PORT = this.parseServerPort() || 8080
+  }
+
+  private parseServerPort(): number | undefined { 
+    const __serverPort = process.env.SERVER_PORT
+    if(!__serverPort) return undefined
+    const port = parseInt(`${__serverPort}`)
+    if(isNaN(port)) exitLog("Invalid server port")
+    return port
+
   }
 
   private parseLogLevel(): Level {

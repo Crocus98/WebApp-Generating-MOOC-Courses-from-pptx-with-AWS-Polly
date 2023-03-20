@@ -1,0 +1,138 @@
+2023-03-20T23:41:03.586 ERROR default Error: Hello
+    at D:\MDP-Project\BackEnd\src\routes\v1\public\controller.ts:8:11
+    at Generator.next (<anonymous>)
+    at D:\MDP-Project\BackEnd\node_modules\tslib\tslib.js:167:75
+    at new Promise (<anonymous>)
+    at Object.__awaiter (D:\MDP-Project\BackEnd\node_modules\tslib\tslib.js:163:16)
+    at hello (D:\MDP-Project\BackEnd\src\routes\v1\public\controller.ts:7:20)
+    at Layer.handle [as handle_request] (D:\MDP-Project\BackEnd\node_modules\express\lib\router\layer.js:95:5)
+    at next (D:\MDP-Project\BackEnd\node_modules\express\lib\router\route.js:144:13)
+    at Route.dispatch (D:\MDP-Project\BackEnd\node_modules\express\lib\router\route.js:114:3)
+    at Layer.handle [as handle_request] (D:\MDP-Project\BackEnd\node_modules\express\lib\router\layer.js:95:5) 	(@controller.ts:8) 
+2023-03-20T23:41:23.532 ERROR default Error: Hello
+    at D:\MDP-Project\BackEnd\src\routes\v1\public\controller.ts:8:11
+    at Generator.next (<anonymous>)
+    at D:\MDP-Project\BackEnd\node_modules\tslib\tslib.js:167:75
+    at new Promise (<anonymous>)
+    at Object.__awaiter (D:\MDP-Project\BackEnd\node_modules\tslib\tslib.js:163:16)
+    at hello (D:\MDP-Project\BackEnd\src\routes\v1\public\controller.ts:7:20)
+    at Layer.handle [as handle_request] (D:\MDP-Project\BackEnd\node_modules\express\lib\router\layer.js:95:5)
+    at next (D:\MDP-Project\BackEnd\node_modules\express\lib\router\route.js:144:13)
+    at Route.dispatch (D:\MDP-Project\BackEnd\node_modules\express\lib\router\route.js:114:3)
+    at Layer.handle [as handle_request] (D:\MDP-Project\BackEnd\node_modules\express\lib\router\layer.js:95:5) 	(@controller.ts:8) 
+2023-03-20T23:42:38.908 ERROR default Error: Hello
+    at D:\MDP-Project\BackEnd\src\routes\v1\public\controller.ts:8:11
+    at Generator.next (<anonymous>)
+    at D:\MDP-Project\BackEnd\node_modules\tslib\tslib.js:167:75
+    at new Promise (<anonymous>)
+    at Object.__awaiter (D:\MDP-Project\BackEnd\node_modules\tslib\tslib.js:163:16)
+    at hello (D:\MDP-Project\BackEnd\src\routes\v1\public\controller.ts:7:20)
+    at Layer.handle [as handle_request] (D:\MDP-Project\BackEnd\node_modules\express\lib\router\layer.js:95:5)
+    at next (D:\MDP-Project\BackEnd\node_modules\express\lib\router\route.js:144:13)
+    at Route.dispatch (D:\MDP-Project\BackEnd\node_modules\express\lib\router\route.js:114:3)
+    at Layer.handle [as handle_request] (D:\MDP-Project\BackEnd\node_modules\express\lib\router\layer.js:95:5) 	(@controller.ts:8) 
+2023-03-20T23:45:08.435 ERROR default Error: Fku
+    at D:\MDP-Project\BackEnd\src\routes\v1\public\controller.ts:8:11
+    at Generator.next (<anonymous>)
+    at D:\MDP-Project\BackEnd\node_modules\tslib\tslib.js:167:75
+    at new Promise (<anonymous>)
+    at Object.__awaiter (D:\MDP-Project\BackEnd\node_modules\tslib\tslib.js:163:16)
+    at hello (D:\MDP-Project\BackEnd\src\routes\v1\public\controller.ts:7:20)
+    at Layer.handle [as handle_request] (D:\MDP-Project\BackEnd\node_modules\express\lib\router\layer.js:95:5)
+    at next (D:\MDP-Project\BackEnd\node_modules\express\lib\router\route.js:144:13)
+    at Route.dispatch (D:\MDP-Project\BackEnd\node_modules\express\lib\router\route.js:114:3)
+    at Layer.handle [as handle_request] (D:\MDP-Project\BackEnd\node_modules\express\lib\router\layer.js:95:5) 	(@controller.ts:8) 
+2023-03-20T23:45:31.374 ERROR default Error: Fku
+    at D:\MDP-Project\BackEnd\src\routes\v1\public\controller.ts:8:11
+    at Generator.next (<anonymous>)
+    at D:\MDP-Project\BackEnd\node_modules\tslib\tslib.js:167:75
+    at new Promise (<anonymous>)
+    at Object.__awaiter (D:\MDP-Project\BackEnd\node_modules\tslib\tslib.js:163:16)
+    at hello (D:\MDP-Project\BackEnd\src\routes\v1\public\controller.ts:7:20)
+    at Layer.handle [as handle_request] (D:\MDP-Project\BackEnd\node_modules\express\lib\router\layer.js:95:5)
+    at next (D:\MDP-Project\BackEnd\node_modules\express\lib\router\route.js:144:13)
+    at Route.dispatch (D:\MDP-Project\BackEnd\node_modules\express\lib\router\route.js:114:3)
+    at Layer.handle [as handle_request] (D:\MDP-Project\BackEnd\node_modules\express\lib\router\layer.js:95:5) 	(@controller.ts:8) 
+2023-03-20T23:46:37.171 ERROR default Error: Fkuas
+    at D:\MDP-Project\BackEnd\src\routes\v1\public\controller.ts:8:11
+    at Generator.next (<anonymous>)
+    at D:\MDP-Project\BackEnd\node_modules\tslib\tslib.js:167:75
+    at new Promise (<anonymous>)
+    at Object.__awaiter (D:\MDP-Project\BackEnd\node_modules\tslib\tslib.js:163:16)
+    at hello (D:\MDP-Project\BackEnd\src\routes\v1\public\controller.ts:7:20)
+    at Layer.handle [as handle_request] (D:\MDP-Project\BackEnd\node_modules\express\lib\router\layer.js:95:5)
+    at next (D:\MDP-Project\BackEnd\node_modules\express\lib\router\route.js:144:13)
+    at Route.dispatch (D:\MDP-Project\BackEnd\node_modules\express\lib\router\route.js:114:3)
+    at Layer.handle [as handle_request] (D:\MDP-Project\BackEnd\node_modules\express\lib\router\layer.js:95:5) 	(@controller.ts:8) 
+2023-03-20T23:47:11.107 ERROR default Error: asd
+    at D:\MDP-Project\BackEnd\src\routes\v1\public\controller.ts:8:11
+    at Generator.next (<anonymous>)
+    at D:\MDP-Project\BackEnd\node_modules\tslib\tslib.js:167:75
+    at new Promise (<anonymous>)
+    at Object.__awaiter (D:\MDP-Project\BackEnd\node_modules\tslib\tslib.js:163:16)
+    at hello (D:\MDP-Project\BackEnd\src\routes\v1\public\controller.ts:7:20)
+    at Layer.handle [as handle_request] (D:\MDP-Project\BackEnd\node_modules\express\lib\router\layer.js:95:5)
+    at next (D:\MDP-Project\BackEnd\node_modules\express\lib\router\route.js:144:13)
+    at Route.dispatch (D:\MDP-Project\BackEnd\node_modules\express\lib\router\route.js:114:3)
+    at Layer.handle [as handle_request] (D:\MDP-Project\BackEnd\node_modules\express\lib\router\layer.js:95:5) 	(@controller.ts:8) 
+2023-03-20T23:48:17.622 ERROR default Error: asd
+    at D:\MDP-Project\BackEnd\src\routes\v1\public\controller.ts:8:11
+    at Generator.next (<anonymous>)
+    at D:\MDP-Project\BackEnd\node_modules\tslib\tslib.js:167:75
+    at new Promise (<anonymous>)
+    at Object.__awaiter (D:\MDP-Project\BackEnd\node_modules\tslib\tslib.js:163:16)
+    at hello (D:\MDP-Project\BackEnd\src\routes\v1\public\controller.ts:7:20)
+    at Layer.handle [as handle_request] (D:\MDP-Project\BackEnd\node_modules\express\lib\router\layer.js:95:5)
+    at next (D:\MDP-Project\BackEnd\node_modules\express\lib\router\route.js:144:13)
+    at Route.dispatch (D:\MDP-Project\BackEnd\node_modules\express\lib\router\route.js:114:3)
+    at Layer.handle [as handle_request] (D:\MDP-Project\BackEnd\node_modules\express\lib\router\layer.js:95:5) 	(@controller.ts:8) 
+2023-03-20T23:52:53.682 ERROR default Error: asd
+    at D:\MDP-Project\BackEnd\src\routes\v1\public\controller.ts:8:11
+    at Generator.next (<anonymous>)
+    at D:\MDP-Project\BackEnd\node_modules\tslib\tslib.js:167:75
+    at new Promise (<anonymous>)
+    at Object.__awaiter (D:\MDP-Project\BackEnd\node_modules\tslib\tslib.js:163:16)
+    at hello (D:\MDP-Project\BackEnd\src\routes\v1\public\controller.ts:7:20)
+    at Layer.handle [as handle_request] (D:\MDP-Project\BackEnd\node_modules\express\lib\router\layer.js:95:5)
+    at next (D:\MDP-Project\BackEnd\node_modules\express\lib\router\route.js:144:13)
+    at Route.dispatch (D:\MDP-Project\BackEnd\node_modules\express\lib\router\route.js:114:3)
+    at Layer.handle [as handle_request] (D:\MDP-Project\BackEnd\node_modules\express\lib\router\layer.js:95:5) 	(@controller.ts:8) 
+2023-03-21T00:04:27.714 ERROR default HttpException [Error]: FKU
+    at D:\MDP-Project\BackEnd\src\routes\v1\public\controller.ts:9:11
+    at Generator.next (<anonymous>)
+    at D:\MDP-Project\BackEnd\node_modules\tslib\tslib.js:167:75
+    at new Promise (<anonymous>)
+    at Object.__awaiter (D:\MDP-Project\BackEnd\node_modules\tslib\tslib.js:163:16)
+    at hello (D:\MDP-Project\BackEnd\src\routes\v1\public\controller.ts:8:20)
+    at Layer.handle [as handle_request] (D:\MDP-Project\BackEnd\node_modules\express\lib\router\layer.js:95:5)
+    at next (D:\MDP-Project\BackEnd\node_modules\express\lib\router\route.js:144:13)
+    at Route.dispatch (D:\MDP-Project\BackEnd\node_modules\express\lib\router\route.js:114:3)
+    at Layer.handle [as handle_request] (D:\MDP-Project\BackEnd\node_modules\express\lib\router\layer.js:95:5) {
+  status: 505
+} 	(@controller.ts:9) 
+2023-03-21T00:05:26.527 ERROR default HttpException [Error]: FKU
+    at D:\MDP-Project\BackEnd\src\routes\v1\public\controller.ts:9:11
+    at Generator.next (<anonymous>)
+    at D:\MDP-Project\BackEnd\node_modules\tslib\tslib.js:167:75
+    at new Promise (<anonymous>)
+    at Object.__awaiter (D:\MDP-Project\BackEnd\node_modules\tslib\tslib.js:163:16)
+    at hello (D:\MDP-Project\BackEnd\src\routes\v1\public\controller.ts:8:20)
+    at Layer.handle [as handle_request] (D:\MDP-Project\BackEnd\node_modules\express\lib\router\layer.js:95:5)
+    at next (D:\MDP-Project\BackEnd\node_modules\express\lib\router\route.js:144:13)
+    at Route.dispatch (D:\MDP-Project\BackEnd\node_modules\express\lib\router\route.js:114:3)
+    at Layer.handle [as handle_request] (D:\MDP-Project\BackEnd\node_modules\express\lib\router\layer.js:95:5) {
+  status: 505
+} 	(@controller.ts:9) 
+2023-03-21T00:06:45.959 ERROR default HttpException [Error]: FKU
+    at D:\MDP-Project\BackEnd\src\routes\v1\public\controller.ts:9:11
+    at Generator.next (<anonymous>)
+    at D:\MDP-Project\BackEnd\node_modules\tslib\tslib.js:167:75
+    at new Promise (<anonymous>)
+    at Object.__awaiter (D:\MDP-Project\BackEnd\node_modules\tslib\tslib.js:163:16)
+    at hello (D:\MDP-Project\BackEnd\src\routes\v1\public\controller.ts:8:20)
+    at Layer.handle [as handle_request] (D:\MDP-Project\BackEnd\node_modules\express\lib\router\layer.js:95:5)
+    at next (D:\MDP-Project\BackEnd\node_modules\express\lib\router\route.js:144:13)
+    at Route.dispatch (D:\MDP-Project\BackEnd\node_modules\express\lib\router\route.js:114:3)
+    at Layer.handle [as handle_request] (D:\MDP-Project\BackEnd\node_modules\express\lib\router\layer.js:95:5) {
+  status: 606
+} 	(@controller.ts:9) 
