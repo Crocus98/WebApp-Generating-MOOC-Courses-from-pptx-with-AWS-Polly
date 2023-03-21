@@ -9,6 +9,7 @@ class Config {
   public readonly LOG_LEVEL: Level
   public readonly ENV: "production" | "development"
   public readonly DB_AUTH: DB_CONFIG = { NAME: '', USER: '', PASS: '', HOST: '', PORT: 3306}
+  public readonly DB_STRING: string = ""
   public readonly SERVER_PORT: number
 
   static getInstance(): Config {
@@ -23,7 +24,7 @@ class Config {
     if(!process.env.NODE_ENV || process.env.NODE_ENV.includes('dev')) this.ENV = "development";
     this.LOG_LEVEL = this.parseLogLevel()
     this.DB_AUTH = this.parseDBConfig()
-    this.SERVER_PORT = this.parseServerPort() || 8080
+    this.SERVER_PORT = this.parseServerPort() || 3000
   }
 
   private parseServerPort(): number | undefined { 
@@ -32,7 +33,6 @@ class Config {
     const port = parseInt(`${__serverPort}`)
     if(isNaN(port)) exitLog("Invalid server port")
     return port
-
   }
 
   private parseLogLevel(): Level {
@@ -76,6 +76,11 @@ class Config {
       if(isNaN(port)) exitLog(`Bad DB_PORT in .env`)
       DB_PORT = port
     }
+
+    const __DB_STRING = process.env.DB_STRING
+    let DB_STRING = `mysql://${DB_USER}:${DB_PASS}@${DB_HOST}:${DB_PORT}/${DB_NAME}`
+    if(this.isUndefinedOrEmpty(__DB_STRING) || __DB_STRING != DB_STRING) exitLog(`Missing or Bad DB_STRING in .env`)
+
     return {
       HOST: DB_HOST as string,
       NAME: DB_NAME as string,
@@ -92,7 +97,6 @@ class Config {
 export default Config.getInstance();
 
 // Types
-
 type DB_CONFIG = {
   NAME: string
   USER: string
