@@ -4,14 +4,16 @@ export default class Utils {
         return String(error);
     }
 
-    static checkMail(email: string) {
+    static parseMail(email: string) {
+        if (this.isUndefinedOrEmpty(email)) return null;
         email = email.trim().toLowerCase();
         const regex = /^\S+@\S+\.\S+$/; //email regex => consider to use a library instead
         return (regex.test(email)) ? email : null;
     }
 
-    static checkPassword(password: string) {
-        return (password.length < 8) ? null : password;
+    static parsePassword(password: string) {
+        if (this.isUndefinedOrEmpty(password) || password.length < 8) return null;
+        return password;
     }
 
     static isUndefinedOrEmpty(value: string | undefined): boolean {
