@@ -121,3 +121,5 @@
 2023-04-07T17:57:37.094 DEBUG express ::ffff:127.0.0.1 - - "POST /v1/public/login?email=matteo@gmail.com&password=as HTTP/1.1" 500 52 "" "PostmanRuntime/7.31.3" 	(@node:events:525) 
 2023-04-07T17:59:06.340 INFO express Server started on port 3000 	(@server.ts:54) 
 2023-04-07T18:00:44.856 INFO express Server started on port 3000 	(@server.ts:54) 
+2023-04-07T18:11:36.757 INFO express Server started on port 3000 	(@server.ts:54) 
+2023-04-07T18:12:29.649 INFO express Server started on port 3000 	(@server.ts:54) 

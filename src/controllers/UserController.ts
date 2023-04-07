@@ -4,18 +4,18 @@ import logger from "@logger";
 import config from "@config";
 import HttpException from "@/exceptions/HttpException";
 import jwt from 'jsonwebtoken';
-import { checkMail, checkPassword, getErrorMessage } from "@/common/utils";
+import utils from "@utils";
 
 export const login = async (req: Request, res: Response) => {
   try {
     let { email, password } = req.body;
     //check mail
-    email = checkMail(email);
+    email = utils.checkMail(email);
     if (!email) {
       return res.status(400).send("Invalid email format");
     }
     //check password
-    password = checkPassword(password);
+    password = utils.checkPassword(password);
     if (!password) {
       return res.status(400).send("Password too short. Minimum 8 characters");
     }
@@ -32,7 +32,7 @@ export const login = async (req: Request, res: Response) => {
     res.status(200).send({ user: { name: user.name, surname: user.surname, email: user.email }, token });
   }
   catch (error) {
-    return res.status(500).send(getErrorMessage(error));
+    return res.status(500).send(utils.getErrorMessage(error));
   }
 };
 

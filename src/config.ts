@@ -1,6 +1,7 @@
 import dotenv from 'dotenv'
 import logger, { exitLog } from '@logger'
 import { Level, levels } from "log4js";
+import utils from "@utils";
 
 class Config {
   private static instance?: Config;
@@ -30,7 +31,7 @@ class Config {
 
   parseJWTSecret(): string {
     const __JWT_SECRET = process.env.JWT_SECRET
-    if (this.isUndefinedOrEmpty(__JWT_SECRET)) exitLog(`Missing or Bad JWT_SECRET in .env`)
+    if (utils.isUndefinedOrEmpty(__JWT_SECRET)) exitLog(`Missing or Bad JWT_SECRET in .env`)
     return __JWT_SECRET as string
   }
 
@@ -68,17 +69,17 @@ class Config {
 
   private parseDBConfig(): DB_CONFIG {
     const DB_HOST = process.env.DB_HOST
-    if (this.isUndefinedOrEmpty(DB_HOST)) exitLog(`Missing or Bad DB_HOST in .env`)
+    if (utils.isUndefinedOrEmpty(DB_HOST)) exitLog(`Missing or Bad DB_HOST in .env`)
     const DB_NAME = process.env.DB_NAME
-    if (this.isUndefinedOrEmpty(DB_NAME)) exitLog(`Missing or Bad DB_NAME in .env`)
+    if (utils.isUndefinedOrEmpty(DB_NAME)) exitLog(`Missing or Bad DB_NAME in .env`)
     const DB_USER = process.env.DB_USER
-    if (this.isUndefinedOrEmpty(DB_USER)) exitLog(`Missing or Bad DB_USER in .env`)
+    if (utils.isUndefinedOrEmpty(DB_USER)) exitLog(`Missing or Bad DB_USER in .env`)
     const DB_PASS = process.env.DB_PASS
-    if (this.isUndefinedOrEmpty(DB_PASS)) exitLog(`Missing or Bad DB_PASS in .env`)
+    if (utils.isUndefinedOrEmpty(DB_PASS)) exitLog(`Missing or Bad DB_PASS in .env`)
 
     let DB_PORT = 3306
     const __DB_PORT = process.env.DB_PORT
-    if (!this.isUndefinedOrEmpty(__DB_PORT)) {
+    if (!utils.isUndefinedOrEmpty(__DB_PORT)) {
       const port = parseInt(`${__DB_PORT}`)
       if (isNaN(port)) exitLog(`Bad DB_PORT in .env`)
       DB_PORT = port
@@ -86,7 +87,7 @@ class Config {
 
     const __DB_STRING = process.env.DB_STRING
     let DB_STRING = `mysql://${DB_USER}:${DB_PASS}@${DB_HOST}:${DB_PORT}/${DB_NAME}`
-    if (this.isUndefinedOrEmpty(__DB_STRING) || __DB_STRING != DB_STRING) exitLog(`Missing or Bad DB_STRING in .env`)
+    if (utils.isUndefinedOrEmpty(__DB_STRING) || __DB_STRING != DB_STRING) exitLog(`Missing or Bad DB_STRING in .env`)
 
     return {
       HOST: DB_HOST as string,
@@ -95,10 +96,6 @@ class Config {
       PASS: DB_PASS as string,
       PORT: DB_PORT,
     }
-  }
-
-  private isUndefinedOrEmpty(value: string | undefined): boolean {
-    return (value === undefined || value.trim().length === 0)
   }
 }
 export default Config.getInstance();
