@@ -1,12 +1,15 @@
 import { Router } from "express"
-import * as controller from "./controller"
+import * as UserController from "@controllers/UserController"
+import { auth } from "@authentication"
 
 // Actual path
-
 const path = Router()
+
 /** GET */
-path.get("/hello", controller.hello)
+path.get("/hello", auth, UserController.hello)
 /** POST */
+path.post("/login", UserController.login)
+path.post("/register", UserController.register)
 /** DELETE */
 /** PUT */
 export default path
