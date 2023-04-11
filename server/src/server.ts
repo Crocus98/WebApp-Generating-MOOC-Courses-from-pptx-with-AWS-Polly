@@ -48,7 +48,7 @@ class Server {
   }
 
   private serveClient() {
-    const clientBuildPath = path.join(__dirname, "clientBuild");
+    const clientBuildPath = path.join(__dirname, "..", "clientBuild");
     console.log(clientBuildPath);
     this.app.use(express.static(clientBuildPath));
     this.app.get("/*", function (req, res) {
