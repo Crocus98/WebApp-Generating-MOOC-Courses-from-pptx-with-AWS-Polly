@@ -1,0 +1,18 @@
+Se dovete far partire l'applicazione per la prima volta dovete:
+
+1) Far partire l'istanza di postgresql
+/services: docker-compose up (chiaramente dovete avere docker installato)
+
+2) Client: Installare e generare build
+/client: npm install
+/client: npm run build
+
+3) Backend: Installare, allineare prisma con db e far partire applicazione
+/server: npm install
+/server: npx prisma db push
+/server: npm run start
+
+Per tutte le volte successive vi basterà far partire i servizi ed il backend.
+
+/services: docker-compose up
+/server: npm run start
