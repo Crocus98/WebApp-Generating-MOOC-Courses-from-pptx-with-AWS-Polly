@@ -5,7 +5,7 @@ import http from "http";
 import { connectLogger } from "log4js";
 import helmet from "helmet";
 import routes from "@routes";
-import HttpException from "@exceptions/HttpException";
+//import HttpException from "@exceptions/HttpException";
 import path from "path";
 
 class Server {
@@ -17,14 +17,14 @@ class Server {
     this.server = new http.Server(this.app);
   }
 
-  private genericHandler(req: Request, res: Response) {
+  /*private genericHandler(req: Request, res: Response) {
     const error = new HttpException("Not Found", 404);
     return error.sendError(res);
-  }
+  }*/
 
-  private errorHandler(error: HttpException, req: Request, res: Response) {
+  /*private errorHandler(error: HttpException, req: Request, res: Response) {
     return error.sendError(res);
-  }
+  }*/
 
   private includeRoutes() {
     this.app.use(routes);
@@ -42,10 +42,10 @@ class Server {
     this.app.disable("x-powered-by");
   }
 
-  private includeHandlers() {
+  /*private includeHandlers() {
     //this.app.use(this.genericHandler);
     //this.app.use(this.errorHandler);
-  }
+  }*/
 
   private serveClient() {
     const clientBuildPath = path.join(__dirname, "..", "clientBuild");
