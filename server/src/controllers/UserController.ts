@@ -12,7 +12,7 @@ export const login = async (req: Request, res: Response) => {
     //check mail
     email = utils.parseMail(email);
     if (!email) {
-      return res.status(400).send("Invalid email format");
+      return res.status(400).send("Missing or invalid email");
     }
     //check password
     password = utils.parsePassword(password);
@@ -50,7 +50,7 @@ export const register = async (req: Request, res: Response) => {
     //email
     email = utils.parseMail(email);
     if (!email) {
-      return res.status(400).send("Invalid email format");
+      return res.status(400).send("Missing or invalid email");
     }
     //password
     password = utils.parsePassword(password);
@@ -81,7 +81,7 @@ export const generateRegistrationToken = async (req: Request, res: Response) => 
     //check mail
     email = utils.parseMail(email);
     if (!email) {
-      return res.status(400).send("Invalid email format");
+      return res.status(400).send("Missing or invalid email");
     }
     //check password
     password = utils.parsePassword(password);
@@ -107,7 +107,7 @@ export const assignAdminPermissions = async (req: Request, res: Response) => {
     //check mail
     email = utils.parseMail(email);
     if (!email) {
-      return res.status(400).send("Invalid email format");
+      return res.status(400).send("Missing or invalid email");
     }
     //check password
     password = utils.parsePassword(password);

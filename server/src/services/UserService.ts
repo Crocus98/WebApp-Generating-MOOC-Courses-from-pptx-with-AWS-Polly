@@ -1,6 +1,6 @@
 import prisma from "@prisma";
 import bcrypt from 'bcrypt';
-import { PrismaClientKnownRequestError } from '@prisma/client/runtime';
+import { PrismaClientKnownRequestError } from "@prisma/client/runtime/library";
 
 export const getUserByMail = async (email: string) => {
     const user = await prisma.PRISMA.user.findUnique({ where: { email } });
@@ -79,9 +79,7 @@ export const generateRegistrationToken = async (email: string, password: string)
                 return [null, "You must be an admin to generate a token"];
             }
             const token = await prisma.PRISMA.token.create({
-                data: {
-                    token: "This is a super secret token. No one will never know it. Not even google.", //TODO: generate a random token
-                }
+                data: {}
             });
             return [token, ""]; //token exists and not used
         });
