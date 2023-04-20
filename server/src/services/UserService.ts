@@ -103,11 +103,34 @@ export const assignAdminPermissions = async (email: any, password: any, newAdmin
             if (!newAdmin) {
                 return [false, "The user you are trying to assign admin permissions doesn't exist"];
             }
-            const updatedUser = await prisma.PRISMA.user.update({ where: { email: newAdminMail }, data: { admin: true } });
+            const updatedUser = await prisma.PRISMA.user.update({ where: { id: newAdmin.id }, data: { admin: true } });
             return [true, ""];
         })
         return result;
     } catch (error) {
         return [false, "An unexpected error occurred while assigning admin permissions."];
+    }
+}
+
+export const revokeAdminPermissions = async (email: any, password: any, newAdminMail: any) => {
+    try {
+        const result = await prisma.PRISMA.$transaction(async () => {
+            const user = await login(email, password);
+            if (!user) {
+                return [false, "Invalid credentials"];
+            }
+            if (user.admin == false) {
+                return [false, "You must be an admin to revoke admin permissions"];
+            }
+            const newNormalUser = await getUserByMail(newAdminMail);
+            if (!newNormalUser) {
+                return [false, "The user you are trying to revoke admin permissions from doesn't exist"];
+            }
+            const updatedUser = await prisma.PRISMA.user.update({ where: { id: newNormalUser.id }, data: { admin: false } });
+            return [true, ""];
+        })
+        return result;
+    } catch (error) {
+        return [false, "An unexpected error occurred while revoking admin permissions."];
     }
 }
