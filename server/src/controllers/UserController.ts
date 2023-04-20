@@ -61,20 +61,11 @@ export const register = async (req: Request, res: Response) => {
     if (utils.isUndefinedOrEmpty(token)) {
       return res.status(400).send("Token is required");
     }
-    else {
-      //we check if the token is valid
-      //race conditions are not a problem here since the token is unique and can be used only once
-      //we check here to output a more meaningful error message
-      const accepted = await UserService.checkToken(token);
-      if (!accepted) {
-        return res.status(400).send("Invalid token");
-      }
-    }
     //create user
-    const user = await UserService.register(name, surname, email, password, token);
+    const [user, message] = await UserService.register(name, surname, email, password, token);
 
     if (!user) {
-      return res.status(400).send("User already exists with this email");
+      return res.status(400).send(message);
     }
 
     res.status(200).send('Inserted successfully');

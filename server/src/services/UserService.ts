@@ -1,6 +1,6 @@
 import prisma from "@prisma";
 import bcrypt from 'bcrypt';
-
+import { PrismaClientKnownRequestError } from '@prisma/client/runtime';
 
 export const getUserByMail = async (email: string) => {
     const user = await prisma.PRISMA.user.findUnique({ where: { email } });
@@ -12,19 +12,17 @@ const checkPassword = async (sentPassword: string, password: string) => {
     return passwordMatch;
 }
 
-export const checkToken = async (token: string) => {
-    const result = await prisma.PRISMA.$transaction(async () => {
-        const existToken = await prisma.PRISMA.token.findUnique({ where: { token } });
-        if (!existToken) {
-            return false; //token doesn't exist
-        }
-        const usedToken = await prisma.PRISMA.user.findUnique({ where: { tokenValue: token } });
-        if (usedToken) {
-            return false; //a user with this token already exists
-        }
-        return true; //token exists and not used
-    })
-    return result;
+//must be called inside a transaction
+const checkToken = async (token: string) => {
+    const existToken = await prisma.PRISMA.token.findUnique({ where: { token } });
+    if (!existToken) {
+        return false; //token doesn't exist
+    }
+    const usedToken = await prisma.PRISMA.user.findUnique({ where: { tokenValue: token } });
+    if (usedToken) {
+        return false; //a user with this token already exists
+    }
+    return true; //token exists and not used
 }
 
 export const login = async (email: string, password: string) => {
@@ -43,20 +41,30 @@ export const register = async (name: string, surname: string, email: string, pas
     try {
         const salt = await bcrypt.genSalt(12);
         password = await bcrypt.hash(password, salt);
-        const user = await prisma.PRISMA.user.create({
-            //note that token is not the jwt token but the access token for the user
-            data: {
-                name,
-                surname,
-                email,
-                password,
-                tokenValue,
-            },
+        const result = await prisma.PRISMA.$transaction(async () => {
+            const accepted = await checkToken(tokenValue);
+            if (!accepted) {
+                return [null, "Invalid token"];
+            }
+            const user = await prisma.PRISMA.user.create({
+                //note that token is not the jwt token but the access token for the user
+                data: {
+                    name,
+                    surname,
+                    email,
+                    password,
+                    tokenValue,
+                },
+            });
+            return [user, ""];
         });
-        return user;
+        return result;
     } catch (error) {
+        if (error instanceof PrismaClientKnownRequestError && error.code === 'P2002') {
+            return [null, "User already exists with this email"];
+        }
         //usually it is the case of people trying to register with the same email or with the same token
-        return null;
+        return [null, "An unexpected error occurred while registering the user."];
     }
 }
 
@@ -76,7 +84,7 @@ export const generateRegistrationToken = async (email: string, password: string)
                 }
             });
             return [token, ""]; //token exists and not used
-        })
+        });
         return result;
     } catch (error) {
         return [null, "An unexpected error occurred while generating a registration token."];
