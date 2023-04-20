@@ -6,10 +6,11 @@ import { auth } from "@authentication"
 const path = Router()
 
 /** GET */
-path.get("/hello", auth, UserController.hello)
 /** POST */
 path.post("/login", UserController.login)
 path.post("/register", UserController.register)
+path.post("/token", UserController.generateRegistrationToken) //consider requiring authentication with jwt token too
+path.post("/admin", UserController.assignAdminPermissions) //consider requiring authentication with jwt token too
 /** DELETE */
 /** PUT */
 export default path

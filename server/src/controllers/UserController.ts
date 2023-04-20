@@ -39,15 +39,6 @@ export const login = async (req: Request, res: Response) => {
 export const register = async (req: Request, res: Response) => {
   try {
     let { name, surname, email, password, token } = req.body;
-    //token
-    if (utils.isUndefinedOrEmpty(token)) {
-      return res.status(400).send("Token is required");
-    }
-    else {
-      //TODO: check if token is valid
-      //if valid continue
-      //else res.status(400).send("Invalid token");
-    }
     //name
     if (utils.isUndefinedOrEmpty(name)) {
       return res.status(400).send("Name is required");
@@ -66,6 +57,19 @@ export const register = async (req: Request, res: Response) => {
     if (!password) {
       return res.status(400).send("Invalid password. Minimum 8 characters");
     }
+    //token
+    if (utils.isUndefinedOrEmpty(token)) {
+      return res.status(400).send("Token is required");
+    }
+    else {
+      //we check if the token is valid
+      //race conditions are not a problem here since the token is unique and can be used only once
+      //we check here to output a more meaningful error message
+      const accepted = await UserService.checkToken(token);
+      if (!accepted) {
+        return res.status(400).send("Invalid token");
+      }
+    }
     //create user
     const user = await UserService.register(name, surname, email, password, token);
 
@@ -80,13 +84,54 @@ export const register = async (req: Request, res: Response) => {
   }
 };
 
-export const hello = async (req: Request, res: Response, next: NextFunction) => {
+export const generateRegistrationToken = async (req: Request, res: Response) => {
   try {
-    //throw new HttpException("Prova", 500)
-    res.status(200).json("Hello");
+    let { email, password } = req.body;
+    //check mail
+    email = utils.parseMail(email);
+    if (!email) {
+      return res.status(400).send("Invalid email format");
+    }
+    //check password
+    password = utils.parsePassword(password);
+    if (!password) {
+      return res.status(400).send("Password too short. Minimum 8 characters");
+    }
+    //login
+    const [registrationToken, message] = await UserService.generateRegistrationToken(email, password);
+    if (!registrationToken) {
+      return res.status(400).send(message);
+    }
+    //successful login
+    res.status(200).send({ token: registrationToken });
   }
   catch (error) {
-    logger.error(error)
-    next(error)
+    return res.status(500).send(utils.getErrorMessage(error));
   }
-}
+};
+
+export const assignAdminPermissions = async (req: Request, res: Response) => {
+  try {
+    let { email, password, newAdminMail } = req.body;
+    //check mail
+    email = utils.parseMail(email);
+    if (!email) {
+      return res.status(400).send("Invalid email format");
+    }
+    //check password
+    password = utils.parsePassword(password);
+    if (!password) {
+      return res.status(400).send("Password too short. Minimum 8 characters");
+    }
+    //login
+    const [result, message] = await UserService.assignAdminPermissions(email, password, newAdminMail);
+    if (!result) {
+      return res.status(400).send(message);
+    }
+    //successful login
+    res.status(200).send("Success");
+  }
+  catch (error) {
+    return res.status(500).send(utils.getErrorMessage(error));
+  }
+};

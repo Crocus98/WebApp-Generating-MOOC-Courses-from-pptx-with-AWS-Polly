@@ -1,8 +1,6 @@
 import prisma from "@prisma";
-import { User } from "@prisma/client";
 import bcrypt from 'bcrypt';
-import { Prisma } from '@prisma/client'
-import { PrismaClientKnownRequestError } from "@prisma/client/runtime";
+
 
 export const getUserByMail = async (email: string) => {
     const user = await prisma.PRISMA.user.findUnique({ where: { email } });
@@ -12,6 +10,21 @@ export const getUserByMail = async (email: string) => {
 const checkPassword = async (sentPassword: string, password: string) => {
     const passwordMatch = await bcrypt.compare(sentPassword, password);
     return passwordMatch;
+}
+
+export const checkToken = async (token: string) => {
+    const result = await prisma.PRISMA.$transaction(async () => {
+        const existToken = await prisma.PRISMA.token.findUnique({ where: { token } });
+        if (!existToken) {
+            return false; //token doesn't exist
+        }
+        const usedToken = await prisma.PRISMA.user.findUnique({ where: { tokenValue: token } });
+        if (usedToken) {
+            return false; //a user with this token already exists
+        }
+        return true; //token exists and not used
+    })
+    return result;
 }
 
 export const login = async (email: string, password: string) => {
@@ -26,7 +39,7 @@ export const login = async (email: string, password: string) => {
     return user;
 }
 
-export const register = async (name: string, surname: string, email: string, password: string, token: string) => {
+export const register = async (name: string, surname: string, email: string, password: string, tokenValue: string) => {
     try {
         const salt = await bcrypt.genSalt(12);
         password = await bcrypt.hash(password, salt);
@@ -37,12 +50,58 @@ export const register = async (name: string, surname: string, email: string, pas
                 surname,
                 email,
                 password,
-                token
+                tokenValue,
             },
         });
         return user;
     } catch (error) {
-        //usually it is the case of people trying to register with the same email
+        //usually it is the case of people trying to register with the same email or with the same token
         return null;
+    }
+}
+
+export const generateRegistrationToken = async (email: string, password: string) => {
+    try {
+        const result = await prisma.PRISMA.$transaction(async () => {
+            const user = await login(email, password);
+            if (!user) {
+                return [null, "Invalid credentials"];
+            }
+            if (user.admin == false) {
+                return [null, "You must be an admin to generate a token"];
+            }
+            const token = await prisma.PRISMA.token.create({
+                data: {
+                    token: "This is a super secret token. No one will never know it. Not even google.", //TODO: generate a random token
+                }
+            });
+            return [token, ""]; //token exists and not used
+        })
+        return result;
+    } catch (error) {
+        return [null, "An unexpected error occurred while generating a registration token."];
+    }
+}
+
+export const assignAdminPermissions = async (email: any, password: any, newAdminMail: any) => {
+    try {
+        const result = await prisma.PRISMA.$transaction(async () => {
+            const user = await login(email, password);
+            if (!user) {
+                return [false, "Invalid credentials"];
+            }
+            if (user.admin == false) {
+                return [false, "You must be an admin to assign admin permissions"];
+            }
+            const newAdmin = await getUserByMail(newAdminMail);
+            if (!newAdmin) {
+                return [false, "The user you are trying to assign admin permissions doesn't exist"];
+            }
+            const updatedUser = await prisma.PRISMA.user.update({ where: { email: newAdminMail }, data: { admin: true } });
+            return [true, ""];
+        })
+        return result;
+    } catch (error) {
+        return [false, "An unexpected error occurred while assigning admin permissions."];
     }
 }
