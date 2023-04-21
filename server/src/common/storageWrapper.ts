@@ -1,5 +1,6 @@
 import config from "@config";
-import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
+import { S3Client, PutObjectCommand, DeleteObjectCommand, DeleteObjectsCommand, ListObjectsCommand } from "@aws-sdk/client-s3";
+import AwsS3Exception from "@/exceptions/AwsS3Exception";
 
 class StorageWrapper {
     private static storageWrapper?: StorageWrapper;
@@ -17,6 +18,18 @@ class StorageWrapper {
         }
     }
 
+    async uploadFileToStorageAndDeleteOldOnes(file: any, email: string) {
+        try {
+            await this.deleteFilesFromStorageByUserEmail(email);
+            await this.uploadFileToStorage(file, email);
+        } catch (error) {
+            if (error instanceof AwsS3Exception) {
+                throw new AwsS3Exception(error.message);
+            }
+            throw new AwsS3Exception("Unexpected errror. Could not upload file to storage");
+        }
+    }
+
     async uploadFileToStorage(file: any, email: string) {
         try {
             const command = new PutObjectCommand({
@@ -24,14 +37,62 @@ class StorageWrapper {
                 Key: `${email}/${file.originalname}`,
                 Body: file.buffer,
             });
+            const result = await this.s3client?.send(command);
+            if (result?.$metadata.httpStatusCode !== 200) {
+                throw new AwsS3Exception("Could not upload file to storage");
+            }
+        } catch (error) {
+            if (error instanceof AwsS3Exception) {
+                throw new AwsS3Exception(error.message);
+            }
+            throw new AwsS3Exception("Unexpected errror. Could not upload file to storage");
+        }
+    }
+
+    async getFileNamesFromStorageByUserEmail(email: string) {
+        try {
+            const listCommand = new ListObjectsCommand({
+                Bucket: config.AWS_CONFIG.S3_BUCKET_NAME,
+                Prefix: `${email}/`,
+            });
+            const result = await this.s3client?.send(listCommand);
+            if (result?.$metadata.httpStatusCode !== 200) {
+                throw new AwsS3Exception("Could not get file names from storage");
+            }
+            const objectKeys = result?.Contents?.map((obj) => ({ Key: obj.Key }));
+            return objectKeys;
+        } catch (error) {
+            if (error instanceof AwsS3Exception) {
+                throw new AwsS3Exception(error.message);
+            }
+            throw new AwsS3Exception("Unexpected errror. Could not get file names from storage");
+        }
+    }
+
+    async deleteFilesFromStorageByUserEmail(email: string) {
+        try {
+            const objectKeys = await this.getFileNamesFromStorageByUserEmail(email);
+            if (!objectKeys) {
+                throw new AwsS3Exception("Could not check current files in storage to delete in order to upload a new one");
+            }
+            if (objectKeys.length === 0) {
+                return;
+            }
+            const command = new DeleteObjectsCommand({
+                Bucket: config.AWS_CONFIG.S3_BUCKET_NAME,
+                Delete: { Objects: objectKeys },
+            });
 
             const result = await this.s3client?.send(command);
-            if (!result) {
-                return false;
+            if (result?.$metadata.httpStatusCode !== 200) {
+                throw new AwsS3Exception("Could not delete files from storage");
             }
-            return true;
-        } catch (error) {
-            return false;
+        }
+        catch (error) {
+            if (error instanceof AwsS3Exception) {
+                throw new AwsS3Exception(error.message);
+            }
+            throw new AwsS3Exception("Unexpected errror. Could not delete files from storage");
         }
     }
 

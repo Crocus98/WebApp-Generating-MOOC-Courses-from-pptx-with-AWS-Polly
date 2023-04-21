@@ -17,10 +17,8 @@ export const uploadFile = async (req: Request, res: Response) => {
             throw new FileException('File must be a PowerPoint (.pptx) file.');
         }
 
-        const result = await FileService.uploadFileToStorage(file, user.email);
-        if (!result) {
-            throw new StorageException('File upload failed.');
-        }
+        await FileService.uploadFileToStorage(file, user.email);
+
         return res.status(200).send(`File ${file.originalname} uploaded to S3.`);
     }
     catch (error) {

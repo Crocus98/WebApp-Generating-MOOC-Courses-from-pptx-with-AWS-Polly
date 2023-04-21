@@ -447,3 +447,8 @@
 2023-04-21T11:16:28.007 DEBUG express ::ffff:127.0.0.1 - - "PUT /v1/public/upload HTTP/1.1" 400 39 "" "PostmanRuntime/7.32.2" 	(@node:events:525) 
 2023-04-21T11:16:51.220 DEBUG express ::ffff:127.0.0.1 - - "PUT /v1/public/upload HTTP/1.1" 200 29 "" "PostmanRuntime/7.32.2" 	(@node:events:525) 
 2023-04-21T11:17:23.721 DEBUG express ::ffff:127.0.0.1 - - "PUT /v1/public/upload HTTP/1.1" 200 29 "" "PostmanRuntime/7.32.2" 	(@node:events:525) 
+2023-04-21T16:19:45.556 INFO express Server started on port 3001 	(@server.ts:67) 
+2023-04-21T16:20:07.098 INFO express Server started on port 3001 	(@server.ts:67) 
+2023-04-21T17:25:52.052 INFO express Server started on port 3001 	(@server.ts:67) 
+2023-04-21T17:25:57.187 DEBUG express ::ffff:127.0.0.1 - - "PUT /v1/public/upload HTTP/1.1" 200 29 "" "PostmanRuntime/7.32.2" 	(@node:events:525) 
+2023-04-21T17:26:19.785 DEBUG express ::ffff:127.0.0.1 - - "PUT /v1/public/upload HTTP/1.1" 200 32 "" "PostmanRuntime/7.32.2" 	(@node:events:525) 
