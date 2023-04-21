@@ -23,7 +23,8 @@ class Config {
   public readonly AWS_CONFIG: AWS_CONFIG = {
     ACCESS_KEY_ID: "",
     SECRET_ACCESS_KEY: "",
-    S3_BUCKET_REGION: ""
+    S3_BUCKET_REGION: "",
+    S3_BUCKET_NAME: "",
   };
 
   static getInstance(): Config {
@@ -89,11 +90,14 @@ class Config {
     if (utils.isUndefinedOrEmpty(AWS_SECRET_ACCESS_KEY)) exitLog(`Missing or Bad AWS_SECRET_ACCESS_KEY in .env`)
     const AWS_S3_BUCKET_REGION = process.env.AWS_S3_BUCKET_REGION
     if (utils.isUndefinedOrEmpty(AWS_S3_BUCKET_REGION)) exitLog(`Missing or Bad AWS_S3_BUCKET_REGION in .env`)
+    const AWS_S3_BUCKET_NAME = process.env.AWS_S3_BUCKET_NAME
+    if (utils.isUndefinedOrEmpty(AWS_S3_BUCKET_NAME)) exitLog(`Missing or Bad AWS_S3_BUCKET_NAME in .env`)
 
     return {
       ACCESS_KEY_ID: AWS_ACCESS_KEY_ID as string,
       SECRET_ACCESS_KEY: AWS_SECRET_ACCESS_KEY as string,
-      S3_BUCKET_REGION: AWS_S3_BUCKET_REGION as string
+      S3_BUCKET_REGION: AWS_S3_BUCKET_REGION as string,
+      S3_BUCKET_NAME: AWS_S3_BUCKET_NAME as string,
     }
   }
 
@@ -153,4 +157,5 @@ type AWS_CONFIG = {
   ACCESS_KEY_ID: string;
   SECRET_ACCESS_KEY: string;
   S3_BUCKET_REGION: string;
+  S3_BUCKET_NAME: string;
 };

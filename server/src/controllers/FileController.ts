@@ -1,26 +1,34 @@
+import { Request, Response, NextFunction } from "express"
+import utils from "@utils";
+import * as FileService from "@services/FileService";
+import { User } from "@prisma/client"
+import FileException from "@/exceptions/FileException";
+import AwsException from "@/exceptions/AwsException";
 
-/*export const load = async (req: Request, res: Response) => {
+export const uploadFile = async (req: Request, res: Response) => {
     try {
-        let { email, password, newAdminMail } = req.body;
-        //check mail
-        email = utils.parseMail(email);
-        if (!email) {
-            return res.status(400).send("Missing or invalid email");
+        const file = req.file;
+        const user = res.locals.user as User;
+        if (!file) {
+            throw new FileException('No file uploaded.');
         }
-        //check password
-        password = utils.parsePassword(password);
-        if (!password) {
-            return res.status(400).send("Password too short. Minimum 8 characters");
+        if (!file.originalname.endsWith('.pptx')) {
+            throw new FileException('File must be a PowerPoint (.pptx) file.');
         }
-        //login
-        const [result, message] = await UserService.assignAdminPermissions(email, password, newAdminMail);
+
+        const result = await FileService.uploadFileToS3(file, user.email);
         if (!result) {
-            return res.status(400).send(message);
+            throw new AwsException('File upload failed.');
         }
-        //successful login
-        res.status(200).send("Success");
+        return res.status(200).send(`File ${file.originalname} uploaded to S3.`);
     }
     catch (error) {
+        if (error instanceof FileException) {
+            return res.status(400).send(utils.getErrorMessage(error));
+        }
+        if (error instanceof AwsException) {
+            return res.status(502).send(utils.getErrorMessage(error));
+        }
         return res.status(500).send(utils.getErrorMessage(error));
     }
-};*/
+};

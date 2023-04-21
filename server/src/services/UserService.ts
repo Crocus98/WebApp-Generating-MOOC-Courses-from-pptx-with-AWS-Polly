@@ -1,6 +1,7 @@
 import prisma from "@prisma";
 import bcrypt from 'bcrypt';
 import { PrismaClientKnownRequestError } from "@prisma/client/runtime/library";
+import { User } from "@prisma/client";
 
 export const getUserByMail = async (email: string) => {
     const user = await prisma.PRISMA.user.findUnique({ where: { email } });
@@ -68,69 +69,29 @@ export const register = async (name: string, surname: string, email: string, pas
     }
 }
 
-export const generateRegistrationToken = async (email: string, password: string) => {
+export const generateRegistrationToken = async (user: User) => {
     try {
-        const result = await prisma.PRISMA.$transaction(async () => {
-            const user = await login(email, password);
-            if (!user) {
-                return [null, "Invalid credentials"];
-            }
-            if (user.admin == false) {
-                return [null, "You must be an admin to generate a token"];
-            }
-            const token = await prisma.PRISMA.token.create({
-                data: {}
-            });
-            return [token, ""]; //token exists and not used
+        const token = await prisma.PRISMA.token.create({
+            data: {}
         });
-        return result;
+        return token;
     } catch (error) {
-        return [null, "An unexpected error occurred while generating a registration token."];
+        return null;
     }
 }
 
-export const assignAdminPermissions = async (email: any, password: any, newAdminMail: any) => {
+export const handleAdminPermissions = async (user: User, handledUserMail: string, setAdmin: boolean) => {
     try {
         const result = await prisma.PRISMA.$transaction(async () => {
-            const user = await login(email, password);
-            if (!user) {
-                return [false, "Invalid credentials"];
-            }
-            if (user.admin == false) {
-                return [false, "You must be an admin to assign admin permissions"];
-            }
-            const newAdmin = await getUserByMail(newAdminMail);
-            if (!newAdmin) {
+            const handledUser = await getUserByMail(handledUserMail);
+            if (!handledUser) {
                 return [false, "The user you are trying to assign admin permissions doesn't exist"];
             }
-            const updatedUser = await prisma.PRISMA.user.update({ where: { id: newAdmin.id }, data: { admin: true } });
+            const updatedUser = await prisma.PRISMA.user.update({ where: { id: handledUser.id }, data: { admin: setAdmin } });
             return [true, ""];
         })
         return result;
     } catch (error) {
         return [false, "An unexpected error occurred while assigning admin permissions."];
-    }
-}
-
-export const revokeAdminPermissions = async (email: any, password: any, newAdminMail: any) => {
-    try {
-        const result = await prisma.PRISMA.$transaction(async () => {
-            const user = await login(email, password);
-            if (!user) {
-                return [false, "Invalid credentials"];
-            }
-            if (user.admin == false) {
-                return [false, "You must be an admin to revoke admin permissions"];
-            }
-            const newNormalUser = await getUserByMail(newAdminMail);
-            if (!newNormalUser) {
-                return [false, "The user you are trying to revoke admin permissions from doesn't exist"];
-            }
-            const updatedUser = await prisma.PRISMA.user.update({ where: { id: newNormalUser.id }, data: { admin: false } });
-            return [true, ""];
-        })
-        return result;
-    } catch (error) {
-        return [false, "An unexpected error occurred while revoking admin permissions."];
     }
 }
