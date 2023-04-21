@@ -83,7 +83,7 @@ class Config {
     }
   }
 
-  parseAWSConfig(): AWS_CONFIG {
+  private parseAWSConfig(): AWS_CONFIG {
     const AWS_ACCESS_KEY_ID = process.env.AWS_ACCESS_KEY_ID
     if (utils.isUndefinedOrEmpty(AWS_ACCESS_KEY_ID)) exitLog(`Missing or Bad AWS_ACCESS_KEY_ID in .env`)
     const AWS_SECRET_ACCESS_KEY = process.env.AWS_SECRET_ACCESS_KEY
@@ -101,7 +101,7 @@ class Config {
     }
   }
 
-  parseJWTSecret(): string {
+  private parseJWTSecret(): string {
     const __JWT_SECRET = process.env.JWT_SECRET;
     if (utils.isUndefinedOrEmpty(__JWT_SECRET))
       exitLog(`Missing or Bad JWT_SECRET in .env`);

@@ -3,7 +3,8 @@ import utils from "@utils";
 import * as FileService from "@services/FileService";
 import { User } from "@prisma/client"
 import FileException from "@/exceptions/FileException";
-import AwsException from "@/exceptions/AwsException";
+import StorageException from "@/exceptions/StorageException";
+
 
 export const uploadFile = async (req: Request, res: Response) => {
     try {
@@ -16,9 +17,9 @@ export const uploadFile = async (req: Request, res: Response) => {
             throw new FileException('File must be a PowerPoint (.pptx) file.');
         }
 
-        const result = await FileService.uploadFileToS3(file, user.email);
+        const result = await FileService.uploadFileToStorage(file, user.email);
         if (!result) {
-            throw new AwsException('File upload failed.');
+            throw new StorageException('File upload failed.');
         }
         return res.status(200).send(`File ${file.originalname} uploaded to S3.`);
     }
@@ -26,7 +27,7 @@ export const uploadFile = async (req: Request, res: Response) => {
         if (error instanceof FileException) {
             return res.status(400).send(utils.getErrorMessage(error));
         }
-        if (error instanceof AwsException) {
+        if (error instanceof StorageException) {
             return res.status(502).send(utils.getErrorMessage(error));
         }
         return res.status(500).send(utils.getErrorMessage(error));

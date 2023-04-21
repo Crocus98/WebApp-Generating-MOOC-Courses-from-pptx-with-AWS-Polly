@@ -8,6 +8,7 @@ import multer from "multer"
 const path = Router()
 const upload = multer({ storage: multer.memoryStorage() });
 
+//All routes must authenticate except for login and register
 /** GET */
 path.get("/me", auth, UserController.userData)
 /** POST */
