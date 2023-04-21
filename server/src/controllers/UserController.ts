@@ -30,7 +30,7 @@ export const login = async (req: Request, res: Response) => {
     });
 
     //successful login
-    res.status(200).send({ user: { name: user.name, surname: user.surname, email: user.email }, token });
+    res.status(200).send({ token });
   }
   catch (error) {
     if (error instanceof UserException) {
@@ -150,3 +150,13 @@ export const revokeAdminPermissions = async (req: Request, res: Response) => {
     return res.status(500).send(utils.getErrorMessage(error));
   }
 };
+
+export const userData = async (req: Request, res: Response) => {
+  try {
+    const user = res.locals.user as User;
+    res.status(200).send({ user: { name: user.name, surname: user.surname, email: user.email, admin: user.admin } });
+  }
+  catch (error) {
+    return res.status(500).send(utils.getErrorMessage(error));
+  }
+}

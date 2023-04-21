@@ -433,3 +433,8 @@
 2023-04-21T02:06:14.434 INFO express Server started on port 3001 	(@server.ts:67) 
 2023-04-21T02:06:52.533 INFO express Server started on port 3001 	(@server.ts:67) 
 2023-04-21T02:07:00.490 INFO express Server started on port 3001 	(@server.ts:67) 
+2023-04-21T02:17:31.779 INFO express Server started on port 3001 	(@server.ts:67) 
+2023-04-21T02:17:44.002 DEBUG express ::ffff:127.0.0.1 - - "PUT /v1/public/upload HTTP/1.1" 400 39 "" "PostmanRuntime/7.32.2" 	(@node:events:525) 
+2023-04-21T02:18:00.699 INFO express Server started on port 3001 	(@server.ts:67) 
+2023-04-21T02:32:02.957 INFO express Server started on port 3002 	(@server.ts:67) 
+2023-04-21T02:32:45.978 DEBUG express ::ffff:127.0.0.1 - - "GET /v1/public/me HTTP/1.1" 200 93 "" "PostmanRuntime/7.32.2" 	(@node:events:525) 

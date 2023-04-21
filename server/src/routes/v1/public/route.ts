@@ -9,6 +9,7 @@ const path = Router()
 const upload = multer({ storage: multer.memoryStorage() });
 
 /** GET */
+path.get("/me", auth, UserController.userData)
 /** POST */
 path.post("/login", UserController.login)
 path.post("/register", UserController.register)
