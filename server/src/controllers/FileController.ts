@@ -4,6 +4,7 @@ import * as FileService from "@services/FileService";
 import { User } from "@prisma/client"
 import FileException from "@/exceptions/FileException";
 import StorageException from "@/exceptions/StorageException";
+import { originAgentCluster } from "helmet";
 
 
 export const uploadFile = async (req: Request, res: Response) => {
@@ -25,9 +26,33 @@ export const uploadFile = async (req: Request, res: Response) => {
         if (error instanceof FileException) {
             return res.status(400).send(utils.getErrorMessage(error));
         }
+        else if (error instanceof StorageException) {
+            return res.status(502).send(utils.getErrorMessage(error));
+        }
+        return res.status(500).send(utils.getErrorMessage(error));
+    }
+};
+
+export const downloadFile = async (req: Request, res: Response) => {
+    try {
+        const user = res.locals.user as User;
+        const parameter = req.query.original;
+        let original = false;
+        if (parameter && parameter === 'true') {
+            original = true;
+        }
+        const file = await FileService.downloadFileFromStorage(user.email, original);
+        return res.status(200).send(file);
+    } catch (error) {
         if (error instanceof StorageException) {
             return res.status(502).send(utils.getErrorMessage(error));
         }
         return res.status(500).send(utils.getErrorMessage(error));
     }
 };
+
+export const elaborateFile = async (req: Request, res: Response) => {
+    //TODO
+};
+
+

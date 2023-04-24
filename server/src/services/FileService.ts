@@ -12,3 +12,15 @@ export const uploadFileToStorage = async (file: any, email: string) => {
         throw new StorageException("Unexpected errror. Could not upload file to storage");
     }
 }
+
+export const downloadFileFromStorage = async (email: string, original: boolean = false) => {
+    try {
+        const file = await storageWrapper.getFileFromStorage(email, original);
+        return file;
+    } catch (error) {
+        if (error instanceof AwsS3Exception) {
+            throw new StorageException(error.message);
+        }
+        throw new StorageException("Unexpected errror. Could not download file from storage");
+    }
+}
