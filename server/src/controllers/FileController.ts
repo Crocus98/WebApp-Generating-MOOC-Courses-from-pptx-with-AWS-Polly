@@ -4,6 +4,7 @@ import * as FileService from "@services/FileService";
 import { User } from "@prisma/client"
 import FileException from "@/exceptions/FileException";
 import StorageException from "@/exceptions/StorageException";
+import ElaborationException from "@/exceptions/ElaborationException";
 import { originAgentCluster } from "helmet";
 
 
@@ -52,7 +53,23 @@ export const downloadFile = async (req: Request, res: Response) => {
 };
 
 export const elaborateFile = async (req: Request, res: Response) => {
-    //TODO
+    try {
+        const user = res.locals.user as User;
+        await FileService.elaborateFile(user.email);
+        return res.status(200).send("File elaboration performed successfully");
+    }
+    catch (error) {
+        if (error instanceof FileException) {
+            return res.status(400).send(utils.getErrorMessage(error));
+        }
+        else if (error instanceof StorageException) {
+            return res.status(502).send(utils.getErrorMessage(error));
+        }
+        else if (error instanceof ElaborationException) {
+            return res.status(502).send(utils.getErrorMessage(error));
+        }
+        return res.status(500).send(utils.getErrorMessage(error));
+    }
 };
 
 
