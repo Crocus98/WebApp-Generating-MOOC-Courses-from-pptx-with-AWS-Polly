@@ -1,6 +1,7 @@
 import config from "@config";
 import { S3Client, PutObjectCommand, DeleteObjectCommand, DeleteObjectsCommand, ListObjectsCommand, GetObjectCommand } from "@aws-sdk/client-s3";
 import AwsS3Exception from "@/exceptions/AwsS3Exception";
+import { Readable } from "stream";
 
 class StorageWrapper {
     private static storageWrapper?: StorageWrapper;
@@ -96,14 +97,11 @@ class StorageWrapper {
     async getFileFromStorage(email: string, original: boolean = false) {
         try {
             const objectKeys = await this.getFileNamesFromStorageByUserEmail(email);
-            if (!objectKeys) {
-                throw new AwsS3Exception("Could not retrieve file names from S3.");
-            }
             const fileName = original ?
                 objectKeys?.find((obj) => !obj.Key?.includes("/edited/"))?.Key :
                 objectKeys?.find((obj) => obj.Key?.includes("/edited/"))?.Key;
             if (!fileName) {
-                throw new AwsS3Exception("The specified file is not present in S3.")
+                throw new AwsS3Exception("The file is not present in S3.")
             }
             const getCommand = new GetObjectCommand({
                 Bucket: config.AWS_CONFIG.S3_BUCKET_NAME,
@@ -113,7 +111,7 @@ class StorageWrapper {
             if (result?.$metadata.httpStatusCode !== 200 || !result.Body) {
                 throw new AwsS3Exception("Could not get the specified file from S3. No file found.");
             }
-            return result.Body;
+            return result.Body.transformToString();
         } catch (error) {
             if (error instanceof AwsS3Exception) {
                 throw new AwsS3Exception(error.message);

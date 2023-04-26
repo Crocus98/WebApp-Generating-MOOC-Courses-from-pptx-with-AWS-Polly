@@ -9,7 +9,7 @@ export const uploadFileToStorage = async (file: any, email: string) => {
         if (error instanceof AwsS3Exception) {
             throw new StorageException(error.message);
         }
-        throw new StorageException("Unexpected errror. Could not upload file to storage");
+        throw new StorageException("Unexpected error. Could not upload file to storage");
     }
 }
 
@@ -21,6 +21,6 @@ export const downloadFileFromStorage = async (email: string, original: boolean =
         if (error instanceof AwsS3Exception) {
             throw new StorageException(error.message);
         }
-        throw new StorageException("Unexpected errror. Could not download file from storage");
+        throw new StorageException("Unexpected error. Could not download file from storage");
     }
 }
