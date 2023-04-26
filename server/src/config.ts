@@ -45,32 +45,37 @@ class Config {
     this.AWS_CONFIG = this.parseAWSConfig();
   }
 
-
   private parseDBConfig(): DB_CONFIG {
-    const DB_HOST = process.env.DB_HOST
-    if (utils.isUndefinedOrEmpty(DB_HOST)) exitLog(`Missing or Bad DB_HOST in .env`)
-    const DB_NAME = process.env.DB_NAME
-    if (utils.isUndefinedOrEmpty(DB_NAME)) exitLog(`Missing or Bad DB_NAME in .env`)
-    const DB_USER = process.env.DB_USER
-    if (utils.isUndefinedOrEmpty(DB_USER)) exitLog(`Missing or Bad DB_USER in .env`)
-    const DB_PASS = process.env.DB_PASS
-    if (utils.isUndefinedOrEmpty(DB_PASS)) exitLog(`Missing or Bad DB_PASS in .env`)
-    const DB_DIALECT = process.env.DB_DIALECT
-    if (utils.isUndefinedOrEmpty(DB_DIALECT)) exitLog(`Missing or Bad DB_DIALECT in .env`)
-    const DB_SCHEMA = process.env.DB_SCHEMA
-    if (utils.isUndefinedOrEmpty(DB_SCHEMA)) exitLog(`Missing or Bad DB_SCHEMA in .env`)
+    const DB_HOST = process.env.DB_HOST;
+    if (utils.isUndefinedOrEmpty(DB_HOST))
+      exitLog(`Missing or Bad DB_HOST in .env`);
+    const DB_NAME = process.env.DB_NAME;
+    if (utils.isUndefinedOrEmpty(DB_NAME))
+      exitLog(`Missing or Bad DB_NAME in .env`);
+    const DB_USER = process.env.DB_USER;
+    if (utils.isUndefinedOrEmpty(DB_USER))
+      exitLog(`Missing or Bad DB_USER in .env`);
+    const DB_PASS = process.env.DB_PASS;
+    if (utils.isUndefinedOrEmpty(DB_PASS))
+      exitLog(`Missing or Bad DB_PASS in .env`);
+    const DB_DIALECT = process.env.DB_DIALECT;
+    if (utils.isUndefinedOrEmpty(DB_DIALECT))
+      exitLog(`Missing or Bad DB_DIALECT in .env`);
+    const DB_SCHEMA = process.env.DB_SCHEMA;
+    if (utils.isUndefinedOrEmpty(DB_SCHEMA)) exitLog(`CHEMA in .env`);
 
-    let DB_PORT = 5555
-    const __DB_PORT = process.env.DB_PORT
+    let DB_PORT = 5555;
+    const __DB_PORT = process.env.DB_PORT;
     if (!utils.isUndefinedOrEmpty(__DB_PORT)) {
-      const port = parseInt(`${__DB_PORT}`)
-      if (isNaN(port)) exitLog(`Bad DB_PORT in .env`)
-      DB_PORT = port
+      const port = parseInt(`${__DB_PORT}`);
+      if (isNaN(port)) exitLog(`Bad DB_PORT in .env`);
+      DB_PORT = port;
     }
 
-    const __DB_STRING = process.env.DB_STRING
-    let DB_STRING = `${DB_DIALECT}://${DB_USER}:${DB_PASS}@${DB_HOST}:${DB_PORT}/${DB_NAME}?schema=${DB_SCHEMA}`
-    if (utils.isUndefinedOrEmpty(__DB_STRING) || __DB_STRING != DB_STRING) exitLog(`Missing or Bad DB_STRING in .env`)
+    const __DB_STRING = process.env.DB_STRING;
+    let DB_STRING = `${DB_DIALECT}://${DB_USER}:${DB_PASS}@${DB_HOST}:${DB_PORT}/${DB_NAME}?schema=${DB_SCHEMA}`;
+    if (utils.isUndefinedOrEmpty(__DB_STRING) || __DB_STRING != DB_STRING)
+      exitLog(`Missing or Bad DB_STRING in .env`);
 
     return {
       NAME: DB_NAME as string,
@@ -80,25 +85,29 @@ class Config {
       HOST: DB_HOST as string,
       DIALECT: DB_DIALECT as string,
       PORT: DB_PORT,
-    }
+    };
   }
 
   private parseAWSConfig(): AWS_CONFIG {
-    const AWS_ACCESS_KEY_ID = process.env.AWS_ACCESS_KEY_ID
-    if (utils.isUndefinedOrEmpty(AWS_ACCESS_KEY_ID)) exitLog(`Missing or Bad AWS_ACCESS_KEY_ID in .env`)
-    const AWS_SECRET_ACCESS_KEY = process.env.AWS_SECRET_ACCESS_KEY
-    if (utils.isUndefinedOrEmpty(AWS_SECRET_ACCESS_KEY)) exitLog(`Missing or Bad AWS_SECRET_ACCESS_KEY in .env`)
-    const AWS_S3_BUCKET_REGION = process.env.AWS_S3_BUCKET_REGION
-    if (utils.isUndefinedOrEmpty(AWS_S3_BUCKET_REGION)) exitLog(`Missing or Bad AWS_S3_BUCKET_REGION in .env`)
-    const AWS_S3_BUCKET_NAME = process.env.AWS_S3_BUCKET_NAME
-    if (utils.isUndefinedOrEmpty(AWS_S3_BUCKET_NAME)) exitLog(`Missing or Bad AWS_S3_BUCKET_NAME in .env`)
+    const AWS_ACCESS_KEY_ID = process.env.AWS_ACCESS_KEY_ID;
+    if (utils.isUndefinedOrEmpty(AWS_ACCESS_KEY_ID))
+      exitLog(`Missing or Bad AWS_ACCESS_KEY_ID in .env`);
+    const AWS_SECRET_ACCESS_KEY = process.env.AWS_SECRET_ACCESS_KEY;
+    if (utils.isUndefinedOrEmpty(AWS_SECRET_ACCESS_KEY))
+      exitLog(`Missing or Bad AWS_SECRET_ACCESS_KEY in .env`);
+    const AWS_S3_BUCKET_REGION = process.env.AWS_S3_BUCKET_REGION;
+    if (utils.isUndefinedOrEmpty(AWS_S3_BUCKET_REGION))
+      exitLog(`Missing or Bad AWS_S3_BUCKET_REGION in .env`);
+    const AWS_S3_BUCKET_NAME = process.env.AWS_S3_BUCKET_NAME;
+    if (utils.isUndefinedOrEmpty(AWS_S3_BUCKET_NAME))
+      exitLog(`Missing or Bad AWS_S3_BUCKET_NAME in .env`);
 
     return {
       ACCESS_KEY_ID: AWS_ACCESS_KEY_ID as string,
       SECRET_ACCESS_KEY: AWS_SECRET_ACCESS_KEY as string,
       S3_BUCKET_REGION: AWS_S3_BUCKET_REGION as string,
       S3_BUCKET_NAME: AWS_S3_BUCKET_NAME as string,
-    }
+    };
   }
 
   private parseJWTSecret(): string {

@@ -23,7 +23,7 @@ const StyledH2 = styled.h2`
   padding: 0px;
   font-weight: 400;
   letter-spacing: 0.2em;
-  font-size: 30px;
+  font-size: 24px;
 `;
 
 const StyledH3 = styled.h3`
@@ -32,7 +32,7 @@ const StyledH3 = styled.h3`
   padding: 0px;
   font-weight: 400;
   letter-spacing: 0.15em;
-  font-size: 24px;
+  font-size: 20px;
 `;
 
 const StyledP = styled.p`
@@ -41,5 +41,5 @@ const StyledP = styled.p`
   padding: 0px;
   font-weight: 400;
   letter-spacing: 0.1em;
-  font-size: 18px;
+  font-size: 17x;
 `;

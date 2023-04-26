@@ -1,38 +1,32 @@
-import React, { Dispatch, useReducer } from "react";
+import React, { Dispatch, useEffect, useReducer, useState } from "react";
 
 const initialState = {};
 
-const AuthContext = React.createContext<{
-  state: AuthState;
-  dispatch: Dispatch<AuthAction>;
-}>({ state: initialState, dispatch: () => null });
+const LOCAL_STORAGE_KEY = "AUTH";
 
-export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
-  children,
-}) => {
-  const [state, dispatch] = useReducer(authReducer, initialState);
-
-  return (
-    <AuthContext.Provider value={{ state, dispatch }}>
-      {children}
-    </AuthContext.Provider>
-  );
-};
-
-interface AuthState {
-  name?: string;
-  email?: string;
-  token?: string;
+interface LoggedAuthState {
+  firstName: string;
+  lastName: string;
+  email: string;
+  token: string;
 }
 
-enum AuthActionType {
+interface AnonymousAuthState {}
+
+type AuthState = LoggedAuthState | AnonymousAuthState;
+
+export function isAuthenticated(state: AuthState): state is LoggedAuthState {
+  return state.hasOwnProperty("token");
+}
+
+export enum AuthActionType {
   LOGIN = "LOGIN",
   LOGOUT = "LOGOUT",
 }
 
 interface LoginAction {
   type: AuthActionType.LOGIN;
-  payload: AuthState;
+  payload: LoggedAuthState;
 }
 
 interface LogoutAction {
@@ -44,16 +38,53 @@ type AuthAction = LoginAction | LogoutAction;
 function authReducer(state: AuthState, action: AuthAction) {
   switch (action.type) {
     case AuthActionType.LOGIN:
-      return {
+      const authState = {
         ...state,
-        name: action.payload.name,
+        firstName: action.payload.firstName,
+        lastName: action.payload.lastName,
         email: action.payload.email,
         token: action.payload.token,
       };
+      try {
+        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(authState));
+      } catch (e) {
+        console.log(e);
+      }
+      return authState;
     case AuthActionType.LOGOUT:
+      localStorage.removeItem(LOCAL_STORAGE_KEY);
       return {};
 
     default:
       return state;
   }
 }
+
+export const AuthContext = React.createContext<{
+  state: AuthState;
+  dispatch: Dispatch<AuthAction>;
+}>({ state: initialState, dispatch: () => null });
+
+export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
+  children,
+}) => {
+  const [loading, setLoading] = useState(true);
+  const [state, dispatch] = useReducer(authReducer, initialState);
+
+  useEffect(() => {
+    const persistedState = localStorage.getItem(LOCAL_STORAGE_KEY);
+    if (persistedState) {
+      dispatch({
+        type: AuthActionType.LOGIN,
+        payload: JSON.parse(persistedState),
+      });
+    }
+    setLoading(false);
+  }, []);
+
+  return (
+    <AuthContext.Provider value={{ state, dispatch }}>
+      {loading ? null : children}
+    </AuthContext.Provider>
+  );
+};
