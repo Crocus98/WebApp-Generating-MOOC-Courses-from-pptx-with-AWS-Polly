@@ -7,6 +7,7 @@ import colors from "../style/colors";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { fromEvent } from "file-selector";
 import classNames from "classnames";
+import axios from "axios";
 
 type Props = {};
 
@@ -15,9 +16,23 @@ export default function Generator({}: Props) {
   const [file, setFile] = useState<File | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
+  const uploadFile = async (file: File) => {
+    const fd = new FormData();
+    fd.append("file", file);
+
+    try {
+      const res = await axios.post("/v1/public/upload", fd);
+      console.log(res);
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
   const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) {
-      setFile(e.target.files[0]);
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      setFile(file);
+      uploadFile(file);
     }
   };
 
@@ -35,14 +50,13 @@ export default function Generator({}: Props) {
     setDropping(false);
   };
 
+  const selectFile = async () => {
+    inputRef.current?.click();
+  };
+
   const onDropFile = async (evt: React.DragEvent<HTMLDivElement>) => {
     evt.preventDefault();
     const files = await fromEvent(evt);
-    console.log(files);
-  };
-
-  const selectFile = async () => {
-    inputRef.current?.click();
   };
 
   return (

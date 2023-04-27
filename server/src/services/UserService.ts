@@ -50,7 +50,6 @@ export const register = async (
   try {
     const salt = await bcrypt.genSalt(12);
     password = await bcrypt.hash(password, salt);
-    console.log(name, surname, email, password, tokenValue);
     const result = await prisma.PRISMA.$transaction(async () => {
       const accepted = await checkToken(tokenValue);
       if (!accepted) {

@@ -1,11 +1,11 @@
-import { Request, Response, NextFunction } from "express"
+import { Request, Response, NextFunction } from "express";
 import * as UserService from "@services/UserService";
 import logger from "@logger";
 import config from "@config";
 import UserException from "@/exceptions/UserException";
-import jwt from 'jsonwebtoken';
+import jwt from "jsonwebtoken";
 import utils from "@utils";
-import { User } from "@prisma/client"
+import { User } from "@prisma/client";
 
 export const login = async (req: Request, res: Response) => {
   try {
@@ -21,18 +21,19 @@ export const login = async (req: Request, res: Response) => {
       throw new UserException("Password too short. Minimum 8 characters");
     }
     //login
-    const user = await UserService.login(email, password)
+    const user = await UserService.login(email, password);
     if (!user) {
       throw new UserException("Invalid credentials");
     }
     const token = jwt.sign({ email: user.email }, config.JWT_SECRET, {
-      expiresIn: '2 days',
+      expiresIn: "2 days",
     });
 
     //successful login
-    res.status(200).send({ token });
-  }
-  catch (error) {
+    res
+      .status(200)
+      .send({ email, name: user.name, surname: user.surname, token });
+  } catch (error) {
     if (error instanceof UserException) {
       return res.status(400).send(utils.getErrorMessage(error));
     }
@@ -66,15 +67,20 @@ export const register = async (req: Request, res: Response) => {
       throw new UserException("Token is required");
     }
     //create user
-    const [user, message] = await UserService.register(name, surname, email, password, token);
+    const [user, message] = await UserService.register(
+      name,
+      surname,
+      email,
+      password,
+      token
+    );
 
     if (!user) {
       throw new UserException(message as string);
     }
 
-    res.status(200).send('Inserted successfully');
-  }
-  catch (error) {
+    res.status(200).send("Inserted successfully");
+  } catch (error) {
     if (error instanceof UserException) {
       return res.status(400).send(utils.getErrorMessage(error));
     }
@@ -82,7 +88,10 @@ export const register = async (req: Request, res: Response) => {
   }
 };
 
-export const generateRegistrationToken = async (req: Request, res: Response) => {
+export const generateRegistrationToken = async (
+  req: Request,
+  res: Response
+) => {
   try {
     const user = res.locals.user as User;
     if (!user.admin) {
@@ -94,8 +103,7 @@ export const generateRegistrationToken = async (req: Request, res: Response) => 
     }
     //successful login
     res.status(200).send({ token: registrationToken });
-  }
-  catch (error) {
+  } catch (error) {
     if (error instanceof UserException) {
       return res.status(401).send(utils.getErrorMessage(error));
     }
@@ -112,14 +120,17 @@ export const grantAdminPermissions = async (req: Request, res: Response) => {
       throw new UserException("You are not authorized to perform this action");
     }
 
-    const [result, message] = await UserService.handleAdminPermissions(user, handledUserMail, true);
+    const [result, message] = await UserService.handleAdminPermissions(
+      user,
+      handledUserMail,
+      true
+    );
     if (!result) {
       throw new UserException(message as string);
     }
     //successful login
     res.status(200).send("Success");
-  }
-  catch (error) {
+  } catch (error) {
     if (error instanceof UserException) {
       return res.status(401).send(utils.getErrorMessage(error));
     }
@@ -136,14 +147,17 @@ export const revokeAdminPermissions = async (req: Request, res: Response) => {
       throw new UserException("You are not authorized to perform this action");
     }
 
-    const [result, message] = await UserService.handleAdminPermissions(user, handledUserMail, false);
+    const [result, message] = await UserService.handleAdminPermissions(
+      user,
+      handledUserMail,
+      false
+    );
     if (!result) {
       throw new UserException(message as string);
     }
     //successful login
     res.status(200).send("Success");
-  }
-  catch (error) {
+  } catch (error) {
     if (error instanceof UserException) {
       return res.status(401).send(utils.getErrorMessage(error));
     }
@@ -154,9 +168,15 @@ export const revokeAdminPermissions = async (req: Request, res: Response) => {
 export const userData = async (req: Request, res: Response) => {
   try {
     const user = res.locals.user as User;
-    res.status(200).send({ user: { name: user.name, surname: user.surname, email: user.email, admin: user.admin } });
-  }
-  catch (error) {
+    res.status(200).send({
+      user: {
+        name: user.name,
+        surname: user.surname,
+        email: user.email,
+        admin: user.admin,
+      },
+    });
+  } catch (error) {
     return res.status(500).send(utils.getErrorMessage(error));
   }
-}
+};

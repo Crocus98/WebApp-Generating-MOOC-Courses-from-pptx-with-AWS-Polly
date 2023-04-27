@@ -1,3 +1,4 @@
+import axios from "axios";
 import React, { Dispatch, useEffect, useReducer, useState } from "react";
 
 const initialState = {};
@@ -38,6 +39,9 @@ type AuthAction = LoginAction | LogoutAction;
 function authReducer(state: AuthState, action: AuthAction) {
   switch (action.type) {
     case AuthActionType.LOGIN:
+      axios.defaults.headers.common[
+        "Authorization"
+      ] = `Bearer ${action.payload.token}`;
       const authState = {
         ...state,
         firstName: action.payload.firstName,
@@ -52,6 +56,7 @@ function authReducer(state: AuthState, action: AuthAction) {
       }
       return authState;
     case AuthActionType.LOGOUT:
+      delete axios.defaults.headers.common["Authorization"];
       localStorage.removeItem(LOCAL_STORAGE_KEY);
       return {};
 
@@ -78,6 +83,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         type: AuthActionType.LOGIN,
         payload: JSON.parse(persistedState),
       });
+    } else {
+      dispatch({ type: AuthActionType.LOGOUT });
     }
     setLoading(false);
   }, []);

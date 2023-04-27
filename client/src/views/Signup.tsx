@@ -1,7 +1,7 @@
-import React, { useContext } from "react";
+import React, { useContext, useState } from "react";
 import styled from "styled-components";
 import Card from "../components/Card";
-import { H2 } from "../components/Text";
+import { H2, P } from "../components/Text";
 import { SubmitHandler, useForm } from "react-hook-form";
 import FormInput from "../components/FormInput";
 import Button from "../components/Button";
@@ -55,6 +55,12 @@ export const MainFormSection = styled.div`
   gap: 20px;
 `;
 
+export const ErrorText = styled(P)`
+  color: ${colors.orange};
+  margin: 10px 0;
+  text-align: center;
+`;
+
 type SignupForm = {
   firstName: string;
   lastName: string;
@@ -65,6 +71,7 @@ type SignupForm = {
 };
 
 export default function Signup({}: Props) {
+  const [requestError, setRequestError] = useState<string | null>(null);
   const { dispatch } = useContext(AuthContext);
   const navigate = useNavigate();
   const {
@@ -76,36 +83,86 @@ export default function Signup({}: Props) {
     mode: "onSubmit",
   });
 
-  const onSubmit: SubmitHandler<SignupForm> = (data) => {
-    if (data.confirmPassword !== data.password) {
+  const onSubmit: SubmitHandler<SignupForm> = async (data) => {
+    setRequestError(null);
+    const {
+      email,
+      password,
+      firstName,
+      lastName,
+      accessToken,
+      confirmPassword,
+    } = data;
+    if (confirmPassword !== password) {
       return setError("confirmPassword", {
         type: "custom",
         message: "Le due password devono coincidere",
       });
     }
-    /*
-    axios
-      .post("/v1/public/register", {
-        name: data.firstName,
-        surname: data.lastName,
-        email: data.email,
-        password: data.password,
-        token: data.accessToken,
-      })
-      .then((res) => {
-        console.log(res);
+
+    try {
+      await axios.post("/v1/public/register", {
+        name: firstName,
+        surname: lastName,
+        email,
+        password,
+        token: accessToken,
       });
-      */
-    dispatch({
-      type: AuthActionType.LOGIN,
-      payload: {
-        firstName: data.firstName,
-        lastName: data.lastName,
-        email: data.email,
-        token: data.accessToken,
-      },
-    });
-    navigate("/");
+    } catch (err) {
+      if (!axios.isAxiosError(err) || !err.response) {
+        return setRequestError(
+          "An error occurred while processing your request"
+        );
+      }
+
+      if (err.response.data === "Invalid token") {
+        return setError("accessToken", {
+          type: "custom",
+          message: "Token non valido",
+        });
+      } else if (err.response.data === "User already exists with this email") {
+        return setError("email", {
+          type: "custom",
+          message:
+            "Questa email è stata già utilizzata per registrare un account",
+        });
+      } else if (typeof err.response.data === "string") {
+        return setRequestError(err.response.data);
+      } else {
+        return setRequestError(err.message);
+      }
+    }
+
+    try {
+      const loginResponse = await axios.post<{ token: string }>(
+        "/v1/public/login",
+        {
+          email,
+          password,
+        }
+      );
+      dispatch({
+        type: AuthActionType.LOGIN,
+        payload: {
+          firstName,
+          lastName,
+          email,
+          token: loginResponse.data.token,
+        },
+      });
+      navigate("/");
+    } catch (err) {
+      if (!axios.isAxiosError(err) || !err.response) {
+        return setRequestError(
+          "An error occurred while processing your request"
+        );
+      }
+      if (typeof err.response.data === "string") {
+        return setRequestError(err.response.data);
+      } else {
+        return setRequestError(err.message);
+      }
+    }
   };
 
   return (
@@ -167,6 +224,7 @@ export default function Signup({}: Props) {
               error={errors.accessToken?.message}
             />
           </MainFormSection>
+          {requestError && <ErrorText>{requestError}</ErrorText>}
           <Button>Registrati</Button>
         </AuthForm>
         <ChangeAuthLink to={"/login"}>
