@@ -5,10 +5,11 @@
   "main": "./dist/app.js",
   "scripts": {
     "start": "nodemon",
-    "build": "tsc -p tsconfig.json  && tsc-alias -p tsconfig.json",
+    "build": "tsc",
     "lint": "eslint ./src --ext .ts",
-    "service:start": "set NODE_ENV=production&&node ./dist/app.js",
-    "service:build": "npm run build && npm run start:service"
+    "service:start": "set NODE_ENV=production&&node -r ts-node/register/transpile-only -r tsconfig-paths/register ./dist/app.js",
+    "service:build": "npm run build",
+    "service:buildAndRun": "npm run build && npm run service:start"
   },
   "author": "AI-Assisted-Polimi",
   "license": "ISC",
@@ -24,7 +25,6 @@
     "nodemon": "^2.0.21",
     "prisma": "^4.13.0",
     "ts-node": "^10.9.1",
-    "tsc-alias": "^1.8.3",
     "tsconfig-paths": "^4.1.2",
     "tslib": "^2.5.0",
     "typescript": "^5.0.4"
