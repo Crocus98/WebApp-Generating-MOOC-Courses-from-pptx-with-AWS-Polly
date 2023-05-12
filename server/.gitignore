@@ -3,3 +3,4 @@ node_modules
 clientBuild
 logs/express.log
 logs/default.log
+dist
