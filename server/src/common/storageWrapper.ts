@@ -27,7 +27,7 @@ class StorageWrapper {
             if (error instanceof AwsS3Exception) {
                 throw new AwsS3Exception(error.message);
             }
-            throw new AwsS3Exception("Unexpected errror. Could not upload file to S3");
+            throw new AwsS3Exception("Unexpected error. Could not upload file to S3");
         }
     }
 
@@ -46,7 +46,7 @@ class StorageWrapper {
             if (error instanceof AwsS3Exception) {
                 throw new AwsS3Exception(error.message);
             }
-            throw new AwsS3Exception("Unexpected errror. Could not upload file to S3");
+            throw new AwsS3Exception("Unexpected error. Could not upload file to S3");
         }
     }
 
@@ -66,7 +66,7 @@ class StorageWrapper {
             if (error instanceof AwsS3Exception) {
                 throw new AwsS3Exception(error.message);
             }
-            throw new AwsS3Exception("Unexpected errror. Could not get file names from S3");
+            throw new AwsS3Exception("Unexpected error. Could not get file names from S3");
         }
     }
 
@@ -90,7 +90,7 @@ class StorageWrapper {
             if (error instanceof AwsS3Exception) {
                 throw new AwsS3Exception(error.message);
             }
-            throw new AwsS3Exception("Unexpected errror. Could not delete files from storage");
+            throw new AwsS3Exception("Unexpected error. Could not delete files from storage");
         }
     }
 
