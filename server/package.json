@@ -14,6 +14,7 @@
   "author": "AI-Assisted-Polimi",
   "license": "ISC",
   "devDependencies": {
+    "@types/aws-sdk": "^2.7.0",
     "@types/bcrypt": "^5.0.0",
     "@types/express": "^4.17.17",
     "@types/jsonwebtoken": "^9.0.1",
@@ -30,8 +31,10 @@
     "typescript": "^5.0.4"
   },
   "dependencies": {
+    "@aws-sdk/client-lambda": "^3.335.0",
     "@aws-sdk/client-s3": "^3.317.0",
     "@aws-sdk/lib-storage": "^3.317.0",
+    "@aws-sdk/util-utf8-node": "^3.259.0",
     "@prisma/client": "^4.13.0",
     "aws-sdk": "^2.1362.0",
     "bcrypt": "^5.1.0",

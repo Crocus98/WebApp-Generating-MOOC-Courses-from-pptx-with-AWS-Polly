@@ -15,15 +15,17 @@ class ElaborationWrapper {
     }
 
     public async invoke (funcName:string, payload:string): Promise<{logs: string, result: string }>{
+        const encoder = new TextEncoder();
         const command = new InvokeCommand({
           FunctionName: funcName,
-          Payload: JSON.stringify(payload),
+          Payload: encoder.encode(JSON.stringify(payload)),,
           LogType: LogType.Tail,
         });
       
         const { Payload, LogResult } = await this.lambdaClient.send(command);
-        const result = Buffer.from(Payload).toString();
-        const logs = Buffer.from(LogResult, "base64").toString();
+        const decoder = new TextDecoder();
+        const result = decoder.decode(Payload);
+        const logs = LogResult ? Buffer.from(LogResult, "base64").toString() : '';
         return { logs, result };
       };
 
