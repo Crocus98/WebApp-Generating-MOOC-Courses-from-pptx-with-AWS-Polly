@@ -101,7 +101,7 @@ class StorageWrapper {
                 objectKeys?.find((obj) => !obj.Key?.includes("/edited/"))?.Key :
                 objectKeys?.find((obj) => obj.Key?.includes("/edited/"))?.Key;
             if (!fileName) {
-                throw new AwsS3Exception("The file is not present in S3.")
+                throw new AwsS3Exception("The file is not present in S3.");
             }
             const getCommand = new GetObjectCommand({
                 Bucket: config.AWS_CONFIG.S3_BUCKET_NAME,
