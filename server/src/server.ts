@@ -7,6 +7,7 @@ import helmet from "helmet";
 import routes from "@routes";
 //import HttpException from "@exceptions/HttpException";
 import path from "path";
+import { populateRegistrationPool } from "./services/UserService";
 
 class Server {
   private app: express.Application;
@@ -65,6 +66,7 @@ class Server {
     const port = config.SERVER_PORT;
     this.server.listen(port, () => {
       expressLogger.info(`Server started on port ${port}`);
+      populateRegistrationPool();
     });
   }
 }

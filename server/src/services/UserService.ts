@@ -76,11 +76,11 @@ export const register = async (
       return [null, "User already exists with this email"];
     }
     //usually it is the case of people trying to register with the same email or with the same token
-    return [null, "An unexpected error occurred while registering the user."];
+    return [null, (error as Error).message];
   }
 };
 
-export const generateRegistrationToken = async (user: User) => {
+export const generateRegistrationToken = async () => {
   try {
     const token = await prisma.PRISMA.token.create({
       data: {},
@@ -117,5 +117,35 @@ export const handleAdminPermissions = async (
       false,
       "An unexpected error occurred while assigning admin permissions.",
     ];
+  }
+};
+
+export const populateRegistrationPool = async () => {
+  try {
+    const availableTokens = await prisma.PRISMA.token.findMany({
+      where: {
+        user: { is: null },
+      },
+      take: 5,
+    });
+    const tokensToGenerate = 5 - availableTokens.length;
+    for (let i = 0; i < tokensToGenerate; i++) {
+      const token = await generateRegistrationToken();
+      if (!token) {
+        throw new Error("Error while generating registration token");
+      }
+      availableTokens.push(token);
+    }
+
+    console.log("Available tokens: ");
+    for (let i = 0; i < availableTokens.length; i++) {
+      console.log(availableTokens[i].token);
+    }
+    console.log("------------------\n");
+  } catch (error) {
+    console.log(
+      "Errors while populating registration pool: ",
+      (error as Error).message
+    );
   }
 };

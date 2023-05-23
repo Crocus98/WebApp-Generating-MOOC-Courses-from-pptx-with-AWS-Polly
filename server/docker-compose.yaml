@@ -1,0 +1,27 @@
+
+services:
+  postgres:
+    image: postgres:latest
+    container_name: postgres_prod
+    hostname: postgres
+    ports:
+      - 5555:5432
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: pass
+      POSTGRES_DB: db
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  app:
+    depends_on:
+      - postgres
+    image: polly
+    container_name: polly
+    ports:
+      - 3001:3001
+    restart: always
+
+volumes:
+  postgres-data:

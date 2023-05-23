@@ -5,7 +5,7 @@ services:
     container_name: postgres
     hostname: postgres
     ports:
-      - 5555:5432
+      - 5432:5432
     environment:
       POSTGRES_USER: user
       POSTGRES_PASSWORD: pass

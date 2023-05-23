@@ -81,6 +81,7 @@ export const register = async (req: Request, res: Response) => {
 
     res.status(200).send("Inserted successfully");
   } catch (error) {
+    console.log(utils.getErrorMessage(error));
     if (error instanceof UserException) {
       return res.status(400).send(utils.getErrorMessage(error));
     }
@@ -97,7 +98,7 @@ export const generateRegistrationToken = async (
     if (!user.admin) {
       throw new UserException("You are not authorized to perform this action");
     }
-    const registrationToken = await UserService.generateRegistrationToken(user);
+    const registrationToken = await UserService.generateRegistrationToken();
     if (!registrationToken) {
       throw new UserException("Error generating token");
     }
