@@ -64,13 +64,13 @@ volumes:
     driver: local
     driver_opts:
       type: none
-      device: /home/ubuntu/polly-docker/views/
+      device: /home/ubuntu/WebApp/views/
       o: bind
   dhparam:
     driver: local
     driver_opts:
       type: none
-      device: /home/ubuntu/polly-docker/dhparam/
+      device: /home/ubuntu/WebApp/dhparam/
       o: bind
   postgres-data:
 
