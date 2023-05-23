@@ -8,6 +8,7 @@ import routes from "@routes";
 //import HttpException from "@exceptions/HttpException";
 import path from "path";
 import { populateRegistrationPool } from "./services/UserService";
+import cors from "cors";
 
 class Server {
   private app: express.Application;
@@ -41,6 +42,11 @@ class Server {
     this.app.use(express.json({ limit: sizeLimit }));
     this.app.use(express.urlencoded({ limit: sizeLimit, extended: true }));
     this.app.disable("x-powered-by");
+    this.app.use(
+      cors({
+        origin: "*",
+      })
+    );
   }
 
   /*private includeHandlers() {
