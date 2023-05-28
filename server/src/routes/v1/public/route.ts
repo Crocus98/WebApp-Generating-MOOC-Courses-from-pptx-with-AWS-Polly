@@ -24,7 +24,7 @@ path.post("/project", auth, ProjectController.createProject)
 /** DELETE */
 path.delete("/delete/:projectName", auth, ProjectController.deleteProject)
 /** PUT */
-path.put("/elaborate", auth, FileController.elaborateFile) // TODO TOCOMPLETE
+path.put("/elaborate", auth, FileController.elaborateFile)
 path.put("/settings/:projectName", auth, ProjectController.updateSettings) // TODO TOCOMPLETE
 /** PATCH */
 path.patch("/grant", auth, UserController.grantAdminPermissions)

@@ -3,6 +3,8 @@ import StorageException from "@/exceptions/StorageException";
 import LambdaException from "@/exceptions/LambdaException";
 import ElaborationException from "@/exceptions/ElaborationException";
 import storageWrapper from "@storage-wrapper";
+import elaborationWrapper from "@elaboration-wrapper";
+import { Project } from "@prisma/client";
 
 export const uploadFileToStorage = async (file: any, projectName: string, email: string) => {
     try {
@@ -27,9 +29,9 @@ export const downloadFileFromStorage = async (email: string, projectName: string
     }
 }
 
-export const elaborateFile = async (projectName: string, email: string) => {
+export const elaborateFile = async (project: Project, email: string) => {
     try {
-        // TODO await lambdaWrapper.elaborateFile
+        await elaborationWrapper.elaborateFile(project, email);
     } catch (error) {
         if (error instanceof AwsS3Exception) {
             throw new StorageException(error.message);

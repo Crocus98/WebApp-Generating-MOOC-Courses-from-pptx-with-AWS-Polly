@@ -20,13 +20,13 @@ export const uploadFile = async (req: Request, res: Response) => {
             throw new ParameterException("No project name provided.");
         }
         if (!file) {
-            throw new FileException('No file uploaded.');
+            throw new FileException("No file uploaded.");
         }
         if (!file.originalname.endsWith('.pptx')) {
-            throw new FileException('File must be a PowerPoint (.pptx) file.');
+            throw new FileException("File must be a PowerPoint (.pptx) file.");
         }
         if (!await ProjectService.findProjectByProjectName(projectName, user)) {
-            throw new ParameterException('Project name not valid.');
+            throw new ParameterException("Project name not valid.");
         }
         await FileService.uploadFileToStorage(file, projectName, user.email);
 
@@ -58,10 +58,10 @@ export const downloadFile = async (req: Request, res: Response) => {
             throw new ParameterException("No project name provided.");
         }
         if (!await ProjectService.findProjectByProjectName(projectName, user)) {
-            throw new ParameterException('Project name not valid.');
+            throw new ParameterException("Project name not valid.");
         }
         let original = false;
-        if (parameter && parameter === 'true') {
+        if (parameter && parameter === "true") {
             original = true;
         }
         const file = await FileService.downloadFileFromStorage(user.email, projectName, original);
@@ -84,7 +84,14 @@ export const elaborateFile = async (req: Request, res: Response) => {
     try {
         const user = res.locals.user as User;
         const projectName = req.body.projectName;
-        await FileService.elaborateFile(projectName, user.email);
+        if (!projectName) {
+            throw new ParameterException("No project name provided.");
+        }
+        const project = await ProjectService.findProjectByProjectName(projectName, user);
+        if (!project) {
+            throw new ParameterException("Project name not valid.");
+        }
+        await FileService.elaborateFile(project, user.email);
         return res.status(200).send("File elaboration performed successfully");
     }
     catch (error) {

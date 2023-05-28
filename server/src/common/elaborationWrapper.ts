@@ -20,32 +20,31 @@ class ElaborationWrapper {
             const funcName = "lambda_handler";
             const payload = {
                 function_to_invoke: "process_pptx",
+                param1: filename,
                 param2: email,
-                param1: filename,  // replace with the actual value
             };
 
             const { logs, result } = await this.invoke(funcName, payload);
-            const resultObj = JSON.parse(result);
-            if (resultObj.statusCode !== 200) {
-                throw new LambdaException(`Lambda could not elaborate file.`);
+            const parsedResult = JSON.parse(result);
+            if (parsedResult.statusCode !== 200) {
+                throw new LambdaException("Lambda could not elaborate file.");
             }
         } catch (error) {
             if (error instanceof LambdaException) {
                 throw new LambdaException(error.message);
-            }else if (error instanceof AwsS3Exception) {
+            } else if (error instanceof AwsS3Exception) {
                 throw new AwsS3Exception(error.message);
             }
             throw new LambdaException("Unexpected error. Lambda could not elaborate file.");
-
         }
     }
 
-    public async invoke (funcName:string, payload:object): Promise<{logs: string, result: string }>{
+    public async invoke(funcName: string, payload: object): Promise<{ logs: string, result: string }> {
         const encoder = new TextEncoder();
         const command = new InvokeCommand({
-          FunctionName: funcName,
-          Payload: encoder.encode(JSON.stringify(payload)),
-          LogType: LogType.Tail,
+            FunctionName: funcName,
+            Payload: encoder.encode(JSON.stringify(payload)),
+            LogType: LogType.Tail,
         });
 
         const { Payload, LogResult } = await this.lambdaClient.send(command);
