@@ -2,7 +2,9 @@ import LambdaException from "@/exceptions/LambdaException";
 import { LambdaClient, InvokeCommand } from "@aws-sdk/client-lambda";
 import { LogType } from "@aws-sdk/client-lambda";
 import config from "@config";
-import { Project } from "aws-sdk/clients/kendra";
+import { Project } from "@prisma/client";
+import storageWrapper from "@storage-wrapper";
+import AwsS3Exception from "@/exceptions/AwsS3Exception";
 
 class ElaborationWrapper {
     private static elaborationWrapper?: ElaborationWrapper;
@@ -14,11 +16,11 @@ class ElaborationWrapper {
 
     async elaborateFile(project: Project, email: string) {
         try {
-            
+            const filename = storageWrapper.getFileNameFromStorageByUserEmailAndProjectForLambda(email, project.name);
             const funcName = "lambda_handler";  // replace with your actual Lambda function name
             const payload = {
                 function_to_invoke: "process_pptx",  // replace with the function you want to invoke
-                param1: project,  // replace with the actual value
+                param1: filename,  // replace with the actual value
                 param2: email,  // replace with the actual value
             };
     
@@ -30,16 +32,19 @@ class ElaborationWrapper {
         } catch (error) {
             if (error instanceof LambdaException) {
                 throw new LambdaException(error.message);
+            }else if (error instanceof AwsS3Exception) {
+                throw new AwsS3Exception(error.message);
             }
             throw new LambdaException("Unexpected error. Lambda could not elaborate file.");
+
         }
     }
 
-    public async invoke (funcName:string, payload:string): Promise<{logs: string, result: string }>{
+    public async invoke (funcName:string, payload:object): Promise<{logs: string, result: string }>{
         const encoder = new TextEncoder();
         const command = new InvokeCommand({
           FunctionName: funcName,
-          Payload: encoder.encode(JSON.stringify(payload)),,
+          Payload: encoder.encode(JSON.stringify(payload)),
           LogType: LogType.Tail,
         });
 
