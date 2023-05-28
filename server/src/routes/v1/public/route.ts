@@ -13,17 +13,18 @@ const upload = multer({ storage: multer.memoryStorage() });
 /** GET */
 path.get("/me", auth, UserController.userData)
 path.get("/download/:projectName", auth, FileController.downloadFile) // parameter: original ((true/false) default: false)
-path.get("/list", auth, ProjectController.listProjects) // parameter: projectName"
-//path.get("/project/:projectName", auth, ProjectController.getSettings) // parameter: projectName
+path.get("/list", auth, ProjectController.listProjects)
+path.get("/project/:projectName", auth, ProjectController.getSettings)
 /** POST */
 path.post("/login", UserController.login)
 path.post("/register", UserController.register)
 path.post("/token", auth, UserController.generateRegistrationToken)
 path.post("/upload", auth, upload.single('file'), FileController.uploadFile)
-//path.post("/project", auth, ProjectController.createProject") TODO parameter projectName
+path.post("/project", auth, ProjectController.createProject)
 /** DELETE */
+path.delete("/project/:projectName", auth, ProjectController.deleteProject)
 /** PUT */
-path.put("/elaborate", auth, FileController.elaborateFile) // TODO add parameter projectName (REMOVE this API maybe?)
+path.put("/elaborate", auth, FileController.elaborateFile) // TODO TOCOMPLETE
 //path.put("/settings", auth, ProjectController.updateSettings) // parameter: projectName
 /** PATCH */
 path.patch("/grant", auth, UserController.grantAdminPermissions)

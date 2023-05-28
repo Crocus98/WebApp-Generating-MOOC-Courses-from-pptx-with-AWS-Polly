@@ -83,7 +83,8 @@ export const downloadFile = async (req: Request, res: Response) => {
 export const elaborateFile = async (req: Request, res: Response) => {
     try {
         const user = res.locals.user as User;
-        await FileService.elaborateFile(user.email);
+        const projectName = req.body.projectName;
+        await FileService.elaborateFile(projectName, user.email);
         return res.status(200).send("File elaboration performed successfully");
     }
     catch (error) {

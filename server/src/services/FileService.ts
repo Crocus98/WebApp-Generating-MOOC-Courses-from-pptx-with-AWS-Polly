@@ -27,9 +27,9 @@ export const downloadFileFromStorage = async (email: string, projectName: string
     }
 }
 
-export const elaborateFile = async (email: string) => {
+export const elaborateFile = async (projectName: string, email: string) => {
     try {
-        // TODO await lambdaWrapper.elaborateFile(email);
+        // TODO await lambdaWrapper.elaborateFile
     } catch (error) {
         if (error instanceof AwsS3Exception) {
             throw new StorageException(error.message);
@@ -37,5 +37,16 @@ export const elaborateFile = async (email: string) => {
             throw new ElaborationException(error.message);
         }
         throw new ElaborationException("Unexpected error. Could not elaborate file.");
+    }
+}
+
+export const deleteFilesByProjectName = async (email: string, projectName: string) => {
+    try {
+        await storageWrapper.deleteFilesFromStorageByUserEmailAndProjectName(email, projectName);
+    } catch (error) {
+        if (error instanceof AwsS3Exception) {
+            throw new StorageException(error.message);
+        }
+        throw new StorageException("Unexpected error. Could not elaborate file.");
     }
 }
