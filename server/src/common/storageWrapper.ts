@@ -19,10 +19,10 @@ class StorageWrapper {
         }
     }
 
-    async uploadFileToStorageAndDeleteOldOnes(file: any, email: string) {
+    async uploadFileToStorageAndDeleteOldOnes(file: any, projectName: string, email: string) {
         try {
-            await this.deleteFilesFromStorageByUserEmail(email);
-            await this.uploadFileToStorage(file, email);
+            await this.deleteFilesFromStorageByUserEmailAndProjectName(email, projectName);
+            await this.uploadFileToStorage(file, email, projectName);
         } catch (error) {
             if (error instanceof AwsS3Exception) {
                 throw new AwsS3Exception(error.message);
@@ -31,11 +31,11 @@ class StorageWrapper {
         }
     }
 
-    async uploadFileToStorage(file: any, email: string) {
+    async uploadFileToStorage(file: any, email: string, projectName: string) {
         try {
             const command = new PutObjectCommand({
                 Bucket: config.AWS_CONFIG.S3_BUCKET_NAME,
-                Key: `${email}/${file.originalname}`,
+                Key: `${email}/${projectName}/${file.originalname}`,
                 Body: file.buffer,
             });
             const result = await this.s3client?.send(command);
@@ -50,11 +50,12 @@ class StorageWrapper {
         }
     }
 
-    async getFileNamesFromStorageByUserEmail(email: string) {
+    async getFileNamesFromStorageByUserEmailAndProject(email: string, projectName?: string) {
         try {
+            const prefix = projectName ? `${email}/${projectName}/` : `${email}/`;
             const listCommand = new ListObjectsCommand({
                 Bucket: config.AWS_CONFIG.S3_BUCKET_NAME,
-                Prefix: `${email}/`,
+                Prefix: prefix,
             });
             const result = await this.s3client?.send(listCommand);
             if (result?.$metadata.httpStatusCode !== 200) {
@@ -70,9 +71,9 @@ class StorageWrapper {
         }
     }
 
-    async deleteFilesFromStorageByUserEmail(email: string) {
+    async deleteFilesFromStorageByUserEmailAndProjectName(email: string, projectName: string) {
         try {
-            const objectKeys = await this.getFileNamesFromStorageByUserEmail(email);
+            const objectKeys = await this.getFileNamesFromStorageByUserEmailAndProject(email, projectName);
             if (!objectKeys || objectKeys.length === 0) {
                 return;
             }
@@ -94,9 +95,9 @@ class StorageWrapper {
         }
     }
 
-    async getFileFromStorage(email: string, original: boolean = false) {
+    async getFileFromStorage(email: string, projectName: string, original: boolean = false) {
         try {
-            const objectKeys = await this.getFileNamesFromStorageByUserEmail(email);
+            const objectKeys = await this.getFileNamesFromStorageByUserEmailAndProject(email, projectName);
             const fileName = original ?
                 objectKeys?.find((obj) => !obj.Key?.includes("/edited/"))?.Key :
                 objectKeys?.find((obj) => obj.Key?.includes("/edited/"))?.Key;

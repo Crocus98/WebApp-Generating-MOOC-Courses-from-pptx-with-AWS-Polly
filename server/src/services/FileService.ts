@@ -4,9 +4,9 @@ import LambdaException from "@/exceptions/LambdaException";
 import ElaborationException from "@/exceptions/ElaborationException";
 import storageWrapper from "@storage-wrapper";
 
-export const uploadFileToStorage = async (file: any, email: string) => {
+export const uploadFileToStorage = async (file: any, projectName: string, email: string) => {
     try {
-        await storageWrapper.uploadFileToStorageAndDeleteOldOnes(file, email);
+        await storageWrapper.uploadFileToStorageAndDeleteOldOnes(file, projectName, email);
     } catch (error) {
         if (error instanceof AwsS3Exception) {
             throw new StorageException(error.message);
@@ -15,9 +15,9 @@ export const uploadFileToStorage = async (file: any, email: string) => {
     }
 }
 
-export const downloadFileFromStorage = async (email: string, original: boolean = false) => {
+export const downloadFileFromStorage = async (email: string, projectName: string, original: boolean = false) => {
     try {
-        const file = await storageWrapper.getFileFromStorage(email, original);
+        const file = await storageWrapper.getFileFromStorage(email, projectName, original);
         return file;
     } catch (error) {
         if (error instanceof AwsS3Exception) {
