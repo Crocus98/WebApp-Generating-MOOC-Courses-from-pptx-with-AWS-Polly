@@ -22,10 +22,10 @@ path.post("/token", auth, UserController.generateRegistrationToken)
 path.post("/upload", auth, upload.single('file'), FileController.uploadFile)
 path.post("/project", auth, ProjectController.createProject)
 /** DELETE */
-path.delete("/project/:projectName", auth, ProjectController.deleteProject)
+path.delete("/delete/:projectName", auth, ProjectController.deleteProject)
 /** PUT */
 path.put("/elaborate", auth, FileController.elaborateFile) // TODO TOCOMPLETE
-//path.put("/settings", auth, ProjectController.updateSettings) // parameter: projectName
+path.put("/settings/:projectName", auth, ProjectController.updateSettings) // TODO TOCOMPLETE
 /** PATCH */
 path.patch("/grant", auth, UserController.grantAdminPermissions)
 path.patch("/revoke", auth, UserController.revokeAdminPermissions)
