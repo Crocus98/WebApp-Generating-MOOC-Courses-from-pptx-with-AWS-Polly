@@ -71,6 +71,19 @@ class StorageWrapper {
         }
     }
 
+    async getFileNameFromStorageByUserEmailAndProjectForLambda(email: string, projectName: string) {
+        try {
+            const objectKeys = await this.getFileNamesFromStorageByUserEmailAndProject(email, projectName);
+            const fileName = objectKeys?.find((obj) => !obj.Key?.includes("/edited/"))?.Key;
+            return fileName;
+        } catch (error) {
+            if (error instanceof AwsS3Exception) {
+                throw new AwsS3Exception(error.message);
+            }
+            throw new AwsS3Exception("Unexpected error. Could not get file names from S3");
+        }
+    }
+
     async deleteFilesFromStorageByUserEmailAndProjectName(email: string, projectName: string) {
         try {
             const objectKeys = await this.getFileNamesFromStorageByUserEmailAndProject(email, projectName);

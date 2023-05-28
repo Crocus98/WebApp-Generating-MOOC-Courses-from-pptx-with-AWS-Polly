@@ -14,20 +14,20 @@ class ElaborationWrapper {
         // TODO
     }
 
-    public async invoke (funcName:string, payload:string): Promise<{logs: string, result: string }>{
+    public async invoke(funcName: string, payload: string): Promise<{ logs: string, result: string }> {
         const encoder = new TextEncoder();
         const command = new InvokeCommand({
-          FunctionName: funcName,
-          Payload: encoder.encode(JSON.stringify(payload)),,
-          LogType: LogType.Tail,
+            FunctionName: funcName,
+            Payload: encoder.encode(JSON.stringify(payload)),
+            LogType: LogType.Tail,
         });
-      
+
         const { Payload, LogResult } = await this.lambdaClient.send(command);
         const decoder = new TextDecoder();
         const result = decoder.decode(Payload);
         const logs = LogResult ? Buffer.from(LogResult, "base64").toString() : '';
         return { logs, result };
-      };
+    };
 
 
     static getInstance(): ElaborationWrapper {
