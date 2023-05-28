@@ -1,7 +1,6 @@
 import config from "@config";
 import { S3Client, PutObjectCommand, DeleteObjectCommand, DeleteObjectsCommand, ListObjectsCommand, GetObjectCommand } from "@aws-sdk/client-s3";
 import AwsS3Exception from "@/exceptions/AwsS3Exception";
-import { Readable } from "stream";
 
 class StorageWrapper {
     private static storageWrapper?: StorageWrapper;
@@ -59,7 +58,7 @@ class StorageWrapper {
             });
             const result = await this.s3client?.send(listCommand);
             if (result?.$metadata.httpStatusCode !== 200) {
-                throw new AwsS3Exception("Could not get file names from S3");
+                throw new AwsS3Exception("Could not get file names from S3.");
             }
             const objectKeys = result?.Contents?.map((obj) => ({ Key: obj.Key }));
             return objectKeys;
@@ -67,7 +66,7 @@ class StorageWrapper {
             if (error instanceof AwsS3Exception) {
                 throw new AwsS3Exception(error.message);
             }
-            throw new AwsS3Exception("Unexpected error. Could not get file names from S3");
+            throw new AwsS3Exception("Unexpected error. Could not get file names from S3.");
         }
     }
 
@@ -80,7 +79,7 @@ class StorageWrapper {
             if (error instanceof AwsS3Exception) {
                 throw new AwsS3Exception(error.message);
             }
-            throw new AwsS3Exception("Unexpected error. Could not get file names from S3");
+            throw new AwsS3Exception("Unexpected error. Could not get file name from S3.");
         }
     }
 

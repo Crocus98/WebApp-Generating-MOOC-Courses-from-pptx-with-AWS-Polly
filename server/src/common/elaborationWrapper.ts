@@ -17,13 +17,13 @@ class ElaborationWrapper {
     async elaborateFile(project: Project, email: string) {
         try {
             const filename = storageWrapper.getFileNameFromStorageByUserEmailAndProjectForLambda(email, project.name);
-            const funcName = "lambda_handler";  // replace with your actual Lambda function name
+            const funcName = "lambda_handler";
             const payload = {
-                function_to_invoke: "process_pptx",  // replace with the function you want to invoke
+                function_to_invoke: "process_pptx",
+                param2: email,
                 param1: filename,  // replace with the actual value
-                param2: email,  // replace with the actual value
             };
-    
+
             const { logs, result } = await this.invoke(funcName, payload);
             const resultObj = JSON.parse(result);
             if (resultObj.statusCode !== 200) {
