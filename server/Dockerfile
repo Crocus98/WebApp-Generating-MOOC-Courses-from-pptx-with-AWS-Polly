@@ -10,6 +10,8 @@ COPY . .
 
 RUN npx prisma generate
 
+RUN npx prisma db push
+
 EXPOSE 3001
 
 CMD npm run service:buildAndRun
