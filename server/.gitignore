@@ -1,6 +1,4 @@
 node_modules
 .env
-clientBuild
 logs/express.log
 logs/default.log
-dist
