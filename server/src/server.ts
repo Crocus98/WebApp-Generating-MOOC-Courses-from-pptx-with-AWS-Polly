@@ -7,6 +7,7 @@ import helmet from "helmet";
 import routes from "@routes";
 //import HttpException from "@exceptions/HttpException";
 import path from "path";
+import cors from "cors";
 
 class Server {
   private app: express.Application;
@@ -31,6 +32,7 @@ class Server {
   }
 
   private includeConfig() {
+    this.app.use(cors()); // Enable CORS
     this.app.use(
       connectLogger(expressLogger, { level: config.LOG_LEVEL.levelStr })
     );
