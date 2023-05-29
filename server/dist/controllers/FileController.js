@@ -7,17 +7,27 @@ const FileService = tslib_1.__importStar(require("@services/FileService"));
 const FileException_1 = tslib_1.__importDefault(require("@/exceptions/FileException"));
 const StorageException_1 = tslib_1.__importDefault(require("@/exceptions/StorageException"));
 const ElaborationException_1 = tslib_1.__importDefault(require("@/exceptions/ElaborationException"));
+const ParameterException_1 = tslib_1.__importDefault(require("@/exceptions/ParameterException"));
+const DatabaseException_1 = tslib_1.__importDefault(require("@/exceptions/DatabaseException"));
+const ProjectService = tslib_1.__importStar(require("@services/ProjectService"));
 const uploadFile = (req, res) => tslib_1.__awaiter(void 0, void 0, void 0, function* () {
     try {
         const file = req.file;
+        const projectName = req.body.projectName;
         const user = res.locals.user;
+        if (!projectName) {
+            throw new ParameterException_1.default("No project name provided.");
+        }
         if (!file) {
-            throw new FileException_1.default('No file uploaded.');
+            throw new FileException_1.default("No file uploaded.");
         }
         if (!file.originalname.endsWith('.pptx')) {
-            throw new FileException_1.default('File must be a PowerPoint (.pptx) file.');
+            throw new FileException_1.default("File must be a PowerPoint (.pptx) file.");
         }
-        yield FileService.uploadFileToStorage(file, user.email);
+        if (!(yield ProjectService.findProjectByProjectName(projectName, user))) {
+            throw new ParameterException_1.default("Project name not valid.");
+        }
+        yield FileService.uploadFileToStorage(file, projectName, user.email);
         return res.status(200).send(`File ${file.originalname} uploaded to S3.`);
     }
     catch (error) {
@@ -27,24 +37,44 @@ const uploadFile = (req, res) => tslib_1.__awaiter(void 0, void 0, void 0, funct
         else if (error instanceof StorageException_1.default) {
             return res.status(502).send(_utils_1.default.getErrorMessage(error));
         }
+        else if (error instanceof DatabaseException_1.default) {
+            return res.status(500).send(_utils_1.default.getErrorMessage(error));
+        }
+        else if (error instanceof ParameterException_1.default) {
+            return res.status(400).send(_utils_1.default.getErrorMessage(error));
+        }
         return res.status(500).send(_utils_1.default.getErrorMessage(error));
     }
+    ;
 });
 exports.uploadFile = uploadFile;
 const downloadFile = (req, res) => tslib_1.__awaiter(void 0, void 0, void 0, function* () {
     try {
         const user = res.locals.user;
         const parameter = req.query.original;
+        const projectName = req.params.projectName;
+        if (!projectName) {
+            throw new ParameterException_1.default("No project name provided.");
+        }
+        if (!(yield ProjectService.findProjectByProjectName(projectName, user))) {
+            throw new ParameterException_1.default("Project name not valid.");
+        }
         let original = false;
-        if (parameter && parameter === 'true') {
+        if (parameter && parameter === "true") {
             original = true;
         }
-        const file = yield FileService.downloadFileFromStorage(user.email, original);
+        const file = yield FileService.downloadFileFromStorage(user.email, projectName, original);
         return res.status(200).send(file);
     }
     catch (error) {
         if (error instanceof StorageException_1.default) {
             return res.status(502).send(_utils_1.default.getErrorMessage(error));
+        }
+        else if (error instanceof ParameterException_1.default) {
+            return res.status(400).send(_utils_1.default.getErrorMessage(error));
+        }
+        else if (error instanceof DatabaseException_1.default) {
+            return res.status(500).send(_utils_1.default.getErrorMessage(error));
         }
         return res.status(500).send(_utils_1.default.getErrorMessage(error));
     }
@@ -53,7 +83,15 @@ exports.downloadFile = downloadFile;
 const elaborateFile = (req, res) => tslib_1.__awaiter(void 0, void 0, void 0, function* () {
     try {
         const user = res.locals.user;
-        yield FileService.elaborateFile(user.email);
+        const projectName = req.body.projectName;
+        if (!projectName) {
+            throw new ParameterException_1.default("No project name provided.");
+        }
+        const project = yield ProjectService.findProjectByProjectName(projectName, user);
+        if (!project) {
+            throw new ParameterException_1.default("Project name not valid.");
+        }
+        yield FileService.elaborateFile(project, user.email);
         return res.status(200).send("File elaboration performed successfully");
     }
     catch (error) {

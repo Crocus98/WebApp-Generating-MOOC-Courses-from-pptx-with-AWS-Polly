@@ -9,6 +9,7 @@ const log4js_1 = require("log4js");
 const helmet_1 = tslib_1.__importDefault(require("helmet"));
 const _routes_1 = tslib_1.__importDefault(require("@routes"));
 const path_1 = tslib_1.__importDefault(require("path"));
+const cors_1 = tslib_1.__importDefault(require("cors"));
 class Server {
     constructor() {
         this.app = (0, express_1.default)();
@@ -18,6 +19,7 @@ class Server {
         this.app.use(_routes_1.default);
     }
     includeConfig() {
+        this.app.use((0, cors_1.default)());
         this.app.use((0, log4js_1.connectLogger)(_logger_1.express, { level: _config_1.default.LOG_LEVEL.levelStr }));
         const sizeLimit = "20mb";
         this.app.use((0, helmet_1.default)());

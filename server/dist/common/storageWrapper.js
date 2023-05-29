@@ -16,27 +16,27 @@ class StorageWrapper {
             });
         }
     }
-    uploadFileToStorageAndDeleteOldOnes(file, email) {
+    uploadFileToStorageAndDeleteOldOnes(file, projectName, email) {
         return tslib_1.__awaiter(this, void 0, void 0, function* () {
             try {
-                yield this.deleteFilesFromStorageByUserEmail(email);
-                yield this.uploadFileToStorage(file, email);
+                yield this.deleteFilesFromStorageByUserEmailAndProjectName(email, projectName);
+                yield this.uploadFileToStorage(file, email, projectName);
             }
             catch (error) {
                 if (error instanceof AwsS3Exception_1.default) {
                     throw new AwsS3Exception_1.default(error.message);
                 }
-                throw new AwsS3Exception_1.default("Unexpected errror. Could not upload file to S3");
+                throw new AwsS3Exception_1.default("Unexpected error. Could not upload file to S3");
             }
         });
     }
-    uploadFileToStorage(file, email) {
+    uploadFileToStorage(file, email, projectName) {
         var _a;
         return tslib_1.__awaiter(this, void 0, void 0, function* () {
             try {
                 const command = new client_s3_1.PutObjectCommand({
                     Bucket: _config_1.default.AWS_CONFIG.S3_BUCKET_NAME,
-                    Key: `${email}/${file.originalname}`,
+                    Key: `${email}/${projectName}/${file.originalname}`,
                     Body: file.buffer,
                 });
                 const result = yield ((_a = this.s3client) === null || _a === void 0 ? void 0 : _a.send(command));
@@ -48,21 +48,22 @@ class StorageWrapper {
                 if (error instanceof AwsS3Exception_1.default) {
                     throw new AwsS3Exception_1.default(error.message);
                 }
-                throw new AwsS3Exception_1.default("Unexpected errror. Could not upload file to S3");
+                throw new AwsS3Exception_1.default("Unexpected error. Could not upload file to S3");
             }
         });
     }
-    getFileNamesFromStorageByUserEmail(email) {
+    getFileNamesFromStorageByUserEmailAndProject(email, projectName) {
         var _a, _b;
         return tslib_1.__awaiter(this, void 0, void 0, function* () {
             try {
+                const prefix = projectName ? `${email}/${projectName}/` : `${email}/`;
                 const listCommand = new client_s3_1.ListObjectsCommand({
                     Bucket: _config_1.default.AWS_CONFIG.S3_BUCKET_NAME,
-                    Prefix: `${email}/`,
+                    Prefix: prefix,
                 });
                 const result = yield ((_a = this.s3client) === null || _a === void 0 ? void 0 : _a.send(listCommand));
                 if ((result === null || result === void 0 ? void 0 : result.$metadata.httpStatusCode) !== 200) {
-                    throw new AwsS3Exception_1.default("Could not get file names from S3");
+                    throw new AwsS3Exception_1.default("Could not get file names from S3.");
                 }
                 const objectKeys = (_b = result === null || result === void 0 ? void 0 : result.Contents) === null || _b === void 0 ? void 0 : _b.map((obj) => ({ Key: obj.Key }));
                 return objectKeys;
@@ -71,15 +72,31 @@ class StorageWrapper {
                 if (error instanceof AwsS3Exception_1.default) {
                     throw new AwsS3Exception_1.default(error.message);
                 }
-                throw new AwsS3Exception_1.default("Unexpected errror. Could not get file names from S3");
+                throw new AwsS3Exception_1.default("Unexpected error. Could not get file names from S3.");
             }
         });
     }
-    deleteFilesFromStorageByUserEmail(email) {
+    getFileNameFromStorageByUserEmailAndProjectForLambda(email, projectName) {
         var _a;
         return tslib_1.__awaiter(this, void 0, void 0, function* () {
             try {
-                const objectKeys = yield this.getFileNamesFromStorageByUserEmail(email);
+                const objectKeys = yield this.getFileNamesFromStorageByUserEmailAndProject(email, projectName);
+                const fileName = (_a = objectKeys === null || objectKeys === void 0 ? void 0 : objectKeys.find((obj) => { var _a; return !((_a = obj.Key) === null || _a === void 0 ? void 0 : _a.includes("/edited/")); })) === null || _a === void 0 ? void 0 : _a.Key;
+                return fileName;
+            }
+            catch (error) {
+                if (error instanceof AwsS3Exception_1.default) {
+                    throw new AwsS3Exception_1.default(error.message);
+                }
+                throw new AwsS3Exception_1.default("Unexpected error. Could not get file name from S3.");
+            }
+        });
+    }
+    deleteFilesFromStorageByUserEmailAndProjectName(email, projectName) {
+        var _a;
+        return tslib_1.__awaiter(this, void 0, void 0, function* () {
+            try {
+                const objectKeys = yield this.getFileNamesFromStorageByUserEmailAndProject(email, projectName);
                 if (!objectKeys || objectKeys.length === 0) {
                     return;
                 }
@@ -96,15 +113,15 @@ class StorageWrapper {
                 if (error instanceof AwsS3Exception_1.default) {
                     throw new AwsS3Exception_1.default(error.message);
                 }
-                throw new AwsS3Exception_1.default("Unexpected errror. Could not delete files from storage");
+                throw new AwsS3Exception_1.default("Unexpected error. Could not delete files from storage");
             }
         });
     }
-    getFileFromStorage(email, original = false) {
+    getFileFromStorage(email, projectName, original = false) {
         var _a, _b, _c;
         return tslib_1.__awaiter(this, void 0, void 0, function* () {
             try {
-                const objectKeys = yield this.getFileNamesFromStorageByUserEmail(email);
+                const objectKeys = yield this.getFileNamesFromStorageByUserEmailAndProject(email, projectName);
                 const fileName = original ?
                     (_a = objectKeys === null || objectKeys === void 0 ? void 0 : objectKeys.find((obj) => { var _a; return !((_a = obj.Key) === null || _a === void 0 ? void 0 : _a.includes("/edited/")); })) === null || _a === void 0 ? void 0 : _a.Key :
                     (_b = objectKeys === null || objectKeys === void 0 ? void 0 : objectKeys.find((obj) => { var _a; return (_a = obj.Key) === null || _a === void 0 ? void 0 : _a.includes("/edited/"); })) === null || _b === void 0 ? void 0 : _b.Key;

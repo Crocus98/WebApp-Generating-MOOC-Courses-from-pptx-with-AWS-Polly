@@ -1,15 +1,16 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.elaborateFile = exports.downloadFileFromStorage = exports.uploadFileToStorage = void 0;
+exports.deleteFilesByProjectName = exports.elaborateFile = exports.downloadFileFromStorage = exports.uploadFileToStorage = void 0;
 const tslib_1 = require("tslib");
 const AwsS3Exception_1 = tslib_1.__importDefault(require("@/exceptions/AwsS3Exception"));
 const StorageException_1 = tslib_1.__importDefault(require("@/exceptions/StorageException"));
 const LambdaException_1 = tslib_1.__importDefault(require("@/exceptions/LambdaException"));
 const ElaborationException_1 = tslib_1.__importDefault(require("@/exceptions/ElaborationException"));
 const _storage_wrapper_1 = tslib_1.__importDefault(require("@storage-wrapper"));
-const uploadFileToStorage = (file, email) => tslib_1.__awaiter(void 0, void 0, void 0, function* () {
+const _elaboration_wrapper_1 = tslib_1.__importDefault(require("@elaboration-wrapper"));
+const uploadFileToStorage = (file, projectName, email) => tslib_1.__awaiter(void 0, void 0, void 0, function* () {
     try {
-        yield _storage_wrapper_1.default.uploadFileToStorageAndDeleteOldOnes(file, email);
+        yield _storage_wrapper_1.default.uploadFileToStorageAndDeleteOldOnes(file, projectName, email);
     }
     catch (error) {
         if (error instanceof AwsS3Exception_1.default) {
@@ -19,9 +20,9 @@ const uploadFileToStorage = (file, email) => tslib_1.__awaiter(void 0, void 0, v
     }
 });
 exports.uploadFileToStorage = uploadFileToStorage;
-const downloadFileFromStorage = (email, original = false) => tslib_1.__awaiter(void 0, void 0, void 0, function* () {
+const downloadFileFromStorage = (email, projectName, original = false) => tslib_1.__awaiter(void 0, void 0, void 0, function* () {
     try {
-        const file = yield _storage_wrapper_1.default.getFileFromStorage(email, original);
+        const file = yield _storage_wrapper_1.default.getFileFromStorage(email, projectName, original);
         return file;
     }
     catch (error) {
@@ -32,8 +33,9 @@ const downloadFileFromStorage = (email, original = false) => tslib_1.__awaiter(v
     }
 });
 exports.downloadFileFromStorage = downloadFileFromStorage;
-const elaborateFile = (email) => tslib_1.__awaiter(void 0, void 0, void 0, function* () {
+const elaborateFile = (project, email) => tslib_1.__awaiter(void 0, void 0, void 0, function* () {
     try {
+        yield _elaboration_wrapper_1.default.elaborateFile(project, email);
     }
     catch (error) {
         if (error instanceof AwsS3Exception_1.default) {
@@ -46,3 +48,15 @@ const elaborateFile = (email) => tslib_1.__awaiter(void 0, void 0, void 0, funct
     }
 });
 exports.elaborateFile = elaborateFile;
+const deleteFilesByProjectName = (email, projectName) => tslib_1.__awaiter(void 0, void 0, void 0, function* () {
+    try {
+        yield _storage_wrapper_1.default.deleteFilesFromStorageByUserEmailAndProjectName(email, projectName);
+    }
+    catch (error) {
+        if (error instanceof AwsS3Exception_1.default) {
+            throw new StorageException_1.default(error.message);
+        }
+        throw new StorageException_1.default("Unexpected error. Could not elaborate file.");
+    }
+});
+exports.deleteFilesByProjectName = deleteFilesByProjectName;
