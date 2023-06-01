@@ -12,4 +12,4 @@ RUN npx prisma generate
 
 EXPOSE 3001
 
-CMD npm run service:buildAndRun
+CMD npm run service:runProd
