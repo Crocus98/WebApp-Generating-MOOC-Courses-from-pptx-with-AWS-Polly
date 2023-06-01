@@ -8,6 +8,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { fromEvent } from "file-selector";
 import classNames from "classnames";
 import axios from "axios";
+import { set } from "lodash";
 
 type Props = {};
 
@@ -15,10 +16,13 @@ export default function Generator({}: Props) {
   const [dropping, setDropping] = useState(false);
   const [file, setFile] = useState<File | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const [loading, setLoading] = useState(false);
 
   const uploadFile = async (file: File) => {
+    setLoading(true);
     const fd = new FormData();
     fd.append("file", file);
+    fd.append("projectName", "default");
 
     try {
       const res = await axios.post("/v1/public/upload", fd);
@@ -26,6 +30,7 @@ export default function Generator({}: Props) {
     } catch (error) {
       console.log(error);
     }
+    setLoading(false);
   };
 
   const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
@@ -50,7 +55,8 @@ export default function Generator({}: Props) {
     setDropping(false);
   };
 
-  const selectFile = async () => {
+  const selectFile = () => {
+    console.log(inputRef.current);
     inputRef.current?.click();
   };
 
@@ -58,6 +64,38 @@ export default function Generator({}: Props) {
     evt.preventDefault();
     const files = await fromEvent(evt);
   };
+
+  const downloadFile = async () => {
+    try {
+      setLoading(true);
+      // await axios.post("/v1/public/elaborate", {
+      //   projectName: "default",
+      // });
+      const downloadRes = await axios.get("/v1/public/download/default", {
+        responseType: "blob",
+      });
+      const headerval = downloadRes.headers["content-disposition"];
+      const filename = decodeURI(headerval.split("filename=")[1]);
+      const url = window.URL.createObjectURL(new Blob([downloadRes.data]));
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", filename);
+      document.body.appendChild(link);
+      link.click();
+      window.URL.revokeObjectURL(url);
+      link.remove();
+    } catch (error) {
+      console.log(error);
+    }
+    setLoading(false);
+  };
+
+  /*
+  No File
+  Loading
+  File
+  Downloading
+  */
 
   return (
     <MainContentContainer>
@@ -76,20 +114,46 @@ export default function Generator({}: Props) {
         <InvisibleInput
           type="file"
           onChange={handleFileChange}
+          onChangeCapture={console.log}
           ref={inputRef}
           accept=".pptx"
         />
-        <FontAwesomeIcon
-          icon={"file-upload"}
-          size={"3x"}
-          color={colors.darkGrey}
-        />
-        <GeneratorText>
-          {!file
-            ? "Drop any .pptx file in the rectangle below to generate the MOOC content or"
-            : file.name}
-        </GeneratorText>
-        <Button onClick={selectFile}>Seleziona .pptx</Button>
+        {
+          /*loading ? (
+          <GeneratorText>Loading...</GeneratorText>
+        ) : !!file ? (
+          <>
+            <FontAwesomeIcon
+              icon={"cloud-arrow-down"}
+              size={"3x"}
+              color={colors.purple}
+            />
+            <GeneratorText>{file.name}</GeneratorText>
+            <Button onClick={selectFile}>Download</Button>
+          </>
+        ) : (
+          <>
+            <FontAwesomeIcon
+              icon={"file-upload"}
+              size={"3x"}
+              color={colors.darkGrey}
+            />
+            <GeneratorText>
+              Drop any .pptx file in the rectangle below to generate the MOOC
+              content or
+            </GeneratorText>
+            <Button onClick={selectFile}>Seleziona .pptx</Button>
+          </>
+        )*/
+          <>
+            <FontAwesomeIcon
+              icon={"cloud-arrow-down"}
+              size={"3x"}
+              color={colors.purple}
+            />
+            <Button onClick={downloadFile}>Download</Button>
+          </>
+        }
       </GeneratorContainer>
     </MainContentContainer>
   );
