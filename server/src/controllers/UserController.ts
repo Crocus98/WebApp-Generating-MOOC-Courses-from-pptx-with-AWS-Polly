@@ -6,6 +6,7 @@ import UserException from "@/exceptions/UserException";
 import jwt from "jsonwebtoken";
 import utils from "@utils";
 import { User } from "@prisma/client";
+import * as ProjectService from "@services/ProjectService";
 
 export const login = async (req: Request, res: Response) => {
   try {
@@ -79,6 +80,9 @@ export const register = async (req: Request, res: Response) => {
       throw new UserException(message as string);
     }
 
+    if (typeof user === "object")
+      await ProjectService.createProject("default", user);
+
     res.status(200).send("Inserted successfully");
   } catch (error) {
     if (error instanceof UserException) {
@@ -97,7 +101,7 @@ export const generateRegistrationToken = async (
     if (!user.admin) {
       throw new UserException("You are not authorized to perform this action");
     }
-    const registrationToken = await UserService.generateRegistrationToken(user);
+    const registrationToken = await UserService.generateRegistrationToken();
     if (!registrationToken) {
       throw new UserException("Error generating token");
     }

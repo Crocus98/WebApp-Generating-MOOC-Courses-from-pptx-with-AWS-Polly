@@ -40,7 +40,8 @@ export const login = async (email: string, password: string) => {
   return user;
 };
 
-export const register = async (name: string,
+export const register = async (
+  name: string,
   surname: string,
   email: string,
   password: string,
@@ -79,7 +80,7 @@ export const register = async (name: string,
   }
 };
 
-export const generateRegistrationToken = async (user: User) => {
+export const generateRegistrationToken = async () => {
   try {
     const token = await prisma.PRISMA.token.create({
       data: {},
@@ -116,5 +117,35 @@ export const handleAdminPermissions = async (
       false,
       "An unexpected error occurred while assigning admin permissions.",
     ];
+  }
+};
+
+export const populateRegistrationPool = async () => {
+  try {
+    const availableTokens = await prisma.PRISMA.token.findMany({
+      where: {
+        user: { is: null },
+      },
+      take: 5,
+    });
+    const tokensToGenerate = 5 - availableTokens.length;
+    for (let i = 0; i < tokensToGenerate; i++) {
+      const token = await generateRegistrationToken();
+      if (!token) {
+        throw new Error("Error while generating registration token");
+      }
+      availableTokens.push(token);
+    }
+
+    console.log("Available tokens: ");
+    for (let i = 0; i < availableTokens.length; i++) {
+      console.log(availableTokens[i].token);
+    }
+    console.log("------------------\n");
+  } catch (error) {
+    console.log(
+      "Errors while populating registration pool: ",
+      (error as Error).message
+    );
   }
 };

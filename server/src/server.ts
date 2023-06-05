@@ -8,6 +8,7 @@ import routes from "@routes";
 //import HttpException from "@exceptions/HttpException";
 import path from "path";
 import cors from "cors";
+import { populateRegistrationPool } from "./services/UserService";
 
 class Server {
   private app: express.Application;
@@ -68,6 +69,8 @@ class Server {
     this.server.listen(port, () => {
       expressLogger.info(`Server started on port ${port}`);
       expressLogger.info(`Server version: v1.0`);
+
+      populateRegistrationPool();
     });
   }
 }
