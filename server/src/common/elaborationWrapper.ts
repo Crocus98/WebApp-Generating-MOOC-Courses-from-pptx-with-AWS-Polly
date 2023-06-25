@@ -16,7 +16,7 @@ class ElaborationWrapper {
     });
   }
 
-  async elaborateFile(project: Project, email: string) {
+  public async elaborateFile(project: Project, email: string) {
     try {
       const filename =
         storageWrapper.getFileNameFromStorageByUserEmailAndProjectForLambda(
@@ -44,6 +44,28 @@ class ElaborationWrapper {
       throw new LambdaException(
         "Unexpected error. Lambda could not elaborate file."
       );
+    }
+  }
+
+  public async elaborateAudioPreview(text: string) {
+    try {
+      const funcName = "lambda_handler";
+      const payload = {
+        function_to_invoke: "process_preview",
+        param1: text
+      };
+
+      const { logs, result } = await this.invoke(funcName, payload);
+      const parsedResult = JSON.parse(result);
+      if (parsedResult.statusCode !== 200) {
+        throw new LambdaException("Lambda could not elaborate preview");
+      }
+      return parsedResult.body;
+    } catch (error) {
+      if (error instanceof LambdaException) {
+        throw new LambdaException(error.message);
+      }
+      throw new LambdaException("Unexpected error. Lambda could not elaborate data to preview.");
     }
   }
 

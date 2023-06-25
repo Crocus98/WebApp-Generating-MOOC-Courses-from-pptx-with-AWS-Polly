@@ -2,6 +2,7 @@ import { Router } from "express"
 import * as UserController from "@controllers/UserController"
 import * as FileController from "@controllers/FileController"
 import * as ProjectController from "@controllers/ProjectController"
+import * as PreviewController from "@controllers/PreviewController"
 import { auth } from "@authentication"
 import multer from "multer"
 
@@ -21,6 +22,7 @@ path.post("/register", UserController.register)
 path.post("/token", auth, UserController.generateRegistrationToken)
 path.post("/upload", auth, upload.single('file'), FileController.uploadFile)
 path.post("/project", auth, ProjectController.createProject)
+path.post("/preview", auth, PreviewController.getAudioPreview)
 /** DELETE */
 path.delete("/delete/:projectName", auth, ProjectController.deleteProject)
 /** PUT */
