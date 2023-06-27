@@ -42,6 +42,11 @@ function authReducer(state: AuthState, action: AuthAction) {
       axios.defaults.headers.common[
         "Authorization"
       ] = `Bearer ${action.payload.token}`;
+      console.log(
+        "Setting authorization header: ",
+        axios.defaults.headers.common.Authorization
+      );
+
       const authState = {
         ...state,
         firstName: action.payload.firstName,

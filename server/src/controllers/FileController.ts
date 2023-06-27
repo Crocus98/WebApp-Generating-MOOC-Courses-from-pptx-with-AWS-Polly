@@ -8,6 +8,7 @@ import ElaborationException from "@/exceptions/ElaborationException";
 import ParameterException from "@/exceptions/ParameterException";
 import DatabaseException from "@/exceptions/DatabaseException";
 import * as ProjectService from "@services/ProjectService";
+import { Readable } from "stream";
 
 export const uploadFile = async (req: Request, res: Response) => {
   try {
@@ -70,11 +71,17 @@ export const downloadFile = async (req: Request, res: Response) => {
       projectName,
       original
     );
-    res.attachment("PollyPoint.pptx");
-    if (file.ContentType) res.type(file.ContentType);
-    if (file.ContentLength)
-      res.set("Content-Length", file.ContentLength.toString());
-    res.send(file.Body?.transformToByteArray());
+
+    console.log("Pipe file to response...");
+
+    if (file.Body instanceof Readable) {
+      file.Body.once("error", (err) => {
+        throw err;
+      });
+      file.Body.pipe(res);
+    } else {
+      throw new StorageException("Unexpected error. File not readable.");
+    }
   } catch (error) {
     console.log(error);
     if (error instanceof StorageException) {

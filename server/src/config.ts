@@ -74,6 +74,9 @@ class Config {
 
     const __DB_STRING = process.env.DB_STRING;
     let DB_STRING = `${DB_DIALECT}://${DB_USER}:${DB_PASS}@${DB_HOST}:${DB_PORT}/${DB_NAME}?schema=${DB_SCHEMA}`;
+
+    console.log(__DB_STRING, DB_STRING);
+
     if (utils.isUndefinedOrEmpty(__DB_STRING) || __DB_STRING != DB_STRING)
       exitLog(`Missing or Bad DB_STRING in .env`);
 

@@ -103,7 +103,12 @@ class StorageWrapper {
       const fileName = objectKeys?.find(
         (obj) => !obj.Key?.includes("/edited/")
       )?.Key;
-      return fileName;
+
+      if (!fileName) {
+        throw new AwsS3Exception("Could not get file name from S3.");
+      }
+
+      return fileName.substring(fileName.lastIndexOf("/") + 1);
     } catch (error) {
       if (error instanceof AwsS3Exception) {
         throw new AwsS3Exception(error.message);

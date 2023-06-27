@@ -8,7 +8,6 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { fromEvent } from "file-selector";
 import classNames from "classnames";
 import axios from "axios";
-import { set } from "lodash";
 
 type Props = {};
 
@@ -68,22 +67,24 @@ export default function Generator({}: Props) {
   const downloadFile = async () => {
     try {
       setLoading(true);
-      // await axios.post("/v1/public/elaborate", {
-      //   projectName: "default",
-      // });
+      await axios.put("/v1/public/elaborate", { projectName: "default" });
       const downloadRes = await axios.get("/v1/public/download/default", {
         responseType: "blob",
       });
-      const headerval = downloadRes.headers["content-disposition"];
-      const filename = decodeURI(headerval.split("filename=")[1]);
-      const url = window.URL.createObjectURL(new Blob([downloadRes.data]));
+      console.log(downloadRes);
+      // create file link in browser's memory
+      const href = URL.createObjectURL(downloadRes.data);
+
+      // create "a" HTML element with href to file & click
       const link = document.createElement("a");
-      link.href = url;
-      link.setAttribute("download", filename);
+      link.href = href;
+      link.setAttribute("download", "test.pptx"); //or any other extension
       document.body.appendChild(link);
       link.click();
-      window.URL.revokeObjectURL(url);
-      link.remove();
+
+      // clean up "a" element & remove ObjectURL
+      document.body.removeChild(link);
+      URL.revokeObjectURL(href);
     } catch (error) {
       console.log(error);
     }
@@ -118,8 +119,7 @@ export default function Generator({}: Props) {
           ref={inputRef}
           accept=".pptx"
         />
-        {
-          /*loading ? (
+        {loading ? (
           <GeneratorText>Loading...</GeneratorText>
         ) : !!file ? (
           <>
@@ -129,7 +129,7 @@ export default function Generator({}: Props) {
               color={colors.purple}
             />
             <GeneratorText>{file.name}</GeneratorText>
-            <Button onClick={selectFile}>Download</Button>
+            <Button onClick={downloadFile}>Download</Button>
           </>
         ) : (
           <>
@@ -144,16 +144,7 @@ export default function Generator({}: Props) {
             </GeneratorText>
             <Button onClick={selectFile}>Seleziona .pptx</Button>
           </>
-        )*/
-          <>
-            <FontAwesomeIcon
-              icon={"cloud-arrow-down"}
-              size={"3x"}
-              color={colors.purple}
-            />
-            <Button onClick={downloadFile}>Download</Button>
-          </>
-        }
+        )}
       </GeneratorContainer>
     </MainContentContainer>
   );

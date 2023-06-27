@@ -19,23 +19,27 @@ class ElaborationWrapper {
   public async elaborateFile(project: Project, email: string) {
     try {
       const filename =
-        storageWrapper.getFileNameFromStorageByUserEmailAndProjectForLambda(
+        await storageWrapper.getFileNameFromStorageByUserEmailAndProjectForLambda(
           email,
           project.name
         );
-      const funcName = "lambda_handler";
+      const funcName = "processpptx";
       const payload = {
+        usermail: email,
+        project: project.name,
+        filename: filename,
         function_to_invoke: "process_pptx",
-        param1: filename,
-        param2: email,
       };
+      console.log(payload);
 
       const { logs, result } = await this.invoke(funcName, payload);
       const parsedResult = JSON.parse(result);
       if (parsedResult.statusCode !== 200) {
+        console.log(parsedResult);
         throw new LambdaException("Lambda could not elaborate file.");
       }
-    } catch (error) {
+    } catch (error: any) {
+      console.log(error.message);
       if (error instanceof LambdaException) {
         throw new LambdaException(error.message);
       } else if (error instanceof AwsS3Exception) {

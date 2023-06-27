@@ -69,17 +69,6 @@ export default function Login({}: Props) {
         return setRequestError(err.message);
       }
     }
-
-    dispatch({
-      type: AuthActionType.LOGIN,
-      payload: {
-        firstName: "Io",
-        lastName: "Io",
-        email: data.email,
-        token: "token",
-      },
-    });
-    navigate("/");
   };
 
   return (
