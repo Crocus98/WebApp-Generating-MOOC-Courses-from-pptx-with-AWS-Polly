@@ -3,13 +3,22 @@ import styled from "styled-components";
 import colors from "../style/colors";
 import { Link } from "react-router-dom";
 
-interface Props extends React.HTMLAttributes<HTMLButtonElement> {
+interface Props extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+  children?: React.ReactNode;
+  disabled?: boolean;
   to?: string;
 }
 
-export default function Button({ children, to, ...buttonProps }: Props) {
+export default function Button({
+  children,
+  to,
+  disabled,
+  ...buttonProps
+}: Props) {
   const ButtonJSX = (
-    <ButtonContainer {...buttonProps}>{children}</ButtonContainer>
+    <ButtonContainer disabled={disabled} {...buttonProps}>
+      {children}
+    </ButtonContainer>
   );
   return to != null ? <Link to={to}>{ButtonJSX}</Link> : ButtonJSX;
 }

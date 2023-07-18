@@ -14,11 +14,13 @@ interface Props
 }
 
 const FormInput = React.forwardRef<HTMLInputElement, Props>(
-  ({ style, className, placeholder, id, onChange, error, ...rest }, ref) => {
+  (
+    { style = {}, className, placeholder, id, onChange, error, ...rest },
+    ref
+  ) => {
     const [notEmpty, setNotEmpty] = useState(false);
     const onChangeHandler = (e: React.ChangeEvent<HTMLInputElement>) => {
       setNotEmpty(e.target.value.length > 0);
-      console.log(e.target.value.length > 0);
       onChange && onChange(e);
     };
     return (

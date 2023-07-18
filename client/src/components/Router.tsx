@@ -6,6 +6,8 @@ import Signup from "../views/Signup";
 import Login from "../views/Login";
 import { AuthContext, isAuthenticated } from "./AuthContext";
 import Generator from "../views/Generator";
+import ProjectList from "../views/ProjectList";
+import Editor from "../views/Editor";
 
 type Props = {};
 
@@ -53,12 +55,20 @@ function SmartRouter({
 export default function Router({}: Props) {
   return (
     <Routes>
+      <Route
+        path="/project/:projectName"
+        element={
+          <RequireAuth>
+            <Editor />
+          </RequireAuth>
+        }
+      />
       <Route path="/" element={<MainLayout />}>
         <Route
           index
           element={
             <SmartRouter
-              authChildren={<Generator />}
+              authChildren={<ProjectList />}
               anonymChildren={<HomePage />}
             />
           }
@@ -79,6 +89,8 @@ export default function Router({}: Props) {
             </StrictlyAnonymous>
           }
         />
+        <Route path="generator" element={<Generator />} />
+
         <Route path="*" element={<>404</>} />
       </Route>
     </Routes>

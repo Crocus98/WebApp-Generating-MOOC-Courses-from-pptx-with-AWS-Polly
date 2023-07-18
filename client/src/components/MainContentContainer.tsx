@@ -22,7 +22,7 @@ const MainContentContainerDiv = styled.div`
   min-height: 400px;
   padding-bottom: 20px;
   padding-top: 20px;
-  max-width: 1000px;
+  max-width: min(calc(100% - 40px), 1000px);
   margin: auto;
   border-bottom-left-radius: 8px;
   border-bottom-right-radius: 8px;

@@ -9,18 +9,51 @@ import Avatar from "./Avatar";
 import * as Text from "./Text";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 
-type Props = {};
+type Props = {
+  projectName?: string;
+  onDownload?: () => void;
+  loadingDownload?: boolean;
+};
 
-export default function Header({}: Props) {
+export default function Header({
+  projectName,
+  onDownload,
+  loadingDownload,
+}: Props) {
   const { state: authState, dispatch } = useContext(AuthContext);
   const authenticated = isAuthenticated(authState);
 
   return (
     <HeaderContainer>
-      <LogoContainer to={"/"} style={{ flex: 1 }}>
+      <LogoContainer to={"/"}>
         <Logo src={logo} alt="Polly" />
         <LogoText>Polly</LogoText>
       </LogoContainer>
+      {projectName && (
+        <ProjectContainer>
+          <Text.P>{projectName}</Text.P>
+          <IconButton
+            style={{
+              marginLeft: 20,
+              backgroundColor: loadingDownload
+                ? colors.darkGrey
+                : colors.orange,
+            }}
+            onClick={onDownload}
+            disabled={loadingDownload}
+          >
+            {loadingDownload ? (
+              <FontAwesomeIcon
+                className="rotate-spinner"
+                icon={"spinner"}
+                size="sm"
+              />
+            ) : (
+              <FontAwesomeIcon icon={"download"} size="sm" />
+            )}
+          </IconButton>
+        </ProjectContainer>
+      )}
       {authenticated ? (
         <AvatarContainer>
           <Avatar initials={authState.lastName.charAt(0)} />
@@ -39,6 +72,59 @@ export default function Header({}: Props) {
     </HeaderContainer>
   );
 }
+
+const ProjectContainer = styled.div`
+  flex: 1;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  color: ${colors.white};
+`;
+
+const IconButton = styled.button`
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background-color: transparent;
+  cursor: pointer;
+  height: 28px;
+  width: 28px;
+  color: ${colors.white};
+  background-color: ${colors.orange};
+  border-radius: 999px;
+
+  @-moz-keyframes spin {
+    from {
+      -moz-transform: rotate(0deg);
+    }
+    to {
+      -moz-transform: rotate(360deg);
+    }
+  }
+  @-webkit-keyframes spin {
+    from {
+      -webkit-transform: rotate(0deg);
+    }
+    to {
+      -webkit-transform: rotate(360deg);
+    }
+  }
+  @keyframes spin {
+    from {
+      transform: rotate(0deg);
+    }
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
+  > .rotate-spinner {
+    animation: spin 1s linear infinite;
+  }
+`;
 
 const DropdownItem = styled.button`
   display: block;
@@ -63,12 +149,14 @@ const DropdownContainer = styled.div`
 `;
 
 const AvatarContainer = styled.div`
+  flex: 1;
   display: flex;
   flex-direction: row;
   align-items: center;
   gap: 10px;
   position: relative;
   height: 100%;
+  justify-content: flex-end;
 
   &:hover ${DropdownContainer} {
     display: block;
@@ -85,6 +173,7 @@ const HeaderContainer = styled.div`
 `;
 
 const LogoContainer = styled(Link)`
+  flex: 1;
   display: flex;
   flex-direction: row;
   align-items: center;
