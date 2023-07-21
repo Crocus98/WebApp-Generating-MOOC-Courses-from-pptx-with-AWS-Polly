@@ -16,6 +16,7 @@ path.get("/me", auth, UserController.userData)
 path.get("/download/:projectName", auth, FileController.downloadFile) // parameter: original ((true/false) default: false)
 path.get("/list", auth, ProjectController.listProjects)
 path.get("/project/:projectName", auth, ProjectController.getSettings)
+path.get("/slides/:projectName", auth, PreviewController.getSlidesPreview)
 /** POST */
 path.post("/login", UserController.login)
 path.post("/register", UserController.register)

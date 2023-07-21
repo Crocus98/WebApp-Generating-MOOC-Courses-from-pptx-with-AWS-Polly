@@ -23,23 +23,20 @@ class ElaborationWrapper {
           email,
           project.name
         );
-      const funcName = "processpptx";
+      const funcName = "lambda_handler";
       const payload = {
         usermail: email,
         project: project.name,
         filename: filename,
         function_to_invoke: "process_pptx",
       };
-      console.log(payload);
 
       const { logs, result } = await this.invoke(funcName, payload);
       const parsedResult = JSON.parse(result);
       if (parsedResult.statusCode !== 200) {
-        console.log(parsedResult);
         throw new LambdaException("Lambda could not elaborate file.");
       }
     } catch (error: any) {
-      console.log(error.message);
       if (error instanceof LambdaException) {
         throw new LambdaException(error.message);
       } else if (error instanceof AwsS3Exception) {
@@ -55,21 +52,50 @@ class ElaborationWrapper {
     try {
       const funcName = "lambda_handler";
       const payload = {
-        function_to_invoke: "process_preview",
-        param1: text
+        text: text,
+        function_to_invoke: "process_audio"
       };
 
       const { logs, result } = await this.invoke(funcName, payload);
       const parsedResult = JSON.parse(result);
       if (parsedResult.statusCode !== 200) {
-        throw new LambdaException("Lambda could not elaborate preview");
+        throw new LambdaException("Lambda could not elaborate text to preview");
       }
       return parsedResult.body;
     } catch (error) {
       if (error instanceof LambdaException) {
         throw new LambdaException(error.message);
       }
-      throw new LambdaException("Unexpected error. Lambda could not elaborate data to preview.");
+      throw new LambdaException("Unexpected error. Lambda could not elaborate text to preview.");
+    }
+  }
+
+  public async elaborateSlidesPreview(email: string, projectName: string) {
+    try {
+      const filename =
+        await storageWrapper.getFileNameFromStorageByUserEmailAndProjectForLambda(
+          email,
+          projectName
+        );
+      const funcName = "lambda_handler";
+      const payload = {
+        usermail: email,
+        project: projectName,
+        filename: filename,
+        function_to_invoke: "process_pptx_split",
+      };
+
+      const { logs, result } = await this.invoke(funcName, payload);
+      const parsedResult = JSON.parse(result);
+      if (parsedResult.statusCode !== 200) {
+        throw new LambdaException("Lambda could not elaborate slides to preview.");
+      }
+      return parsedResult.body;
+    } catch (error) {
+      if (error instanceof LambdaException) {
+        throw new LambdaException(error.message);
+      }
+      throw new LambdaException("Unexpected error. Lambda could not elaborate slides to preview.");
     }
   }
 
