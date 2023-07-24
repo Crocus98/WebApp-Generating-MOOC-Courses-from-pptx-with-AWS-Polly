@@ -2,6 +2,7 @@ import React, { useRef, useState } from "react";
 import styled from "styled-components";
 import colors from "../style/colors";
 import { useOnClickOutside } from "usehooks-ts";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 
 type Props = {
   options: { label: string; value: string }[];
@@ -25,8 +26,11 @@ export default function EditorQuickActions({
 
   useOnClickOutside(ref, handleClickOutside);
 
+  const onMouseEnter = () => setShowDropdown(true);
+  const onMouseLeave = () => setShowDropdown(false);
+
   return (
-    <ActionContainer>
+    <ActionContainer onMouseEnter={onMouseEnter} onMouseLeave={onMouseLeave}>
       <DropdownContainer
         ref={ref}
         style={showDropdown ? { visibility: "visible" } : undefined}
@@ -53,7 +57,12 @@ export default function EditorQuickActions({
         style={{ backgroundColor: color }}
         onClick={() => setShowDropdown(true)}
       >
-        {name}
+        <FontAwesomeIcon
+          icon={showDropdown ? "chevron-down" : "chevron-right"}
+          size="sm"
+          style={{ width: 20 }}
+        />
+        <span>{name}</span>
       </ActionButton>
     </ActionContainer>
   );
@@ -78,15 +87,17 @@ const ActionOption = styled.button`
 const DropdownContainer = styled.div`
   display: flex;
   position: absolute;
-  bottom: 40px;
+  top: 29px;
   background-color: ${colors.white};
   border: solid 1px ${colors.purple};
   border-radius: 4px;
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  overflow-y: auto;
+  overflow-y: scroll;
   visibility: hidden;
+  z-index: 100;
+  max-height: 200px;
 `;
 
 const ActionContainer = styled.div`
@@ -95,12 +106,18 @@ const ActionContainer = styled.div`
 `;
 
 const ActionButton = styled.button`
-  padding: 6px 12px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: row;
+  gap: 10px;
+  padding: 0 12px;
   text-align: center;
   color: ${colors.white};
   font-size: 15px;
   border: none;
   border-radius: 4px;
+  height: 29px;
 
   &:hover {
     cursor: pointer;

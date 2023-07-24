@@ -9,6 +9,7 @@ import ParameterException from "@/exceptions/ParameterException";
 import DatabaseException from "@/exceptions/DatabaseException";
 import * as ProjectService from "@services/ProjectService";
 import { Readable } from "stream";
+import NotFound from "@/exceptions/NotFoundException";
 
 export const uploadFile = async (req: Request, res: Response) => {
   try {
@@ -60,7 +61,7 @@ export const downloadFile = async (req: Request, res: Response) => {
       throw new ParameterException("No project name provided.");
     }
     if (!(await ProjectService.findProjectByProjectName(projectName, user))) {
-      throw new ParameterException("Project name not valid.");
+      throw new NotFound("Project name not valid.");
     }
     let original = false;
     if (parameter && parameter === "true") {
@@ -90,6 +91,8 @@ export const downloadFile = async (req: Request, res: Response) => {
       return res.status(400).send(utils.getErrorMessage(error));
     } else if (error instanceof DatabaseException) {
       return res.status(500).send(utils.getErrorMessage(error));
+    } else if (error instanceof NotFound) {
+      return res.status(404).send(utils.getErrorMessage(error));
     }
     return res.status(500).send(utils.getErrorMessage(error));
   }

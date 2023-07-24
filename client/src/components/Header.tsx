@@ -12,13 +12,19 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 type Props = {
   projectName?: string;
   onDownload?: () => void;
+  onSave?: () => void;
   loadingDownload?: boolean;
+  loadingSave?: boolean;
+  disabeledSave?: boolean;
 };
 
 export default function Header({
   projectName,
   onDownload,
   loadingDownload,
+  onSave,
+  disabeledSave,
+  loadingSave,
 }: Props) {
   const { state: authState, dispatch } = useContext(AuthContext);
   const authenticated = isAuthenticated(authState);
@@ -29,30 +35,54 @@ export default function Header({
         <Logo src={logo} alt="Polly" />
         <LogoText>Polly</LogoText>
       </LogoContainer>
-      {projectName && (
+      {projectName ? (
         <ProjectContainer>
+          <div />
           <Text.P>{projectName}</Text.P>
-          <IconButton
-            style={{
-              marginLeft: 20,
-              backgroundColor: loadingDownload
-                ? colors.darkGrey
-                : colors.orange,
-            }}
-            onClick={onDownload}
-            disabled={loadingDownload}
-          >
-            {loadingDownload ? (
-              <FontAwesomeIcon
-                className="rotate-spinner"
-                icon={"spinner"}
-                size="sm"
-              />
-            ) : (
-              <FontAwesomeIcon icon={"download"} size="sm" />
-            )}
-          </IconButton>
+          <ProjectActionsContainer>
+            <IconButton
+              style={{
+                backgroundColor: disabeledSave
+                  ? colors.darkGrey
+                  : colors.purple,
+              }}
+              onClick={onSave}
+              disabled={disabeledSave}
+            >
+              {loadingSave ? (
+                <FontAwesomeIcon
+                  className="rotate-spinner"
+                  icon={"spinner"}
+                  size="sm"
+                />
+              ) : (
+                <FontAwesomeIcon icon={"floppy-disk"} size="sm" />
+              )}
+            </IconButton>
+            <IconButton
+              style={{
+                backgroundColor:
+                  loadingDownload || !disabeledSave
+                    ? colors.darkGrey
+                    : colors.orange,
+              }}
+              onClick={onDownload}
+              disabled={loadingDownload || !disabeledSave}
+            >
+              {loadingDownload ? (
+                <FontAwesomeIcon
+                  className="rotate-spinner"
+                  icon={"spinner"}
+                  size="sm"
+                />
+              ) : (
+                <FontAwesomeIcon icon={"download"} size="sm" />
+              )}
+            </IconButton>
+          </ProjectActionsContainer>
         </ProjectContainer>
+      ) : (
+        <div />
       )}
       {authenticated ? (
         <AvatarContainer>
@@ -74,12 +104,19 @@ export default function Header({
 }
 
 const ProjectContainer = styled.div`
-  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  color: ${colors.white};
+  align-items: center;
+`;
+
+const ProjectActionsContainer = styled.div`
   display: flex;
   flex-direction: row;
+  justify-content: flex-start;
   align-items: center;
-  justify-content: center;
-  color: ${colors.white};
+  gap: 10px;
+  padding: 0 20px;
 `;
 
 const IconButton = styled.button`
@@ -149,7 +186,6 @@ const DropdownContainer = styled.div`
 `;
 
 const AvatarContainer = styled.div`
-  flex: 1;
   display: flex;
   flex-direction: row;
   align-items: center;
@@ -164,16 +200,14 @@ const AvatarContainer = styled.div`
 `;
 
 const HeaderContainer = styled.div`
-  display: flex;
-  flex-direction: row;
-  align-items: center;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
   height: 75px;
   background-color: ${colors.green};
   padding: 0px 30px;
 `;
 
 const LogoContainer = styled(Link)`
-  flex: 1;
   display: flex;
   flex-direction: row;
   align-items: center;

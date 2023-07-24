@@ -28,15 +28,21 @@ export default function SlideEditor({
   const input = useRef<HTMLTextAreaElement>(null);
 
   const selectQuickAction = (quickAction: string) => {
-    let pointer = input.current?.selectionStart;
-    if (pointer != null) {
-      pointer = Math.min(content.length, pointer);
-      onChange(
-        [content.slice(0, pointer), quickAction, content.slice(pointer)].join(
-          ""
-        )
-      );
-    }
+    let selectionStart = input.current?.selectionStart || 0;
+    let selectionEnd = input.current?.selectionEnd || selectionStart;
+
+    selectionStart = Math.min(content.length, selectionStart);
+    selectionEnd = Math.min(
+      Math.max(selectionStart, selectionEnd),
+      content.length
+    );
+    onChange(
+      [
+        content.slice(0, selectionStart),
+        quickAction,
+        content.slice(selectionEnd),
+      ].join("")
+    );
   };
 
   return (
@@ -62,12 +68,47 @@ export default function SlideEditor({
             <EditorQuickActions
               name="Voci"
               options={[
-                { label: "Micheal", value: "<speak name='micheal'></speak>" },
-                { label: "Laura", value: "<speak name='laura'></speak>" },
-                { label: "Giuseppe", value: "<speak name='giuseppe'></speak>" },
-                { label: "Maria", value: "<speak name='maria'></speak>" },
+                {
+                  label: "Micheal",
+                  value: "<speak voice_name='micheal'></speak>",
+                },
+                { label: "Laura", value: "<speak voice_name='laura'></speak>" },
+                {
+                  label: "Giuseppe",
+                  value: "<speak voice_name='giuseppe'></speak>",
+                },
+                { label: "Maria", value: "<speak voice_name='maria'></speak>" },
               ]}
               color={colors.orange}
+              onClick={selectQuickAction}
+            />
+            <EditorQuickActions
+              name="SSML Tags"
+              options={[
+                { label: "Pausa", value: '<break time="1s"/>' },
+                {
+                  label: "Lingua",
+                  value: '<lang xml:lang="en-US">English Text</lang>',
+                },
+                {
+                  label: "Volume e Velocità",
+                  value: '<prosody volume="-6dB" rate="slow">Testo</prosody>',
+                },
+                {
+                  label: "Say-As",
+                  value:
+                    '<say-as interpret-as="value">[text to be interpreted]</say-as>',
+                },
+                {
+                  label: "Pausa Paragrafo",
+                  value: "<p>Testo Paragrafo</p ",
+                },
+                {
+                  label: "Pronuncia Fonetica",
+                  value: '<phoneme alphabet="ipa" ph="pɪˈkɑːn">pecan</phoneme>',
+                },
+              ]}
+              color={colors.purple}
               onClick={selectQuickAction}
             />
           </ToolbarContainer>
@@ -76,6 +117,12 @@ export default function SlideEditor({
             value={content}
             onChange={(e) => onChange(e.target.value)}
           />
+          <DocsContainer
+            href="https://docs.aws.amazon.com/polly/latest/dg/supportedtags.html"
+            target="_blank"
+          >
+            Documentazione tag SSML supportati
+          </DocsContainer>
         </NotesEditorContainer>
       </NotesEditorContentContainer>
     </Container>
@@ -164,4 +211,17 @@ const NotesEditor = styled.textarea`
   border: none;
   outline: none;
   resize: none;
+`;
+
+const DocsContainer = styled.a`
+  padding: 5px 0;
+  text-align: center;
+  background-color: ${colors.lightGrey};
+  color: ${colors.purple};
+  width: 100%;
+  font-size: 12px;
+
+  &:hover {
+    color: ${colors.darkPurple};
+  }
 `;
