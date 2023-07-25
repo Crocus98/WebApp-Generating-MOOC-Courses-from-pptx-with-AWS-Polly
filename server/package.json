@@ -38,6 +38,7 @@
     "@aws-sdk/util-utf8-node": "^3.259.0",
     "@prisma/client": "^4.13.0",
     "aws-sdk": "^2.1362.0",
+    "axios": "^1.4.0",
     "bcrypt": "^5.1.0",
     "cors": "^2.8.5",
     "dotenv": "^16.0.3",

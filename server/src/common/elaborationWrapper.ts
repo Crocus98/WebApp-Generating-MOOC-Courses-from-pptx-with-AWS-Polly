@@ -5,6 +5,7 @@ import config from "@config";
 import { Project } from "@prisma/client";
 import storageWrapper from "@storage-wrapper";
 import AwsS3Exception from "@/exceptions/AwsS3Exception";
+import axios from "axios";
 
 class ElaborationWrapper {
   private static elaborationWrapper?: ElaborationWrapper;
@@ -23,6 +24,8 @@ class ElaborationWrapper {
           email,
           project.name
         );
+
+      /*
       const funcName = "lambda_handler";
       const payload = {
         usermail: email,
@@ -30,13 +33,22 @@ class ElaborationWrapper {
         filename: filename,
         function_to_invoke: "process_pptx",
       };
-
       const { logs, result } = await this.invoke(funcName, payload);
       const parsedResult = JSON.parse(result);
       if (parsedResult.statusCode !== 200) {
         throw new LambdaException("Lambda could not elaborate file.");
       }
+      */
+      const res = await axios.get("http://127.0.0.1:5001/process-pptx", {
+        params: {
+          usermail: email,
+          project: project.name,
+          filename: filename,
+        },
+      });
+      
     } catch (error: any) {
+      console.log(error);
       if (error instanceof LambdaException) {
         throw new LambdaException(error.message);
       } else if (error instanceof AwsS3Exception) {
@@ -53,7 +65,7 @@ class ElaborationWrapper {
       const funcName = "lambda_handler";
       const payload = {
         text: text,
-        function_to_invoke: "process_audio"
+        function_to_invoke: "process_audio",
       };
 
       const { logs, result } = await this.invoke(funcName, payload);
@@ -66,7 +78,9 @@ class ElaborationWrapper {
       if (error instanceof LambdaException) {
         throw new LambdaException(error.message);
       }
-      throw new LambdaException("Unexpected error. Lambda could not elaborate text to preview.");
+      throw new LambdaException(
+        "Unexpected error. Lambda could not elaborate text to preview."
+      );
     }
   }
 
@@ -88,14 +102,18 @@ class ElaborationWrapper {
       const { logs, result } = await this.invoke(funcName, payload);
       const parsedResult = JSON.parse(result);
       if (parsedResult.statusCode !== 200) {
-        throw new LambdaException("Lambda could not elaborate slides to preview.");
+        throw new LambdaException(
+          "Lambda could not elaborate slides to preview."
+        );
       }
       return parsedResult.body;
     } catch (error) {
       if (error instanceof LambdaException) {
         throw new LambdaException(error.message);
       }
-      throw new LambdaException("Unexpected error. Lambda could not elaborate slides to preview.");
+      throw new LambdaException(
+        "Unexpected error. Lambda could not elaborate slides to preview."
+      );
     }
   }
 

@@ -87,14 +87,10 @@ export default function Editor({}: Props) {
           `${encodeURI(projectName)}.pptx`
         );
 
-        /*
         const fd = new FormData();
         fd.append("file", file);
         fd.append("projectName", projectName);
         await axios.post("/v1/public/upload", fd);
-        */
-
-        
 
         setUnsavedChanges(false);
       }
