@@ -7,6 +7,21 @@
     </xs:complexType>
 </xs:element>
 
+  <!-- Define the simple type for allowed voice names -->
+  <xs:simpleType name="VoiceNameType">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="Amy"/>
+      <xs:enumeration value="Arthur"/>
+      <xs:enumeration value="Brian"/>
+      <xs:enumeration value="Joanna"/>
+      <xs:enumeration value="Ruth"/>
+      <xs:enumeration value="Matthew"/>
+      <xs:enumeration value="Stephen"/>
+      <xs:enumeration value="Bianca"/>
+      <xs:enumeration value="Adriano"/>
+    </xs:restriction>
+  </xs:simpleType>
+
     <!-- Define the voice element -->
   <xs:element name="voice">
     <xs:complexType mixed="true">
@@ -26,7 +41,7 @@
           <xs:element ref="prosody"/>
         </xs:choice>
       </xs:sequence>
-      <xs:attribute name="voice_name" use="required" type="xs:string"/>
+      <xs:attribute name="voice_name" use="required" type="VoiceNameType"/>
     </xs:complexType>
   </xs:element>
 

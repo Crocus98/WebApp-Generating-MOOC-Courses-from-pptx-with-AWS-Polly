@@ -99,27 +99,6 @@ def parse_ssml(ssml_text):
 
     return lines
 
-# # Test the function with an example SSML
-# ssml_text = '''
-# <speak>
-#     <voice voice_name="Matthew">
-#         Hello, my name is Matthew.
-#     </voice>
-#     <voice voice_name="Joanna">
-#         Hi, I am Joanna.
-#     </voice>
-#     <voice voice_name="Matthew">
-#         Nice to meet you, Joanna.
-#     </voice>
-# </speak>
-# '''
-
-# [
-#     ('Matthew', '<speak>Hello, my name is Matthew.</speak>'),
-#     ('Joanna', '<speak>Hi, I am Joanna.</speak>'),
-#     ('Matthew', '<speak>Nice to meet you, Joanna.</speak>')
-# ]
-
 
 def test_functions():
     ssml_text = '''
@@ -131,7 +110,7 @@ def test_functions():
    <voice voice_name="Matthew">
         Nice to meet you, Joanna.
      </voice>
-     <voice voice_name="ASa">
+     <voice voice_name="Amy">
     The word <sub alias="kilogram">kg</sub> is an abbreviation for kilogram.
   </voice>
    <voice voice_name="Matthew">
