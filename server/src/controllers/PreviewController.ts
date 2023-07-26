@@ -49,7 +49,7 @@ export const getSlidesPreview = async (req: Request, res: Response) => {
         }
         const result = await PreviewService.elaborateSlidesPreview(user.email, projectName);
         if (!result) {
-            throw new PreviewException("Could not elaborate slides preview.");
+            throw new PreviewException("Slides preview not empty or not available.");
         }
         res.setHeader("Content-Type", "application/json");
         return res.status(200).json(result);

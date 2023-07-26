@@ -1,6 +1,7 @@
-import LambdaException from "@/exceptions/LambdaException";
-import { LambdaClient, InvokeCommand } from "@aws-sdk/client-lambda";
-import { LogType } from "@aws-sdk/client-lambda";
+//import LambdaException from "@/exceptions/LambdaException"; LAMBDA DISMISSED IN FAVOR OF MICROSERVICE
+import MicroserviceException from "@/exceptions/MicroserviceException";
+//import { LambdaClient, InvokeCommand } from "@aws-sdk/client-lambda"; LAMBDA DISMISSED IN FAVOR OF MICROSERVICE
+//import { LogType } from "@aws-sdk/client-lambda"; LAMBDA DISMISSED IN FAVOR OF MICROSERVICE
 import config from "@config";
 import { Project } from "@prisma/client";
 import storageWrapper from "@storage-wrapper";
@@ -9,12 +10,13 @@ import axios from "axios";
 
 class ElaborationWrapper {
   private static elaborationWrapper?: ElaborationWrapper;
-  private lambdaClient: LambdaClient;
+  //private lambdaClient: LambdaClient; LAMBDA DISMISSED IN FAVOR OF MICROSERVICE
 
   constructor() {
+    /* LAMBDA DISMISSED IN FAVOR OF MICROSERVICE
     this.lambdaClient = new LambdaClient({
       region: config.AWS_CONFIG.S3_BUCKET_REGION,
-    });
+    });*/
   }
 
   public async elaborateFile(project: Project, email: string) {
@@ -25,7 +27,7 @@ class ElaborationWrapper {
           project.name
         );
 
-      /*
+      /* LAMBDA DISMISSED IN FAVOR OF MICROSERVICE
       const funcName = "lambda_handler";
       const payload = {
         usermail: email,
@@ -39,29 +41,31 @@ class ElaborationWrapper {
         throw new LambdaException("Lambda could not elaborate file.");
       }
       */
-      const res = await axios.get("http://127.0.0.1:5001/process-pptx", {
-        params: {
-          usermail: email,
-          project: project.name,
-          filename: filename,
-        },
+
+      const result = await axios.post("http://127.0.0.1:5001/process-pptx", {
+        usermail: email,
+        project: project.name,
+        filename: filename,
       });
-      
+      if (result.status !== 200) {
+        throw new MicroserviceException(result.data);
+      }
     } catch (error: any) {
-      console.log(error);
-      if (error instanceof LambdaException) {
-        throw new LambdaException(error.message);
+      if (error instanceof MicroserviceException) {
+        throw new MicroserviceException(error.message);
       } else if (error instanceof AwsS3Exception) {
         throw new AwsS3Exception(error.message);
       }
-      throw new LambdaException(
-        "Unexpected error. Lambda could not elaborate file."
+      throw new MicroserviceException(
+        "Unexpected error. Microservice could not elaborate file."
       );
     }
   }
 
   public async elaborateAudioPreview(text: string) {
     try {
+
+      /* LAMBDA DISMISSED IN FAVOR OF MICROSERVICE
       const funcName = "lambda_handler";
       const payload = {
         text: text,
@@ -71,21 +75,32 @@ class ElaborationWrapper {
       const { logs, result } = await this.invoke(funcName, payload);
       const parsedResult = JSON.parse(result);
       if (parsedResult.statusCode !== 200) {
-        throw new LambdaException("Lambda could not elaborate text to preview");
+        throw new LambdaException("Microservice could not elaborate text to preview");
       }
       return parsedResult.body;
-    } catch (error) {
-      if (error instanceof LambdaException) {
-        throw new LambdaException(error.message);
+      */
+
+      const result = await axios.post("http://127.0.0.1:5001/process-text", {
+        text: text
+      });
+      if (result.status !== 200) {
+        throw new MicroserviceException(result.data);
       }
-      throw new LambdaException(
-        "Unexpected error. Lambda could not elaborate text to preview."
+      return result.data;
+    } catch (error) {
+      if (error instanceof MicroserviceException) {
+        throw new MicroserviceException(error.message);
+      }
+      throw new MicroserviceException(
+        "Unexpected error. Microservice could not elaborate text to preview."
       );
     }
   }
 
   public async elaborateSlidesPreview(email: string, projectName: string) {
     try {
+
+      /* LAMBDA DISMISSED IN FAVOR OF MICROSERVICE
       const filename =
         await storageWrapper.getFileNameFromStorageByUserEmailAndProjectForLambda(
           email,
@@ -96,27 +111,37 @@ class ElaborationWrapper {
         usermail: email,
         project: projectName,
         filename: filename,
-        function_to_invoke: "process_pptx_split",
+        function_to_invoke: "process_slides",
       };
-
       const { logs, result } = await this.invoke(funcName, payload);
       const parsedResult = JSON.parse(result);
       if (parsedResult.statusCode !== 200) {
         throw new LambdaException(
-          "Lambda could not elaborate slides to preview."
+          "Microservice could not elaborate slides to preview."
         );
       }
       return parsedResult.body;
-    } catch (error) {
-      if (error instanceof LambdaException) {
-        throw new LambdaException(error.message);
+      */
+
+      const result = await axios.post("http://127.0.0.1:5001/process-slides", {
+        email: email,
+        projectName: projectName
+      });
+      if (result.status !== 200) {
+        throw new MicroserviceException(result.data);
       }
-      throw new LambdaException(
-        "Unexpected error. Lambda could not elaborate slides to preview."
+      return result.data;
+    } catch (error) {
+      if (error instanceof MicroserviceException) {
+        throw new MicroserviceException(error.message);
+      }
+      throw new MicroserviceException(
+        "Unexpected error. Microservice could not elaborate slides to preview."
       );
     }
   }
 
+  /* Used to invoke Lambda functions -- DISMISSED IN FAVOR OF MICROSERVICE
   public async invoke(
     funcName: string,
     payload: object
@@ -133,7 +158,7 @@ class ElaborationWrapper {
     const result = decoder.decode(Payload);
     const logs = LogResult ? Buffer.from(LogResult, "base64").toString() : "";
     return { logs, result };
-  }
+  }*/
 
   static getInstance(): ElaborationWrapper {
     if (!this.elaborationWrapper)

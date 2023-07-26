@@ -13,6 +13,7 @@ class ElaborationWrapper {
             region: _config_1.default.AWS_CONFIG.S3_BUCKET_REGION,
         });
     }
+
     elaborateFile(project, email) {
         return tslib_1.__awaiter(this, void 0, void 0, function* () {
             try {
@@ -40,6 +41,7 @@ class ElaborationWrapper {
             }
         });
     }
+
     invoke(funcName, payload) {
         return tslib_1.__awaiter(this, void 0, void 0, function* () {
             const encoder = new TextEncoder();
@@ -55,6 +57,7 @@ class ElaborationWrapper {
             return { logs, result };
         });
     }
+
     static getInstance() {
         if (!this.elaborationWrapper)
             this.elaborationWrapper = new ElaborationWrapper();

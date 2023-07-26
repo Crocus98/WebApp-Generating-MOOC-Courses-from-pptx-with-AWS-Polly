@@ -91,6 +91,8 @@ export const deleteProject = async (req: Request, res: Response) => {
   }
 };
 
+
+//TODO TOCOMPLETE
 export const updateSettings = async (req: Request, res: Response) => {
   try {
     const user = res.locals.user as User;
