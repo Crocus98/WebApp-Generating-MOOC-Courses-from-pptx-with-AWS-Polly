@@ -57,8 +57,15 @@ export const getSlidesPreview = async (req: Request, res: Response) => {
         if (!result) {
             throw new PreviewException("Slides preview not empty or not available.");
         }
-        res.setHeader("Content-Type", "application/json");
-        return res.status(200).json(result);
+
+        if (result instanceof Readable) {
+            result.once("error", () => {
+                throw new StorageException("Error while reading JSON of files.");
+            });
+            result.pipe(res);
+        } else {
+            throw new StorageException("JSON of files not readable.");
+        }
     } catch (error) {
         if (error instanceof PreviewException) {
             return res.status(502).send(utils.getErrorMessage(error));
