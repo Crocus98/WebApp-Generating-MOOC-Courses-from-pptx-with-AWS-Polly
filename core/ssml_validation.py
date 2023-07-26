@@ -1,17 +1,23 @@
 import xml.etree.ElementTree as ET
 import re
+import html
 
-def correct_special_characters(xml_text):
+from collections import deque
+from lxml import etree
+
+schema_path = 'WebApp\core\ssml.xsd'
+
+def correct_special_characters(ssml_text):
     escape_chars = {
         '&': '&amp;',
-        '\'': '&apos;',
+        # '\'': '&apos;',
         '\"': '&quot;',
         '<': '&lt;',
         '>': '&gt;'
     }
 
     # Parse the XML document
-    root = ET.fromstring(xml_text)
+    root = ET.fromstring(ssml_text)
 
     # Walk through all elements in the document
     for element in root.iter():
@@ -23,15 +29,19 @@ def correct_special_characters(xml_text):
             element.tail = ''.join(escape_chars.get(c, c) for c in element.tail)
 
     # Write the corrected document back to a string
-    corrected_xml = ET.tostring(root, encoding='unicode')
+    corrected_ssml = ET.tostring(root, encoding='unicode')
 
-    return corrected_xml
+    return corrected_ssml
 
 def validate_ssml(ssml_text, schema_path):
     # Load schema
-    with open(schema_path, 'r') as schema_file:
-        schema_root = etree.XML(schema_file.read())
-        schema = etree.XMLSchema(schema_root)
+    try:
+        with open(schema_path, 'r') as schema_file:
+            schema_root = etree.parse(schema_file)
+            schema = etree.XMLSchema(schema_root)
+    except FileNotFoundError:
+        print(f"Schema file not found: {schema_path}")
+        return False  # Indicate an error with a False return value
 
     # Correct and parse SSML document
     ssml_text = correct_special_characters(ssml_text)
@@ -44,7 +54,7 @@ def validate_ssml(ssml_text, schema_path):
         return False
 
     # Additional validation
-    text_tags = ['speak', 'p', 's']
+    text_tags = ['p', 's']
     for tag in text_tags:
         for element in ssml.iter(tag):
             if not re.search('\S', element.text):
@@ -54,53 +64,104 @@ def validate_ssml(ssml_text, schema_path):
     print('SSML validation passed')
     return True
 
-def parse_ssml(ssml): # saves different actors and their lines in a dictionary and then removes the voice tags
-    # Parse the SSML
-    root = ET.fromstring(ssml)
+def escape_ssml_chars(text):
+    escape_chars = {
+        '<': '&lt;',
+        '>': '&gt;',
+        '&': '&amp;'
+    }
+    return ''.join(escape_chars.get(c, c) for c in text)
 
-    # Initialize the dictionary to store the voices and their texts
-    voices = {}
 
-    # Find all the voice tags
-    for voice in root.findall('.//voice'):
-        # Get the voice name
-        voice_name = voice.get('voice_name')
-        # Get the text inside the voice tag
-        voice_text = "".join(voice.itertext())
-        # If this voice is already in the dictionary, append the new text
-        if voice_name in voices:
-            voices[voice_name].append(voice_text)
-        # Otherwise, initialize a new list with this text
-        else:
-            voices[voice_name] = [voice_text]
-        # Remove the voice tag from the root element
-        root.remove(voice)
-    
-    # After all voice tags are removed, we convert the XML back to string
-    new_ssml = ET.tostring(root, encoding='unicode')
+def parse_ssml(ssml_text):
+    lines = deque()
 
-    return voices, new_ssml
+    # Parse the XML document
+    root = ET.fromstring(ssml_text)
 
-# Test the function with an example SSML
-ssml = '''
-<speak>
-    <voice voice_name="Matthew">
-        Hello, my name is Matthew.
-    </voice>
-    <voice voice_name="Joanna">
-        Hi, I am Joanna.
-    </voice>
-    <voice voice_name="Matthew">
-        Nice to meet you, Joanna.
-    </voice>
-</speak>
-'''
-
-voices, new_ssml = parse_ssml(ssml)
-for voice_name, texts in voices.items():
-    print(f'Voice name: {voice_name}')
-    for i, text in enumerate(texts):
-        print(f'Text {i+1}: {text}')
+    # Find all 'voice' elements
+    for voice_element in root.findall('.//voice'):
+        voice_name = voice_element.attrib.get('voice_name')
         
-print(f'\nNew SSML without voice tags:\n{new_ssml}')
+        # Start constructing a new 'speak' SSML string
+        speak_ssml = "<speak>"
+        
+        # If the 'voice' tag contains text, add it to the 'speak' SSML string
+        if voice_element.text and voice_element.text.strip():
+            speak_ssml += escape_ssml_chars(voice_element.text.strip())
 
+        # Add all child elements of the 'voice' tag to the 'speak' SSML string
+        for child in voice_element:
+            speak_ssml += ET.tostring(child, encoding='unicode')
+
+        speak_ssml += "</speak>"
+        lines.append((voice_name, speak_ssml))
+
+    return lines
+
+# # Test the function with an example SSML
+# ssml_text = '''
+# <speak>
+#     <voice voice_name="Matthew">
+#         Hello, my name is Matthew.
+#     </voice>
+#     <voice voice_name="Joanna">
+#         Hi, I am Joanna.
+#     </voice>
+#     <voice voice_name="Matthew">
+#         Nice to meet you, Joanna.
+#     </voice>
+# </speak>
+# '''
+
+# [
+#     ('Matthew', '<speak>Hello, my name is Matthew.</speak>'),
+#     ('Joanna', '<speak>Hi, I am Joanna.</speak>'),
+#     ('Matthew', '<speak>Nice to meet you, Joanna.</speak>')
+# ]
+
+
+def test_functions():
+    ssml_text = '''
+<speak>
+  <voice voice_name="Joanna">
+    Here's a phoneme: <phoneme alphabet="ipa" ph="pɪˈkɑːn"/>. 
+    And here's a date: <say-as interpret-as="date" format="ymd">2023-07-26</say-as>.
+  </voice>
+   <voice voice_name="Matthew">
+        Nice to meet you, Joanna.
+     </voice>
+     <voice voice_name="ASa">
+    The word <sub alias="kilogram">kg</sub> is an abbreviation for kilogram.
+  </voice>
+   <voice voice_name="Matthew">
+    <prosody rate="x-slow">
+      Hello, I am speaking slowly and loudly.
+    </prosody>
+    <lang lang="en-US">
+      This part is in American English.
+    </lang>
+    <prosody volume="+6dB">
+      Hello, I am speaking slowly and loudly.
+    </prosody>
+  </voice>
+</speak>
+    '''
+    
+    # Test special character correction function
+    corrected_ssml = correct_special_characters(ssml_text)
+    print("Corrected SSML: \n", corrected_ssml)
+
+    # Test SSML validation function
+    validation_result = validate_ssml(corrected_ssml, schema_path)
+    print("Validation result: ", validation_result)
+
+    # Test SSML parsing function
+    parsed_ssml = parse_ssml(ssml_text)
+    print("Parsed SSML: ")
+    while parsed_ssml:
+        voice_name, text = parsed_ssml.popleft()
+        print(f"{voice_name}: {text}")
+
+if __name__ == "__main__":
+    test_functions()

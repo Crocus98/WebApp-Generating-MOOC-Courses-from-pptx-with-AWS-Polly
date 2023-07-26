@@ -1,4 +1,4 @@
-from flask import Flask, request
+from flask import Flask, request, jsonify
 from manipulation2 import *
 import os
 
@@ -8,22 +8,75 @@ PORT = 5001
 
 app = Flask(__name__)
 
-@app.get('/process-pptx')
-def processPPTX():
-    usermail = request.args.get('user')
-    project = request.args.get('project')
-    filename = request.args.get('filename')
+@app.route('/process-pptx', methods=['POST'])
+def process_pptx_request():
+    data = request.get_json()
 
-    print(usermail, project, filename)
+    if not all(key in data for key in ('user', 'projectname', 'filename')):
+        return jsonify({"message": "Missing parameters"}), 400
 
-    result = process_pptx(usermail, project, filename) 
+    try:
+        usermail = data['user']
+        project = data['projectname']
+        filename = data['filename']
 
-    response = app.response_class(
-        response=json.dumps({"message": result}),
-        status=200,
-        mimetype='application/json'
-    )
-    return response
+        print(usermail, project, filename)
+
+        result = process_pptx(usermail, project, filename)
+        
+        return jsonify({"message": result}), 200
+    except SomeLibrarySpecificError as e:  # replace with a specific exception type
+        return jsonify({"message": str(e)}), 400
+    except Exception as e:
+        print(f"An error occurred: {str(e)}")  # this should be replaced with proper logging
+        return jsonify({"message": "Internal Server Error"}), 500
+
+
+@app.route('/process-text', methods=['POST'])
+def process_pptx_request():
+    data = request.get_json()
+
+    if 'text' not in data:
+        return jsonify({"message": "Missing parameters"}), 400
+
+    try:
+        text = data['text']
+        
+        print(text)
+
+        result = process_preview(text) 
+        
+        return jsonify({"message": result}), 200
+    except SomeLibrarySpecificError as e:  # replace with a specific exception type
+        return jsonify({"message": str(e)}), 400
+    except Exception as e:
+        print(f"An error occurred: {str(e)}")  # this should be replaced with proper logging
+        return jsonify({"message": "Internal Server Error"}), 500
+
+
+@app.route('/process-slides', methods=['POST'])
+def process_pptx_request():
+    data = request.get_json()
+
+    if not all(key in data for key in ('user', 'projectname', 'filename')):
+        return jsonify({"message": "Missing parameters"}), 400
+
+    try:
+        usermail = data['user']
+        project = data['projectname']
+        filename = data['filename']
+
+        print(usermail, project, filename)
+
+        result = process_pptx_split(usermail, project, filename)
+        
+        return jsonify({"message": result}), 200
+    except SomeLibrarySpecificError as e: # replace with a specific exception type
+        return jsonify({"message": str(e)}), 400
+    except Exception as e:
+        print(f"An error occurred: {str(e)}") # this should be replaced with proper logging
+        return jsonify({"message": "Internal Server Error"}), 500
+
 
     
 if __name__ == "__main__":
