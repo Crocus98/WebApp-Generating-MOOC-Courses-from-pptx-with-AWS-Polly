@@ -155,7 +155,7 @@ class StorageWrapper {
     email: string,
     projectName: string,
     original = false
-  ): Promise<GetObjectCommandOutput> {
+  ): Promise<any> {
     try {
       const objectKeys =
         await this.getFileNamesFromStorageByUserEmailAndProject(
@@ -164,12 +164,12 @@ class StorageWrapper {
         );
       const fileName = original
         ? objectKeys?.find(
-            (obj) =>
-              !obj.Key?.includes("/edited/") && obj.Key?.includes(".pptx")
-          )?.Key
+          (obj) =>
+            !obj.Key?.includes("/edited/") && obj.Key?.includes(".pptx")
+        )?.Key
         : objectKeys?.find(
-            (obj) => obj.Key?.includes("/edited/") && obj.Key?.includes(".pptx")
-          )?.Key;
+          (obj) => obj.Key?.includes("/edited/") && obj.Key?.includes(".pptx")
+        )?.Key;
       if (!fileName) {
         throw new AwsS3Exception("The file is not present in S3.");
       }
@@ -183,7 +183,7 @@ class StorageWrapper {
           "Could not get the specified file from S3. No file found."
         );
       }
-      return result;
+      return result.Body;
     } catch (error) {
       if (error instanceof AwsS3Exception) {
         throw new AwsS3Exception(error.message);

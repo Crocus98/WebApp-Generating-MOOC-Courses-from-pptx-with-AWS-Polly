@@ -10,6 +10,7 @@ import ParameterException from "@/exceptions/ParameterException";
 import DatabaseException from "@/exceptions/DatabaseException";
 import * as ProjectService from "@services/ProjectService";
 import PreviewException from "@/exceptions/PreviewException";
+import { Readable } from "stream";
 
 
 export const getAudioPreview = async (req: Request, res: Response) => {
@@ -23,9 +24,14 @@ export const getAudioPreview = async (req: Request, res: Response) => {
         if (!result) {
             throw new PreviewException("Could not elaborate audio preview.");
         }
-        //res.setHeader("Content-Disposition", "attachment; filename=preview.mp3");
-        res.setHeader("Content-Type", "audio/mpeg");
-        return res.status(200).send(result);
+        if (result instanceof Readable) {
+            result.once("error", () => {
+                throw new PreviewException("Error while reading audio preview file.");
+            });
+            result.pipe(res);
+        } else {
+            throw new PreviewException("File not readable.");
+        }
     } catch (error) {
         if (error instanceof PreviewException) {
             return res.status(502).send(utils.getErrorMessage(error));

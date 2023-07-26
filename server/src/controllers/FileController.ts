@@ -73,15 +73,13 @@ export const downloadFile = async (req: Request, res: Response) => {
       original
     );
 
-    console.log("Pipe file to response...");
-
-    if (file.Body instanceof Readable) {
-      file.Body.once("error", (err) => {
-        throw err;
+    if (file instanceof Readable) {
+      file.once("error", () => {
+        throw new StorageException("Error while reading file.");
       });
-      file.Body.pipe(res);
+      file.pipe(res);
     } else {
-      throw new StorageException("Unexpected error. File not readable.");
+      throw new StorageException("File not readable.");
     }
   } catch (error) {
     console.log(error);
