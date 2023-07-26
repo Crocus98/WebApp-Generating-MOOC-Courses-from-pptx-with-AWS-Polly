@@ -11,12 +11,18 @@ import axios from "axios";
 class ElaborationWrapper {
   private static elaborationWrapper?: ElaborationWrapper;
   //private lambdaClient: LambdaClient; LAMBDA DISMISSED IN FAVOR OF MICROSERVICE
+  private axiosInstance: any;
 
   constructor() {
     /* LAMBDA DISMISSED IN FAVOR OF MICROSERVICE
     this.lambdaClient = new LambdaClient({
       region: config.AWS_CONFIG.S3_BUCKET_REGION,
-    });*/
+    });
+    */
+
+    this.axiosInstance = axios.create({
+      baseURL: "https://" + config.MICROSERVICE_CONFIG.MICROSERVICE_HOST + ":" + config.MICROSERVICE_CONFIG.MICROSERVICE_PORT
+    });
   }
 
   public async elaborateFile(project: Project, email: string) {
@@ -42,9 +48,9 @@ class ElaborationWrapper {
       }
       */
 
-      const result = await axios.post("http://127.0.0.1:5001/process-pptx", {
-        usermail: email,
-        project: project.name,
+      const result = await this.axiosInstance.post("/process-pptx", {
+        email: email,
+        projectName: project.name,
         filename: filename,
       });
       if (result.status !== 200) {
@@ -80,7 +86,7 @@ class ElaborationWrapper {
       return parsedResult.body;
       */
 
-      const result = await axios.post("http://127.0.0.1:5001/process-text", {
+      const result = await this.axiosInstance.post("/process-text", {
         text: text
       });
       if (result.status !== 200) {
@@ -99,13 +105,13 @@ class ElaborationWrapper {
 
   public async elaborateSlidesPreview(email: string, projectName: string) {
     try {
-
-      /* LAMBDA DISMISSED IN FAVOR OF MICROSERVICE
       const filename =
         await storageWrapper.getFileNameFromStorageByUserEmailAndProjectForLambda(
           email,
           projectName
         );
+
+      /* LAMBDA DISMISSED IN FAVOR OF MICROSERVICE
       const funcName = "lambda_handler";
       const payload = {
         usermail: email,
@@ -123,9 +129,10 @@ class ElaborationWrapper {
       return parsedResult.body;
       */
 
-      const result = await axios.post("http://127.0.0.1:5001/process-slides", {
+      const result = await this.axiosInstance.post("/process-slides", {
         email: email,
-        projectName: projectName
+        projectName: projectName,
+        filename: filename
       });
       if (result.status !== 200) {
         throw new MicroserviceException(result.data);

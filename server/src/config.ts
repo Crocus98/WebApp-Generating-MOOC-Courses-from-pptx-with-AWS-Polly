@@ -27,6 +27,11 @@ class Config {
     S3_BUCKET_NAME: "",
   };
 
+  public readonly MICROSERVICE_CONFIG: MICROSERVICE_CONFIG = {
+    MICROSERVICE_HOST: "",
+    MICROSERVICE_PORT: 5001
+  }
+
   static getInstance(): Config {
     if (!this.instance) this.instance = new Config();
     return this.instance;
@@ -43,6 +48,7 @@ class Config {
     this.JWT_SECRET = this.parseJWTSecret();
     this.DB_AUTH = this.parseDBConfig();
     this.AWS_CONFIG = this.parseAWSConfig();
+    this.MICROSERVICE_CONFIG = this.parseMicroserviceConfig();
   }
 
   private parseDBConfig(): DB_CONFIG {
@@ -128,6 +134,25 @@ class Config {
     return port;
   }
 
+  private parseMicroserviceConfig(): MICROSERVICE_CONFIG {
+    const MICROSERVICE_HOST = process.env.MICROSERVICE_HOST;
+    if (utils.isUndefinedOrEmpty(MICROSERVICE_HOST))
+      exitLog(`Missing or Bad MICROSERVICE_HOST in .env`);
+
+    let MICROSERVICE_PORT = 5001;
+    const __MICROSERVICE_PORT = process.env.MICROSERVICE_PORT;
+    if (!utils.isUndefinedOrEmpty(__MICROSERVICE_PORT)) {
+      const port = parseInt(`${__MICROSERVICE_PORT}`);
+      if (isNaN(port)) exitLog(`Bad MICROSERVICE_PORT in .env`);
+      MICROSERVICE_PORT = port;
+    }
+
+    return {
+      MICROSERVICE_HOST: process.env.MICROSERVICE_URL as string,
+      MICROSERVICE_PORT: MICROSERVICE_PORT
+    }
+  }
+
   private parseLogLevel(): Level {
     let log = "";
     if (!process.env.LOG_LEVEL) exitLog(`Missing LOG_LEVEL in .env`);
@@ -170,4 +195,9 @@ type AWS_CONFIG = {
   SECRET_ACCESS_KEY: string;
   S3_BUCKET_REGION: string;
   S3_BUCKET_NAME: string;
+};
+
+type MICROSERVICE_CONFIG = {
+  MICROSERVICE_HOST: string;
+  MICROSERVICE_PORT: number;
 };
