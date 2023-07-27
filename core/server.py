@@ -12,8 +12,6 @@ app = Flask(__name__)
 def process_pptx_request():
     data = request.get_json()
 
-    print(data)
-
     if not all(key in data for key in ('email', 'projectName', 'filename')):
         return jsonify({"message": "Missing parameters"}), 400
 
@@ -49,8 +47,8 @@ def process_text_request():
         result = process_preview(text) 
         
         return jsonify({"message": result}), 200
-    except SomeLibrarySpecificError as e:  # replace with a specific exception type
-        return jsonify({"message": str(e)}), 400
+    #except SomeLibrarySpecificError as e:  # replace with a specific exception type
+        #return jsonify({"message": str(e)}), 400
     except Exception as e:
         print(f"An error occurred: {str(e)}")  # this should be replaced with proper logging
         return jsonify({"message": "Internal Server Error"}), 500
@@ -73,8 +71,8 @@ def process_slides_request():
         result = process_pptx_split(usermail, project, filename)
         
         return jsonify({"message": result}), 200
-    except SomeLibrarySpecificError as e: # replace with a specific exception type
-        return jsonify({"message": str(e)}), 400
+    #except SomeLibrarySpecificError as e: # replace with a specific exception type
+        #return jsonify({"message": str(e)}), 400
     except Exception as e:
         print(f"An error occurred: {str(e)}") # this should be replaced with proper logging
         return jsonify({"message": "Internal Server Error"}), 500
