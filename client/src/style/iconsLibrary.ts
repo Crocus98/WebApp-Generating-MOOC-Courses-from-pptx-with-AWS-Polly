@@ -9,6 +9,8 @@ import {
   faChevronLeft,
   faChevronRight,
   faFloppyDisk,
+  faPlay,
+  faPause,
 } from "@fortawesome/free-solid-svg-icons";
 
 library.add(
@@ -20,5 +22,7 @@ library.add(
   faSpinner,
   faChevronLeft,
   faChevronRight,
-  faFloppyDisk
+  faFloppyDisk,
+  faPlay,
+  faPause
 );

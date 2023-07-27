@@ -3,6 +3,7 @@ import styled from "styled-components";
 import colors from "../style/colors";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import EditorQuickActions from "./EditorQuickActions";
+import Player from "./Player";
 
 type Props = {
   slideNumber: number;
@@ -61,7 +62,9 @@ export default function SlideEditor({
           <FontAwesomeIcon icon={"chevron-right"} size="xl" />
         </IconButton>
       </SlidePreviewContainer>
-      <VoicePreviewContainer></VoicePreviewContainer>
+      <VoicePreviewContainer>
+        <Player audio={undefined} loading={false} />
+      </VoicePreviewContainer>
       <NotesEditorContentContainer>
         <NotesEditorContainer>
           <ToolbarContainer>
@@ -173,6 +176,9 @@ const VoicePreviewContainer = styled.div`
   background-color: ${colors.green};
   height: 40px;
   width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 `;
 
 const NotesEditorContentContainer = styled.div`
