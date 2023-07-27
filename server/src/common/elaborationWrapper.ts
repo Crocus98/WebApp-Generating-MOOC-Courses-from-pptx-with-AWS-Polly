@@ -28,7 +28,7 @@ class ElaborationWrapper {
   public async elaborateFile(project: Project, email: string) {
     try {
       const filename =
-        await storageWrapper.getFileNameFromStorageByUserEmailAndProjectForLambda(
+        await storageWrapper.getFileNameFromStorageByUserEmailAndProject(
           email,
           project.name
         );
@@ -104,11 +104,7 @@ class ElaborationWrapper {
 
   public async elaborateSlidesPreview(email: string, projectName: string) {
     try {
-      const filename =
-        await storageWrapper.getFileNameFromStorageByUserEmailAndProjectForLambda(
-          email,
-          projectName
-        );
+      const filename = await storageWrapper.getFileNameFromStorageByUserEmailAndProject(email, projectName);
 
       /* LAMBDA DISMISSED IN FAVOR OF MICROSERVICE
       const funcName = "lambda_handler";

@@ -90,7 +90,7 @@ class StorageWrapper {
     }
   }
 
-  async getFileNameFromStorageByUserEmailAndProjectForLambda(
+  async getFileNameFromStorageByUserEmailAndProject(
     email: string,
     projectName: string
   ) {

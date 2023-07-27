@@ -20,8 +20,6 @@ def process_pptx_request():
         project = data['projectName']
         filename = data['filename']
 
-        print(usermail, project, filename)
-
         result = process_pptx(usermail, project, filename)
         
         return jsonify({"message": result}), 200
@@ -41,8 +39,6 @@ def process_text_request():
 
     try:
         text = data['text']
-        
-        print(text)
 
         result = process_preview(text) 
         
@@ -58,6 +54,8 @@ def process_text_request():
 def process_slides_request():
     data = request.get_json()
 
+    print(data)
+
     if not all(key in data for key in ('email', 'projectName', 'filename')):
         return jsonify({"message": "Missing parameters"}), 400
 
@@ -65,8 +63,6 @@ def process_slides_request():
         usermail = data['email']
         project = data['projectName']
         filename = data['filename']
-
-        print(usermail, project, filename)
 
         result = process_pptx_split(usermail, project, filename)
         
