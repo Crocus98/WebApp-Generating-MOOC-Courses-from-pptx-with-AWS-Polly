@@ -19,7 +19,7 @@ class ElaborationWrapper {
       region: config.AWS_CONFIG.S3_BUCKET_REGION,
     });
     */
-
+    console.log("MICROSERVICE HOST: " + config.MICROSERVICE_CONFIG.MICROSERVICE_HOST + ":" + config.MICROSERVICE_CONFIG.MICROSERVICE_PORT)
     this.axiosInstance = axios.create({
       baseURL: "https://" + config.MICROSERVICE_CONFIG.MICROSERVICE_HOST + ":" + config.MICROSERVICE_CONFIG.MICROSERVICE_PORT
     });
@@ -62,6 +62,7 @@ class ElaborationWrapper {
       } else if (error instanceof AwsS3Exception) {
         throw new AwsS3Exception(error.message);
       }
+      console.log(error);
       throw new MicroserviceException(
         "Unexpected error. Microservice could not elaborate file."
       );
@@ -97,9 +98,7 @@ class ElaborationWrapper {
       if (error instanceof MicroserviceException) {
         throw new MicroserviceException(error.message);
       }
-      throw new MicroserviceException(
-        "Unexpected error. Microservice could not elaborate text to preview."
-      );
+      throw new MicroserviceException("Unexpected error. Microservice could not elaborate text to preview.");
     }
   }
 

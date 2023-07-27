@@ -6,6 +6,7 @@ import storageWrapper from "@storage-wrapper";
 import elaborationWrapper from "@elaboration-wrapper";
 import { Project } from "@prisma/client";
 import { GetObjectCommandOutput } from "@aws-sdk/client-s3";
+import MicroserviceException from "@/exceptions/MicroserviceException";
 
 export const uploadFileToStorage = async (
   file: any,
@@ -22,9 +23,7 @@ export const uploadFileToStorage = async (
     if (error instanceof AwsS3Exception) {
       throw new StorageException(error.message);
     }
-    throw new StorageException(
-      "Unexpected error. Could not upload file to storage"
-    );
+    throw new StorageException("Unexpected error. Could not upload file to storage");
   }
 };
 
@@ -44,9 +43,7 @@ export const downloadFileFromStorage = async (
     if (error instanceof AwsS3Exception) {
       throw new StorageException(error.message);
     }
-    throw new StorageException(
-      "Unexpected error. Could not download file from storage"
-    );
+    throw new StorageException("Unexpected error. Could not download file from storage");
   }
 };
 
@@ -56,12 +53,11 @@ export const elaborateFile = async (project: Project, email: string) => {
   } catch (error) {
     if (error instanceof AwsS3Exception) {
       throw new StorageException(error.message);
-    } else if (error instanceof LambdaException) {
+    } else if (error instanceof MicroserviceException) {
       throw new ElaborationException(error.message);
     }
-    throw new ElaborationException(
-      "Unexpected error. Could not elaborate file."
-    );
+    console.log(error);
+    throw new ElaborationException("Unexpected error. Could not elaborate file.");
   }
 };
 
