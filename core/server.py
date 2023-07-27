@@ -2,7 +2,7 @@ from flask import Flask, request, jsonify
 from manipulation2 import *
 import os
 
-ENVIROMENT = "PROD" # DEV, PROD
+ENVIROMENT = "DEV" # DEV, PROD
 HOST = "0.0.0.0"
 PORT = 5001
 
@@ -12,12 +12,14 @@ app = Flask(__name__)
 def process_pptx_request():
     data = request.get_json()
 
-    if not all(key in data for key in ('user', 'projectname', 'filename')):
+    print(data)
+
+    if not all(key in data for key in ('email', 'projectName', 'filename')):
         return jsonify({"message": "Missing parameters"}), 400
 
     try:
-        usermail = data['user']
-        project = data['projectname']
+        usermail = data['email']
+        project = data['projectName']
         filename = data['filename']
 
         print(usermail, project, filename)
@@ -25,8 +27,8 @@ def process_pptx_request():
         result = process_pptx(usermail, project, filename)
         
         return jsonify({"message": result}), 200
-    except SomeLibrarySpecificError as e:  # replace with a specific exception type
-        return jsonify({"message": str(e)}), 400
+    #except SomeLibrarySpecificError as e:  # replace with a specific exception type
+        #return jsonify({"message": str(e)}), 400
     except Exception as e:
         print(f"An error occurred: {str(e)}")  # this should be replaced with proper logging
         return jsonify({"message": "Internal Server Error"}), 500
