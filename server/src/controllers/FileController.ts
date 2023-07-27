@@ -32,13 +32,10 @@ export const uploadFile = async (req: Request, res: Response) => {
       throw new ParameterException("Project name not valid.");
     }
 
-    console.log("Uploading file to storage...");
     await FileService.uploadFileToStorage(file, projectName, user.email);
 
     return res.status(200).send(`File ${file.originalname} uploaded to S3.`);
   } catch (error) {
-    console.log(error);
-
     if (error instanceof FileException) {
       return res.status(400).send(utils.getErrorMessage(error));
     } else if (error instanceof StorageException) {
@@ -82,7 +79,6 @@ export const downloadFile = async (req: Request, res: Response) => {
       throw new StorageException("File not readable.");
     }
   } catch (error) {
-    console.log(error);
     if (error instanceof StorageException) {
       return res.status(502).send(utils.getErrorMessage(error));
     } else if (error instanceof ParameterException) {

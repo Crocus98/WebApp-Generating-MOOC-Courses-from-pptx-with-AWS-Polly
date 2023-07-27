@@ -56,7 +56,6 @@ export const elaborateFile = async (project: Project, email: string) => {
     } else if (error instanceof MicroserviceException) {
       throw new ElaborationException(error.message);
     }
-    console.log(error);
     throw new ElaborationException("Unexpected error. Could not elaborate file.");
   }
 };

@@ -54,15 +54,15 @@ class ElaborationWrapper {
         filename: filename,
       });
       if (result.status !== 200) {
+        console.log(result.data)
         throw new MicroserviceException(result.data);
       }
-    } catch (error: any) {
+    } catch (error) {
       if (error instanceof MicroserviceException) {
         throw new MicroserviceException(error.message);
       } else if (error instanceof AwsS3Exception) {
         throw new AwsS3Exception(error.message);
       }
-      console.log(error);
       throw new MicroserviceException(
         "Unexpected error. Microservice could not elaborate file."
       );
