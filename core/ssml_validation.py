@@ -105,45 +105,57 @@ def parse_ssml(ssml_text):
 
     return lines
 
+def find_missing_tags(ssml_text):
+    voice_name = 'Brian'
 
+    # Case 1: Both '<speak>' and '<voice>' tags are not present
+    if '<speak>' not in ssml_text and '<voice voice_name' not in ssml_text:
+        speak_ssml = f'<speak><voice voice_name="{voice_name}">{ssml_text.strip()}</voice></speak>'
+        print("case 1")
+        
+    # Case 2: '<speak>' tag is present but '<voice>' tag is not
+    elif '<speak>' in ssml_text and '<voice voice_name' not in ssml_text:
+        speak_ssml = ssml_text.replace('<speak>', f'<speak><voice voice_name="{voice_name}">').replace('</speak>', f'</voice></speak>')
+        print("case 2")
+
+    # Case 3: '<voice>' tag is present but '<speak>' tag is not
+    elif '<voice voice_name' in ssml_text and '<speak>' not in ssml_text:
+        speak_ssml = f'<speak>{ssml_text}</speak>'
+        print("case 3")
+    # Case 4: Both '<speak>' and '<voice>' tags are present
+    else:
+        speak_ssml = ssml_text
+        print("case 4")
+
+    return speak_ssml
+
+
+  
 
 def test_functions():
     ssml_text = '''
-<speak>
-  <voice voice_name="Joanna">
+
     Here's a phoneme: <phoneme alphabet="ipa" ph="pɪˈkɑːn"/>. 
     And here's a date: <say-as interpret-as="date" format="ymd">2023-07-26</say-as>.
-  </voice>
-   <voice voice_name="Matthew">
-        Nice to meet you, Joanna.
-     </voice>
-     <voice voice_name="Amy">
-    The word <sub alias="kilogram">kg</sub> is an abbreviation for kilogram.
-  </voice>
-   <voice voice_name="Matthew">
-    <prosody rate="x-slow">
-      Hello, I am speaking slowly and loudly.
-    </prosody>
-    <lang lang="en-US">
-      This part is in American English.
-    </lang>
-    <prosody volume="+6dB">
-      Hello, I am speaking slowly and loudly.
-    </prosody>
-  </voice>
-</speak>
+
     '''
+
+    print("Original SSML: \n", ssml_text)
+
+    checked_missing_tags = find_missing_tags(ssml_text)
+    print("Checked missing tags: \n", checked_missing_tags)
     
-    # Test special character correction function
-    corrected_ssml = correct_special_characters(ssml_text)
+    
+    # # Test special character correction function
+    corrected_ssml = correct_special_characters(checked_missing_tags)
     print("Corrected SSML: \n", corrected_ssml)
 
-    # Test SSML validation function
+    # # Test SSML validation function
     validation_result = validate_ssml(corrected_ssml, schema_path)
     print("Validation result: ", validation_result)
 
-    # Test SSML parsing function
-    parsed_ssml = parse_ssml(ssml_text)
+    # # Test SSML parsing function
+    parsed_ssml = parse_ssml(corrected_ssml)
     print ("plain: ", parsed_ssml)
     print ("lenght: " , len(parsed_ssml))
 
@@ -151,13 +163,13 @@ def test_functions():
     total_speak_count = 0
 
     for voice_name, text in parsed_ssml:
-        # Parse the XML document
+    #     # Parse the XML document
         root = ET.fromstring(text)
             
-        # Count all 'speak' elements
+    #     # Count all 'speak' elements
         speak_count = len(root.findall('.//speak'))
 
-        # Add the count to the total
+    #     # Add the count to the total
         total_speak_count += speak_count
 
 
@@ -166,9 +178,9 @@ def test_functions():
     print ("Parsed SSML: ")
 
 
-    # while parsed_ssml:
-    #     voice_name, text = parsed_ssml.popleft()
-    #     print(f"{voice_name}: {text}")
+    # # while parsed_ssml:
+    # #     voice_name, text = parsed_ssml.popleft()
+    # #     print(f"{voice_name}: {text}")
         
 
 
