@@ -93,11 +93,11 @@ def process_slide(slide):
         parsed_ssml = parse_ssml(corrected_ssml)
         combined_text = ''.join(text for voice_name, text in parsed_ssml)
 
-        if len(parsed_ssml) == 0:
-            # No voice tag present, using 'Brian' voice
-            generate_tts(parsed_ssml, 'Brian')
-            audio = AudioSegment.from_mp3(f'/tmp/tts_{hash(corrected_ssml)}.mp3')
-            audios = [audio]
+        if len(parsed_ssml) == 1:
+            for voice_name, text in parsed_ssml:
+                filename = generate_tts(text, voice_name)
+                audio = AudioSegment.from_mp3(f'/tmp/tts_{hash(filename)}.mp3')
+                audios = [audio]
 
         else:
             audios = []
@@ -153,9 +153,11 @@ def process_preview(text):
         # continue processing if SSML validation passed
         parsed_ssml = parse_ssml(corrected_ssml)
 
-        if len(parsed_ssml) == 0:
-            # No voice tag present, using 'Brian' voice
-            generate_tts(parsed_ssml, 'Brian')
+        if len(parsed_ssml) == 1:
+            for voice_name, text in parsed_ssml:
+                filename = generate_tts(text, voice_name)
+                audio = AudioSegment.from_mp3(f'/tmp/tts_{hash(filename)}.mp3')
+                audios = [audio]
         else:
             audios = []
             combined_text = ''.join(text for voice_name, text in parsed_ssml)

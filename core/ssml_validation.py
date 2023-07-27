@@ -146,14 +146,34 @@ def test_functions():
     parsed_ssml = parse_ssml(ssml_text)
     print ("plain: ", parsed_ssml)
     print ("lenght: " , len(parsed_ssml))
+
+    
+    total_speak_count = 0
+
+    for voice_name, text in parsed_ssml:
+        # Parse the XML document
+        root = ET.fromstring(text)
+            
+        # Count all 'speak' elements
+        speak_count = len(root.findall('.//speak'))
+
+        # Add the count to the total
+        total_speak_count += speak_count
+
+
+    print ("speak counts: ", total_speak_count)
+
     print ("Parsed SSML: ")
-    while parsed_ssml:
-        voice_name, text = parsed_ssml.popleft()
-        print(f"{voice_name}: {text}")
 
 
-    # for voice_name, text in parsed_ssml:
+    # while parsed_ssml:
+    #     voice_name, text = parsed_ssml.popleft()
     #     print(f"{voice_name}: {text}")
+        
+
+
+    for voice_name, text in parsed_ssml:
+        print(f"{voice_name}: {text}")
 
 if __name__ == "__main__":
     test_functions()
