@@ -148,7 +148,7 @@ class Config {
     }
 
     return {
-      MICROSERVICE_HOST: process.env.MICROSERVICE_URL as string,
+      MICROSERVICE_HOST: MICROSERVICE_HOST as string,
       MICROSERVICE_PORT: MICROSERVICE_PORT
     }
   }
