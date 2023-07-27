@@ -18,7 +18,7 @@ def process_pptx_request():
     try:
         usermail = data['email']
         project = data['projectName']
-        filename = data['filename']speedtest
+        filename = data['filename']
 
 
         result = process_pptx(usermail, project, filename)
