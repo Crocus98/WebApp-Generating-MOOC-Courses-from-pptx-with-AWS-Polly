@@ -64,7 +64,7 @@ def upload_pptx_to_s3(usermail, project, filename, pptx_file):
     pptx_file.seek(0)
     obj.upload_fileobj(pptx_file)
 
-def generate_tts(text, voice_id=voice_name):
+def generate_tts(text, voice_id):
     polly_client = boto3.client('polly', aws_access_key_id=aws_access_key_id, aws_secret_access_key=aws_secret_access_key, region_name=region)
     response = polly_client.synthesize_speech(VoiceId=voice_id, OutputFormat='mp3', Text=text,TextType='ssml', Engine='neural')
     filename = f'/tmp/tts_{hash(text)}.mp3'  # create a unique filename based on the hash of the text
@@ -95,7 +95,7 @@ def process_slide(slide):
 
         if len(parsed_ssml) == 0:
             # No voice tag present, using 'Brian' voice
-            generate_tts('Brian', parsed_ssml)
+            generate_tts(parsed_ssml, 'Brian')
             audio = AudioSegment.from_mp3(f'/tmp/tts_{hash(corrected_ssml)}.mp3')
             audios = [audio]
 
