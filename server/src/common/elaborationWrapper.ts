@@ -21,7 +21,7 @@ class ElaborationWrapper {
     */
     console.log("MICROSERVICE HOST: " + config.MICROSERVICE_CONFIG.MICROSERVICE_HOST + ":" + config.MICROSERVICE_CONFIG.MICROSERVICE_PORT)
     this.axiosInstance = axios.create({
-      baseURL: "https://" + config.MICROSERVICE_CONFIG.MICROSERVICE_HOST + ":" + config.MICROSERVICE_CONFIG.MICROSERVICE_PORT
+      baseURL: "http://" + config.MICROSERVICE_CONFIG.MICROSERVICE_HOST + ":" + config.MICROSERVICE_CONFIG.MICROSERVICE_PORT
     });
   }
 
