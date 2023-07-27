@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.handleAdminPermissions = exports.generateRegistrationToken = exports.register = exports.login = exports.getUserByMail = void 0;
+exports.populateRegistrationPool = exports.handleAdminPermissions = exports.generateRegistrationToken = exports.register = exports.login = exports.getUserByMail = void 0;
 const tslib_1 = require("tslib");
 const _prisma_1 = tslib_1.__importDefault(require("@prisma"));
 const bcrypt_1 = tslib_1.__importDefault(require("bcrypt"));
@@ -70,7 +70,7 @@ const register = (name, surname, email, password, tokenValue) => tslib_1.__await
     }
 });
 exports.register = register;
-const generateRegistrationToken = (user) => tslib_1.__awaiter(void 0, void 0, void 0, function* () {
+const generateRegistrationToken = () => tslib_1.__awaiter(void 0, void 0, void 0, function* () {
     try {
         const token = yield _prisma_1.default.PRISMA.token.create({
             data: {},
@@ -108,3 +108,30 @@ const handleAdminPermissions = (user, handledUserMail, setAdmin) => tslib_1.__aw
     }
 });
 exports.handleAdminPermissions = handleAdminPermissions;
+const populateRegistrationPool = () => tslib_1.__awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const availableTokens = yield _prisma_1.default.PRISMA.token.findMany({
+            where: {
+                user: { is: null },
+            },
+            take: 5,
+        });
+        const tokensToGenerate = 5 - availableTokens.length;
+        for (let i = 0; i < tokensToGenerate; i++) {
+            const token = yield (0, exports.generateRegistrationToken)();
+            if (!token) {
+                throw new Error("Error while generating registration token");
+            }
+            availableTokens.push(token);
+        }
+        console.log("Available tokens: ");
+        for (let i = 0; i < availableTokens.length; i++) {
+            console.log(availableTokens[i].token);
+        }
+        console.log("------------------\n");
+    }
+    catch (error) {
+        console.log("Errors while populating registration pool: ", error.message);
+    }
+});
+exports.populateRegistrationPool = populateRegistrationPool;

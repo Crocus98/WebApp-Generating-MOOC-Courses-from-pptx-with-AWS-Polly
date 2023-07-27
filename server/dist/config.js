@@ -29,6 +29,10 @@ class Config {
             S3_BUCKET_REGION: "",
             S3_BUCKET_NAME: "",
         };
+        this.MICROSERVICE_CONFIG = {
+            MICROSERVICE_HOST: "",
+            MICROSERVICE_PORT: 5001
+        };
         const env = dotenv_1.default.config();
         if (env.error)
             (0, _logger_1.exitLog)("Missing environment file or bad .env");
@@ -40,6 +44,7 @@ class Config {
         this.JWT_SECRET = this.parseJWTSecret();
         this.DB_AUTH = this.parseDBConfig();
         this.AWS_CONFIG = this.parseAWSConfig();
+        this.MICROSERVICE_CONFIG = this.parseMicroserviceConfig();
     }
     parseDBConfig() {
         const DB_HOST = process.env.DB_HOST;
@@ -70,6 +75,7 @@ class Config {
         }
         const __DB_STRING = process.env.DB_STRING;
         let DB_STRING = `${DB_DIALECT}://${DB_USER}:${DB_PASS}@${DB_HOST}:${DB_PORT}/${DB_NAME}?schema=${DB_SCHEMA}`;
+        console.log(__DB_STRING, DB_STRING);
         if (_utils_1.default.isUndefinedOrEmpty(__DB_STRING) || __DB_STRING != DB_STRING)
             (0, _logger_1.exitLog)(`Missing or Bad DB_STRING in .env`);
         return {
@@ -116,6 +122,23 @@ class Config {
         if (isNaN(port))
             (0, _logger_1.exitLog)("Invalid server port");
         return port;
+    }
+    parseMicroserviceConfig() {
+        const MICROSERVICE_HOST = process.env.MICROSERVICE_HOST;
+        if (_utils_1.default.isUndefinedOrEmpty(MICROSERVICE_HOST))
+            (0, _logger_1.exitLog)(`Missing or Bad MICROSERVICE_HOST in .env`);
+        let MICROSERVICE_PORT = 5001;
+        const __MICROSERVICE_PORT = process.env.MICROSERVICE_PORT;
+        if (!_utils_1.default.isUndefinedOrEmpty(__MICROSERVICE_PORT)) {
+            const port = parseInt(`${__MICROSERVICE_PORT}`);
+            if (isNaN(port))
+                (0, _logger_1.exitLog)(`Bad MICROSERVICE_PORT in .env`);
+            MICROSERVICE_PORT = port;
+        }
+        return {
+            MICROSERVICE_HOST: process.env.MICROSERVICE_URL,
+            MICROSERVICE_PORT: MICROSERVICE_PORT
+        };
     }
     parseLogLevel() {
         let log = "";

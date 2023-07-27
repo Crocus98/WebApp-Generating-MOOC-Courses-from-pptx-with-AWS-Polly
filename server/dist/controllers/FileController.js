@@ -10,9 +10,12 @@ const ElaborationException_1 = tslib_1.__importDefault(require("@/exceptions/Ela
 const ParameterException_1 = tslib_1.__importDefault(require("@/exceptions/ParameterException"));
 const DatabaseException_1 = tslib_1.__importDefault(require("@/exceptions/DatabaseException"));
 const ProjectService = tslib_1.__importStar(require("@services/ProjectService"));
+const stream_1 = require("stream");
+const NotFoundException_1 = tslib_1.__importDefault(require("@/exceptions/NotFoundException"));
 const uploadFile = (req, res) => tslib_1.__awaiter(void 0, void 0, void 0, function* () {
     try {
         const file = req.file;
+        console.log(file);
         const projectName = req.body.projectName;
         const user = res.locals.user;
         if (!projectName) {
@@ -21,16 +24,18 @@ const uploadFile = (req, res) => tslib_1.__awaiter(void 0, void 0, void 0, funct
         if (!file) {
             throw new FileException_1.default("No file uploaded.");
         }
-        if (!file.originalname.endsWith('.pptx')) {
+        if (!file.originalname.endsWith(".pptx")) {
             throw new FileException_1.default("File must be a PowerPoint (.pptx) file.");
         }
         if (!(yield ProjectService.findProjectByProjectName(projectName, user))) {
             throw new ParameterException_1.default("Project name not valid.");
         }
+        console.log("Uploading file to storage...");
         yield FileService.uploadFileToStorage(file, projectName, user.email);
         return res.status(200).send(`File ${file.originalname} uploaded to S3.`);
     }
     catch (error) {
+        console.log(error);
         if (error instanceof FileException_1.default) {
             return res.status(400).send(_utils_1.default.getErrorMessage(error));
         }
@@ -45,7 +50,6 @@ const uploadFile = (req, res) => tslib_1.__awaiter(void 0, void 0, void 0, funct
         }
         return res.status(500).send(_utils_1.default.getErrorMessage(error));
     }
-    ;
 });
 exports.uploadFile = uploadFile;
 const downloadFile = (req, res) => tslib_1.__awaiter(void 0, void 0, void 0, function* () {
@@ -57,16 +61,25 @@ const downloadFile = (req, res) => tslib_1.__awaiter(void 0, void 0, void 0, fun
             throw new ParameterException_1.default("No project name provided.");
         }
         if (!(yield ProjectService.findProjectByProjectName(projectName, user))) {
-            throw new ParameterException_1.default("Project name not valid.");
+            throw new NotFoundException_1.default("Project name not valid.");
         }
         let original = false;
         if (parameter && parameter === "true") {
             original = true;
         }
         const file = yield FileService.downloadFileFromStorage(user.email, projectName, original);
-        return res.status(200).send(file);
+        if (file instanceof stream_1.Readable) {
+            file.once("error", () => {
+                throw new StorageException_1.default("Error while reading file.");
+            });
+            file.pipe(res);
+        }
+        else {
+            throw new StorageException_1.default("File not readable.");
+        }
     }
     catch (error) {
+        console.log(error);
         if (error instanceof StorageException_1.default) {
             return res.status(502).send(_utils_1.default.getErrorMessage(error));
         }
@@ -75,6 +88,9 @@ const downloadFile = (req, res) => tslib_1.__awaiter(void 0, void 0, void 0, fun
         }
         else if (error instanceof DatabaseException_1.default) {
             return res.status(500).send(_utils_1.default.getErrorMessage(error));
+        }
+        else if (error instanceof NotFoundException_1.default) {
+            return res.status(404).send(_utils_1.default.getErrorMessage(error));
         }
         return res.status(500).send(_utils_1.default.getErrorMessage(error));
     }

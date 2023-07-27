@@ -1754,3 +1754,5 @@
 2023-07-18T14:40:02.028 DEBUG express 127.0.0.1 - - "GET /favicon.ico HTTP/1.1" 304 - "http://localhost:3000/project/TestPptx" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36" 	(@node:events:525) 
 2023-07-18T14:40:02.428 DEBUG express 127.0.0.1 - - "GET /v1/public/download/TestPptx?original=true HTTP/1.1" 200 - "http://localhost:3000/project/TestPptx" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36" 	(@node:events:525) 
 2023-07-18T14:40:02.621 DEBUG express 127.0.0.1 - - "GET /v1/public/download/TestPptx?original=true HTTP/1.1" 200 - "http://localhost:3000/project/TestPptx" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36" 	(@node:events:525) 
+2023-07-27T16:23:26.895 INFO express Server started on port 3001 	(@server.ts:70) 
+2023-07-27T16:23:26.899 INFO express Server version: v1.0 	(@server.ts:71) 

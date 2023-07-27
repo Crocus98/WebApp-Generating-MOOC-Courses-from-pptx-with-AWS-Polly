@@ -1,63 +1,82 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const tslib_1 = require("tslib");
-const LambdaException_1 = tslib_1.__importDefault(require("@/exceptions/LambdaException"));
-const client_lambda_1 = require("@aws-sdk/client-lambda");
-const client_lambda_2 = require("@aws-sdk/client-lambda");
+const MicroserviceException_1 = tslib_1.__importDefault(require("@/exceptions/MicroserviceException"));
 const _config_1 = tslib_1.__importDefault(require("@config"));
 const _storage_wrapper_1 = tslib_1.__importDefault(require("@storage-wrapper"));
 const AwsS3Exception_1 = tslib_1.__importDefault(require("@/exceptions/AwsS3Exception"));
+const axios_1 = tslib_1.__importDefault(require("axios"));
 class ElaborationWrapper {
     constructor() {
-        this.lambdaClient = new client_lambda_1.LambdaClient({
-            region: _config_1.default.AWS_CONFIG.S3_BUCKET_REGION,
+        this.axiosInstance = axios_1.default.create({
+            baseURL: "https://" + _config_1.default.MICROSERVICE_CONFIG.MICROSERVICE_HOST + ":" + _config_1.default.MICROSERVICE_CONFIG.MICROSERVICE_PORT
         });
     }
-
     elaborateFile(project, email) {
         return tslib_1.__awaiter(this, void 0, void 0, function* () {
             try {
-                const filename = _storage_wrapper_1.default.getFileNameFromStorageByUserEmailAndProjectForLambda(email, project.name);
-                const funcName = "lambda_handler";
-                const payload = {
-                    function_to_invoke: "process_pptx",
-                    param1: filename,
-                    param2: email,
-                };
-                const { logs, result } = yield this.invoke(funcName, payload);
-                const parsedResult = JSON.parse(result);
-                if (parsedResult.statusCode !== 200) {
-                    throw new LambdaException_1.default("Lambda could not elaborate file.");
+                const filename = yield _storage_wrapper_1.default.getFileNameFromStorageByUserEmailAndProjectForLambda(email, project.name);
+                const result = yield this.axiosInstance.post("/process-pptx", {
+                    email: email,
+                    projectName: project.name,
+                    filename: filename,
+                });
+                if (result.status !== 200) {
+                    throw new MicroserviceException_1.default(result.data);
                 }
             }
             catch (error) {
-                if (error instanceof LambdaException_1.default) {
-                    throw new LambdaException_1.default(error.message);
+                if (error instanceof MicroserviceException_1.default) {
+                    throw new MicroserviceException_1.default(error.message);
                 }
                 else if (error instanceof AwsS3Exception_1.default) {
                     throw new AwsS3Exception_1.default(error.message);
                 }
-                throw new LambdaException_1.default("Unexpected error. Lambda could not elaborate file.");
+                throw new MicroserviceException_1.default("Unexpected error. Microservice could not elaborate file.");
             }
         });
     }
-
-    invoke(funcName, payload) {
+    elaborateAudioPreview(text) {
         return tslib_1.__awaiter(this, void 0, void 0, function* () {
-            const encoder = new TextEncoder();
-            const command = new client_lambda_1.InvokeCommand({
-                FunctionName: funcName,
-                Payload: encoder.encode(JSON.stringify(payload)),
-                LogType: client_lambda_2.LogType.Tail,
-            });
-            const { Payload, LogResult } = yield this.lambdaClient.send(command);
-            const decoder = new TextDecoder();
-            const result = decoder.decode(Payload);
-            const logs = LogResult ? Buffer.from(LogResult, "base64").toString() : "";
-            return { logs, result };
+            try {
+                const result = yield this.axiosInstance.post("/process-text", {
+                    text: text
+                });
+                if (result.status !== 200) {
+                    throw new MicroserviceException_1.default(result.data);
+                }
+                return result.data;
+            }
+            catch (error) {
+                if (error instanceof MicroserviceException_1.default) {
+                    throw new MicroserviceException_1.default(error.message);
+                }
+                throw new MicroserviceException_1.default("Unexpected error. Microservice could not elaborate text to preview.");
+            }
         });
     }
-
+    elaborateSlidesPreview(email, projectName) {
+        return tslib_1.__awaiter(this, void 0, void 0, function* () {
+            try {
+                const filename = yield _storage_wrapper_1.default.getFileNameFromStorageByUserEmailAndProjectForLambda(email, projectName);
+                const result = yield this.axiosInstance.post("/process-slides", {
+                    email: email,
+                    projectName: projectName,
+                    filename: filename
+                });
+                if (result.status !== 200) {
+                    throw new MicroserviceException_1.default(result.data);
+                }
+                return result.data;
+            }
+            catch (error) {
+                if (error instanceof MicroserviceException_1.default) {
+                    throw new MicroserviceException_1.default(error.message);
+                }
+                throw new MicroserviceException_1.default("Unexpected error. Microservice could not elaborate slides to preview.");
+            }
+        });
+    }
     static getInstance() {
         if (!this.elaborationWrapper)
             this.elaborationWrapper = new ElaborationWrapper();

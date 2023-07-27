@@ -80,24 +80,31 @@ def parse_ssml(ssml_text):
     root = ET.fromstring(ssml_text)
 
     # Find all 'voice' elements
-    for voice_element in root.findall('.//voice'):
-        voice_name = voice_element.attrib.get('voice_name')
-        
-        # Start constructing a new 'speak' SSML string
-        speak_ssml = "<speak>"
-        
-        # If the 'voice' tag contains text, add it to the 'speak' SSML string
-        if voice_element.text and voice_element.text.strip():
-            speak_ssml += escape_ssml_chars(voice_element.text.strip())
+    voice_elements = root.findall('.//voice')
 
-        # Add all child elements of the 'voice' tag to the 'speak' SSML string
-        for child in voice_element:
-            speak_ssml += ET.tostring(child, encoding='unicode')
+    # If no voice elements are present, create a default one
+    if not voice_elements:
+        lines.append(('Brian', ssml_text))
+    else:
+        for voice_element in voice_elements:
+            voice_name = voice_element.attrib.get('voice_name')
 
-        speak_ssml += "</speak>"
-        lines.append((voice_name, speak_ssml))
+            # Start constructing a new 'speak' SSML string
+            speak_ssml = "<speak>"
+
+            # If the 'voice' tag contains text, add it to the 'speak' SSML string
+            if voice_element.text and voice_element.text.strip():
+                speak_ssml += escape_ssml_chars(voice_element.text.strip())
+
+            # Add all child elements of the 'voice' tag to the 'speak' SSML string
+            for child in voice_element:
+                speak_ssml += ET.tostring(child, encoding='unicode')
+
+            speak_ssml += "</speak>"
+            lines.append((voice_name, speak_ssml))
 
     return lines
+
 
 
 def test_functions():

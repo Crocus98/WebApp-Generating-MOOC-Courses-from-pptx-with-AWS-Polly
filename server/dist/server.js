@@ -10,6 +10,7 @@ const helmet_1 = tslib_1.__importDefault(require("helmet"));
 const _routes_1 = tslib_1.__importDefault(require("@routes"));
 const path_1 = tslib_1.__importDefault(require("path"));
 const cors_1 = tslib_1.__importDefault(require("cors"));
+const UserService_1 = require("./services/UserService");
 class Server {
     constructor() {
         this.app = (0, express_1.default)();
@@ -42,6 +43,8 @@ class Server {
         const port = _config_1.default.SERVER_PORT;
         this.server.listen(port, () => {
             _logger_1.express.info(`Server started on port ${port}`);
+            _logger_1.express.info(`Server version: v1.0`);
+            (0, UserService_1.populateRegistrationPool)();
         });
     }
 }
