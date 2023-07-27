@@ -137,10 +137,16 @@ def test_functions():
 
     # Test SSML parsing function
     parsed_ssml = parse_ssml(ssml_text)
-    print("Parsed SSML: ")
+    print ("plain: ", parsed_ssml)
+    print ("lenght: " , len(parsed_ssml))
+    print ("Parsed SSML: ")
     while parsed_ssml:
         voice_name, text = parsed_ssml.popleft()
         print(f"{voice_name}: {text}")
+
+
+    # for voice_name, text in parsed_ssml:
+    #     print(f"{voice_name}: {text}")
 
 if __name__ == "__main__":
     test_functions()

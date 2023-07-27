@@ -16,6 +16,11 @@ from ssml_validation import *
 
 from pdf2image import convert_from_path
 
+from pydub import AudioSegment
+from pydub.playback import play
+# pip install pydub
+
+
 ###
 # You can use the following approach in a Linux environment:
 
@@ -36,6 +41,9 @@ aws_access_key_id = os.getenv('aws_access_key_id')
 aws_secret_access_key = os.getenv('aws_secret_access_key')
 bucket_name = os.getenv('bucket_name')
 region = os.getenv('region')
+
+# Generate 0.5 seconds of silence
+half_sec_silence = AudioSegment.silent(duration=500)  # duration in milliseconds
 
 
 def split_input_path(input_path):
@@ -82,23 +90,40 @@ def process_slide(slide):
         if not validate_ssml(corrected_ssml):
             raise ValueError('Invalid SSML format detected')
         # Process the SSML
-        voice_texts = parse_ssml(corrected_ssml)
-        audio_files = []
-        # Generate an mp3 file for each voice and text
-        for voice_name, texts in voice_texts.items():
-            for text in texts:
-                audio_file = generate_tts(text, voice_name)  # generate_tts now outputs a file path
-                audio_files.append(audio_file)
-        # Combine the audio files
-        combined_audio = combine_audio_files(audio_files)
+        parsed_ssml = parse_ssml(corrected_ssml)
+        combined_text = ''.join(text for voice_name, text in parsed_ssml)
+
+        if len(parsed_ssml) == 0:
+            # No voice tag present, using 'Brian' voice
+            generate_tts('Brian', parsed_ssml)
+            audio = AudioSegment.from_mp3(f'/tmp/tts_{hash(corrected_ssml)}.mp3')
+            audios = [audio]
+
+        else:
+            audios = []
+            # Generate an mp3 file for each voice and text
+            for voice_name, text in parsed_ssml:
+                filename = generate_tts(text, voice_name)  # generate_tts now outputs a file path
+                audio = AudioSegment.from_mp3(filename)
+                audios.append(audio)
+                audios.append(half_sec_silence)  # 0.5 seconds pause
+                combined_text += text
+
+            # Remove last silence segment
+            audios.pop()
+
+        # combine audios
+        combined = sum(audios, AudioSegment.empty())
+        combined_filename = f'/tmp/tts_{hash(combined_text)}.mp3'
+        combined.export(combined_filename, format='mp3')
+
         # Add the combined audio to the slide
         left, top, width, height = Inches(1), Inches(2.5), Inches(1), Inches(1)
-        slide.shapes.add_movie(combined_audio, left, top, width, height, mime_type="audio/mp3", poster_frame_image=None)
+        slide.shapes.add_movie(combined_filename, left, top, width, height, mime_type="audio/mp3", poster_frame_image=None)
+
         # Remove the temporary files after using them
         try:
-            for audio_file in audio_files:
-                os.remove(audio_file)
-            os.remove(combined_audio)
+            os.remove(combined_filename)
         except OSError as e:
             print(f"Error: {e.filename} - {e.strerror}.")
 
@@ -119,19 +144,41 @@ def process_pptx(usermail, project, filename):
     edited_filename = f"{os.path.splitext(filename)[0]}_edited{os.path.splitext(filename)[1]}"
     upload_pptx_to_s3(usermail, project, edited_filename, pptx_file)
 
-def process_preview(text, voice_id='Brian'):
-    aws_access_key_id = os.getenv('aws_access_key_id')
-    aws_secret_access_key = os.getenv('aws_secret_access_key')
-    region = os.getenv('region')
+def process_preview(text):
 
-    polly_client = boto3.client('polly', aws_access_key_id=aws_access_key_id, aws_secret_access_key=aws_secret_access_key, region_name=region)
-    response = polly_client.synthesize_speech(VoiceId=voice_id, OutputFormat='mp3', Text=text, TextType='text', Engine='neural')
+    corrected_ssml = correct_special_characters(text)
+    validation_result = validate_ssml(corrected_ssml, schema_path)
+
+    if validation_result:
+        # continue processing if SSML validation passed
+        parsed_ssml = parse_ssml(corrected_ssml)
+
+        if len(parsed_ssml) == 0:
+            # No voice tag present, using 'Brian' voice
+            generate_tts(parsed_ssml, 'Brian')
+        else:
+            audios = []
+            combined_text = ''.join(text for voice_name, text in parsed_ssml)
+
+            for voice_name, text in parsed_ssml:
+                filename = generate_tts(text, voice_name)
+                audio = AudioSegment.from_mp3(filename)
+                audios.append(audio)
+                audios.append(half_sec_silence)
+                combined_text += text
+
+            # remove last silence segment
+            audios.pop()
+
+            # combine audios
+            combined = sum(audios, AudioSegment.empty())
+            combined_filename = f'/tmp/tts_{hash(combined_text)}.mp3'
+            combined.export(combined_filename, format='mp3')
+    else:
+        print("SSML validation failed, cannot process the preview.")
+
     
-    filename = f'tts_{hash(text)}.mp3' 
-    with open(filename, 'wb') as out:  
-        out.write(response['AudioStream'].read())
     
-    return filename
 
 
 def pptx_to_pdf(pptx_file):
