@@ -5,3 +5,4 @@ pydub==0.25.1
 python-dotenv==1.0.0
 waitress==2.1.2
 python-pptx==0.6.21
+ffmpeg-python==0.2.0
