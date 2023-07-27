@@ -82,23 +82,27 @@ def combine_audio_files(audio_files):
     return combined_filename
 
 def process_slide(slide):
-    notes_slide = slide.notes_slide
-    notes_text = notes_slide.notes_text_frame.text
-    if notes_text and notes_text.strip():  # Check if notes_text is not empty
-        # Correct special characters and validate the SSML
-        corrected_ssml = correct_special_characters(notes_text)
-        if not validate_ssml(corrected_ssml):
-            raise ValueError('Invalid SSML format detected')
-        # Process the SSML
-        parsed_ssml = parse_ssml(corrected_ssml)
-        combined_text = ''.join(text for voice_name, text in parsed_ssml)
+    try:
+        notes_slide = slide.notes_slide
+        notes_text = notes_slide.notes_text_frame.text
+        if notes_text and notes_text.strip():  # Check if notes_text is not empty
+            # Correct special characters and validate the SSML
+            corrected_ssml = correct_special_characters(notes_text)
+            if not validate_ssml(corrected_ssml):
+                raise ValueError('Invalid SSML format detected')
+            # Process the SSML
+            parsed_ssml = parse_ssml(corrected_ssml)
+            combined_text = ''.join(text for voice_name, text in parsed_ssml)
+    except Exception as e:
+        print(f"Error during SSML correction/validation/parsing: {str(e)}")
+        return
 
+    try:
         if len(parsed_ssml) == 1:
             for voice_name, text in parsed_ssml:
                 filename = generate_tts(text, voice_name)
                 audio = AudioSegment.from_mp3(f'/tmp/tts_{hash(filename)}.mp3')
                 audios = [audio]
-
         else:
             audios = []
             # Generate an mp3 file for each voice and text
@@ -111,7 +115,11 @@ def process_slide(slide):
 
             # Remove last silence segment
             audios.pop()
+    except Exception as e:
+        print(f"Error during audio generation: {str(e)}")
+        return
 
+    try:
         # combine audios
         combined = sum(audios, AudioSegment.empty())
         combined_filename = f'/tmp/tts_{hash(combined_text)}.mp3'
@@ -120,12 +128,15 @@ def process_slide(slide):
         # Add the combined audio to the slide
         left, top, width, height = Inches(1), Inches(2.5), Inches(1), Inches(1)
         slide.shapes.add_movie(combined_filename, left, top, width, height, mime_type="audio/mp3", poster_frame_image=None)
+    except Exception as e:
+        print(f"Error during audio combining/exporting or adding to slide: {str(e)}")
+        return
 
-        # Remove the temporary files after using them
-        try:
-            os.remove(combined_filename)
-        except OSError as e:
-            print(f"Error: {e.filename} - {e.strerror}.")
+    # Remove the temporary files after using them
+    try:
+        os.remove(combined_filename)
+    except OSError as e:
+        print(f"Error: {e.filename} - {e.strerror}.")
 
 
 def add_tts_to_pptx(pptx_file, voices):
@@ -145,39 +156,60 @@ def process_pptx(usermail, project, filename):
     upload_pptx_to_s3(usermail, project, edited_filename, pptx_file)
 
 def process_preview(text):
-
-    corrected_ssml = correct_special_characters(text)
-    validation_result = validate_ssml(corrected_ssml, schema_path)
+    try:
+        corrected_ssml = correct_special_characters(text)
+        validation_result = validate_ssml(corrected_ssml, schema_path)
+    except Exception as e:
+        print(f"Error during SSML correction/validation: {str(e)}")
+        return
 
     if validation_result:
-        # continue processing if SSML validation passed
-        parsed_ssml = parse_ssml(corrected_ssml)
+        try:
+            # continue processing if SSML validation passed
+            parsed_ssml = parse_ssml(corrected_ssml)
+        except Exception as e:
+            print(f"Error during SSML parsing: {str(e)}")
+            return
 
         if len(parsed_ssml) == 1:
-            for voice_name, text in parsed_ssml:
-                filename = generate_tts(text, voice_name)
-                audio = AudioSegment.from_mp3(f'/tmp/tts_{hash(filename)}.mp3')
-                audios = [audio]
+            try:
+                for voice_name, text in parsed_ssml:
+                    filename = generate_tts(text, voice_name)
+                    audio = AudioSegment.from_mp3(f'/tmp/tts_{hash(filename)}.mp3')
+                    audios = [audio]
+            except Exception as e:
+                print(f"Error during TTS generation for a single segment: {str(e)}")
+                return
         else:
             audios = []
             combined_text = ''.join(text for voice_name, text in parsed_ssml)
 
-            for voice_name, text in parsed_ssml:
-                filename = generate_tts(text, voice_name)
-                audio = AudioSegment.from_mp3(filename)
-                audios.append(audio)
-                audios.append(half_sec_silence)
-                combined_text += text
+            try:
+                for voice_name, text in parsed_ssml:
+                    filename = generate_tts(text, voice_name)
+                    audio = AudioSegment.from_mp3(filename)
+                    audios.append(audio)
+                    audios.append(half_sec_silence)
+                    combined_text += text
+            except Exception as e:
+                print(f"Error during TTS generation for multiple segments: {str(e)}")
+                return
 
-            # remove last silence segment
-            audios.pop()
+            try:
+                # remove last silence segment
+                audios.pop()
 
-            # combine audios
-            combined = sum(audios, AudioSegment.empty())
-            combined_filename = f'/tmp/tts_{hash(combined_text)}.mp3'
-            combined.export(combined_filename, format='mp3')
+                # combine audios
+                combined = sum(audios, AudioSegment.empty())
+                combined_filename = f'/tmp/tts_{hash(combined_text)}.mp3'
+                combined.export(combined_filename, format='mp3')
+            except Exception as e:
+                print(f"Error during audio combining/exporting: {str(e)}")
+                return
     else:
         print("SSML validation failed, cannot process the preview.")
+
+
 
     
     
