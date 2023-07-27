@@ -60,12 +60,12 @@ def process_text_request():
 def process_slides_request():
     data = request.get_json()
 
-    if not all(key in data for key in ('user', 'projectname', 'filename')):
+    if not all(key in data for key in ('email', 'projectName', 'filename')):
         return jsonify({"message": "Missing parameters"}), 400
 
     try:
-        usermail = data['user']
-        project = data['projectname']
+        usermail = data['email']
+        project = data['projectName']
         filename = data['filename']
 
         print(usermail, project, filename)
