@@ -8,7 +8,7 @@ PORT = 5001
 
 app = Flask(__name__)
 
-@app.route('/process-pptx', methods=['POST'])
+@app.post('/process-pptx')
 def process_pptx_request():
     data = request.get_json()
 
@@ -32,7 +32,7 @@ def process_pptx_request():
         return jsonify({"message": "Internal Server Error"}), 500
 
 
-@app.route('/process-text', methods=['POST'])
+@app.post('/process-text')
 def process_pptx_request():
     data = request.get_json()
 
@@ -54,7 +54,7 @@ def process_pptx_request():
         return jsonify({"message": "Internal Server Error"}), 500
 
 
-@app.route('/process-slides', methods=['POST'])
+@app.post('/process-slides')
 def process_pptx_request():
     data = request.get_json()
 
