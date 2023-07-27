@@ -18,7 +18,8 @@ def process_pptx_request():
     try:
         usermail = data['email']
         project = data['projectName']
-        filename = data['filename']
+        filename = data['filename']speedtest
+
 
         result = process_pptx(usermail, project, filename)
         
@@ -53,8 +54,6 @@ def process_text_request():
 @app.post('/process-slides')
 def process_slides_request():
     data = request.get_json()
-
-    print(data)
 
     if not all(key in data for key in ('email', 'projectName', 'filename')):
         return jsonify({"message": "Missing parameters"}), 400
