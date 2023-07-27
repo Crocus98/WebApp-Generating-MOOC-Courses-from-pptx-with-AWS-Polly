@@ -33,7 +33,7 @@ def process_pptx_request():
 
 
 @app.post('/process-text')
-def process_pptx_request():
+def process_text_request():
     data = request.get_json()
 
     if 'text' not in data:
@@ -55,7 +55,7 @@ def process_pptx_request():
 
 
 @app.post('/process-slides')
-def process_pptx_request():
+def process_slides_request():
     data = request.get_json()
 
     if not all(key in data for key in ('user', 'projectname', 'filename')):
