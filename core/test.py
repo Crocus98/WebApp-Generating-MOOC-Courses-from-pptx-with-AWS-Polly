@@ -2,7 +2,6 @@ from manipulation2 import *
 from ssml_validation import *
 
 
-
 filename1 = 'RandomPresentation-NotesAndTags.pptx'
 filename2 = 'RandomPresentation-RandomNotes.pptx'
 filename3 = 'RandomPresentation-NoNotes'
@@ -48,7 +47,6 @@ testoporva4 = '''<voice voice_name="Matthew">
   </voice>'''
 
 
-
 def test_process_pptx_split(usermail, project, filename):
     try:
         result = process_pptx_split(usermail, project, filename)
@@ -56,12 +54,14 @@ def test_process_pptx_split(usermail, project, filename):
     except Exception as e:
         print(f"Error during process_pptx_split: {str(e)}")
 
+
 def test_process_preview(text):
     try:
         result = process_preview(text)
         print(f"process_preview result:\n{result}")
     except Exception as e:
         print(f"Error during process_preview: {str(e)}")
+
 
 def test_process_pptx(usermail, project, filename):
     try:
@@ -87,4 +87,3 @@ test_process_pptx(usermail, project, filename1)
 # test_process_preview(testoporva2)
 # test_process_preview(testoporva3)
 # test_process_preview(testoporva4)
-
