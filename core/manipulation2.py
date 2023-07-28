@@ -170,7 +170,8 @@ def process_slide(slide):
 
                     # Export combined audio to a file
                     combined_filename = f'combined_{uuid.uuid4()}.mp3'
-                    combined_audio.export(combined_filename, format="mp3")
+                    combined_audio.export(
+                        combined_filename, format="mp3", bitrate="320k")
 
                     try:
                         # Add the combined audio to the slide
@@ -277,7 +278,8 @@ def process_preview(text):
 
                     # Export combined audio to a file
                     combined_filename = f'combined_{uuid.uuid4()}.mp3'
-                    combined_audio.export(combined_filename, format="mp3")
+                    combined_audio.export(
+                        combined_filename, format="mp3", bitrate="320k")
 
                     try:
                         # Add the combined audio to the slide
