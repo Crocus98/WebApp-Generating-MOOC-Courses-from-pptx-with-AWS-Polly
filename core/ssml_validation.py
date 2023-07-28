@@ -1,11 +1,14 @@
 import xml.etree.ElementTree as ET
 import re
 import html
-
+import os 
 from collections import deque
 from lxml import etree
+from dotenv import load_dotenv
 
-schema_path = 'WebApp\core\ssml.xsd'
+load_dotenv()
+
+schema_path = os.getenv('schema_path')
 
 def correct_special_characters(ssml_text):
     escape_chars = {

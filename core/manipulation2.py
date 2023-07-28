@@ -18,21 +18,7 @@ from pdf2image import convert_from_path
 
 from pydub import AudioSegment
 from pydub.playback import play
-# pip install pydub
 
-
-###
-# You can use the following approach in a Linux environment:
-
-# Install libreoffice (you can skip this step if libreoffice is already installed).
-# sudo apt-get install -y libreoffice
-
-# Install pdf2image and Pillow Python libraries.
-# pip install pdf2image Pillow
-
-# Convert PPTX to PDF.
-# libreoffice --headless --convert-to pdf somefile.pptx
-###
 
 load_dotenv()
 
@@ -41,6 +27,7 @@ aws_access_key_id = os.getenv('aws_access_key_id')
 aws_secret_access_key = os.getenv('aws_secret_access_key')
 bucket_name = os.getenv('bucket_name')
 region = os.getenv('region')
+
 
 # Generate 0.5 seconds of silence
 half_sec_silence = AudioSegment.silent(duration=500)  # duration in milliseconds
@@ -87,12 +74,16 @@ def process_slide(slide):
         notes_text = notes_slide.notes_text_frame.text
         if notes_text and notes_text.strip():  # Check if notes_text is not empty
             # Correct special characters and validate the SSML
-            corrected_ssml = correct_special_characters(notes_text)
-            if not validate_ssml(corrected_ssml):
+            checked_missing_tags = find_missing_tags(notes_text)
+            corrected_ssml = correct_special_characters(checked_missing_tags)
+            print(f"corrected_ssml: {corrected_ssml}")
+            if not validate_ssml(corrected_ssml, schema_path):
                 raise ValueError('Invalid SSML format detected')
             # Process the SSML
             parsed_ssml = parse_ssml(corrected_ssml)
+            print(f"parsed_ssml: {parsed_ssml}")
             combined_text = ''.join(text for voice_name, text in parsed_ssml)
+            print(f"Combined text: {combined_text}")
     except Exception as e:
         print(f"Error during SSML correction/validation/parsing: {str(e)}")
         return
@@ -117,7 +108,7 @@ def process_slide(slide):
             audios.pop()
     except Exception as e:
         print(f"Error during audio generation: {str(e)}")
-        return
+        return 
 
     try:
         # combine audios
@@ -139,7 +130,7 @@ def process_slide(slide):
         print(f"Error: {e.filename} - {e.strerror}.")
 
 
-def add_tts_to_pptx(pptx_file, voices):
+def add_tts_to_pptx(pptx_file):
     pptx_file.seek(0)
     prs = Presentation(pptx_file)
     with ThreadPoolExecutor() as executor:
@@ -157,7 +148,8 @@ def process_pptx(usermail, project, filename):
 
 def process_preview(text):
     try:
-        corrected_ssml = correct_special_characters(text)
+        checked_missing_tags = find_missing_tags(text)
+        corrected_ssml = correct_special_characters(checked_missing_tags)
         validation_result = validate_ssml(corrected_ssml, schema_path)
     except Exception as e:
         print(f"Error during SSML correction/validation: {str(e)}")
@@ -282,6 +274,3 @@ def process_pptx_split(usermail, project, filename):
 
     # Return the slide data (which now contains the URIs for the image and tts) as a JSON string
     return json.dumps(slide_data)
-
-
-
