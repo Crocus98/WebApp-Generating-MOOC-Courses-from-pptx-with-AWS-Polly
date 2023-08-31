@@ -19,19 +19,21 @@ class ElaborationWrapper {
       region: config.AWS_CONFIG.S3_BUCKET_REGION,
     });
     */
-    console.log("MICROSERVICE HOST: " + config.MICROSERVICE_CONFIG.MICROSERVICE_HOST + ":" + config.MICROSERVICE_CONFIG.MICROSERVICE_PORT)
+    console.log(
+      "MICROSERVICE HOST: " +
+        config.MICROSERVICE_CONFIG.MICROSERVICE_HOST +
+        ":" +
+        config.MICROSERVICE_CONFIG.MICROSERVICE_PORT
+    );
     this.axiosInstance = axios.create({
-      baseURL: "http://" + config.MICROSERVICE_CONFIG.MICROSERVICE_HOST + ":" + config.MICROSERVICE_CONFIG.MICROSERVICE_PORT
+      baseURL:
+        "http://" + config.MICROSERVICE_CONFIG.MICROSERVICE_HOST + ":" + config.MICROSERVICE_CONFIG.MICROSERVICE_PORT,
     });
   }
 
   public async elaborateFile(project: Project, email: string) {
     try {
-      const filename =
-        await storageWrapper.getFileNameFromStorageByUserEmailAndProject(
-          email,
-          project.name
-        );
+      const filename = await storageWrapper.getFileNameFromStorageByUserEmailAndProject(email, project.name);
 
       /* LAMBDA DISMISSED IN FAVOR OF MICROSERVICE
       const funcName = "lambda_handler";
@@ -54,7 +56,6 @@ class ElaborationWrapper {
         filename: filename,
       });
       if (result.status !== 200) {
-        console.log(result.data)
         throw new MicroserviceException(result.data);
       }
     } catch (error) {
@@ -63,15 +64,12 @@ class ElaborationWrapper {
       } else if (error instanceof AwsS3Exception) {
         throw new AwsS3Exception(error.message);
       }
-      throw new MicroserviceException(
-        "Unexpected error. Microservice could not elaborate file."
-      );
+      throw new MicroserviceException("Unexpected error. Microservice could not elaborate file.");
     }
   }
 
   public async elaborateAudioPreview(text: string) {
     try {
-
       /* LAMBDA DISMISSED IN FAVOR OF MICROSERVICE
       const funcName = "lambda_handler";
       const payload = {
@@ -88,7 +86,7 @@ class ElaborationWrapper {
       */
 
       const result = await this.axiosInstance.post("/process-text", {
-        text: text
+        text: text,
       });
       if (result.status !== 200) {
         throw new MicroserviceException(result.data);
@@ -127,7 +125,7 @@ class ElaborationWrapper {
       const result = await this.axiosInstance.post("/process-slides", {
         email: email,
         projectName: projectName,
-        filename: filename
+        filename: filename,
       });
       if (result.status !== 200) {
         throw new MicroserviceException(result.data);
@@ -137,9 +135,7 @@ class ElaborationWrapper {
       if (error instanceof MicroserviceException) {
         throw new MicroserviceException(error.message);
       }
-      throw new MicroserviceException(
-        "Unexpected error. Microservice could not elaborate slides to preview."
-      );
+      throw new MicroserviceException("Unexpected error. Microservice could not elaborate slides to preview.");
     }
   }
 
@@ -163,8 +159,7 @@ class ElaborationWrapper {
   }*/
 
   static getInstance(): ElaborationWrapper {
-    if (!this.elaborationWrapper)
-      this.elaborationWrapper = new ElaborationWrapper();
+    if (!this.elaborationWrapper) this.elaborationWrapper = new ElaborationWrapper();
     return this.elaborationWrapper;
   }
 }

@@ -64,11 +64,7 @@ export const downloadFile = async (req: Request, res: Response) => {
     if (parameter && parameter === "true") {
       original = true;
     }
-    const file = await FileService.downloadFileFromStorage(
-      user.email,
-      projectName,
-      original
-    );
+    const file = await FileService.downloadFileFromStorage(user.email, projectName, original);
 
     if (file instanceof Readable) {
       file.once("error", () => {
@@ -99,10 +95,7 @@ export const elaborateFile = async (req: Request, res: Response) => {
     if (!projectName) {
       throw new ParameterException("No project name provided.");
     }
-    const project = await ProjectService.findProjectByProjectName(
-      projectName,
-      user
-    );
+    const project = await ProjectService.findProjectByProjectName(projectName, user);
     if (!project) {
       throw new ParameterException("Project name not valid.");
     }

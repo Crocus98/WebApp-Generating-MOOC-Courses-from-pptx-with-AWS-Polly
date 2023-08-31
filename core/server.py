@@ -2,11 +2,12 @@ from flask import Flask, request, jsonify
 from manipulation2 import *
 import os
 
-ENVIROMENT = "DEV" # DEV, PROD
+ENVIROMENT = "DEV"  # DEV, PROD
 HOST = "0.0.0.0"
 PORT = 5001
 
 app = Flask(__name__)
+
 
 @app.post('/process-pptx')
 def process_pptx_request():
@@ -20,14 +21,14 @@ def process_pptx_request():
         project = data['projectName']
         filename = data['filename']
 
-
         result = process_pptx(usermail, project, filename)
-        
+
         return jsonify({"message": result}), 200
-    #except SomeLibrarySpecificError as e:  # replace with a specific exception type
-        #return jsonify({"message": str(e)}), 400
+    # except SomeLibrarySpecificError as e:  # replace with a specific exception type
+        # return jsonify({"message": str(e)}), 400
     except Exception as e:
-        print(f"An error occurred: {str(e)}")  # this should be replaced with proper logging
+        # this should be replaced with proper logging
+        print(f"An error occurred: {str(e)}")
         return jsonify({"message": "Internal Server Error"}), 500
 
 
@@ -41,13 +42,14 @@ def process_text_request():
     try:
         text = data['text']
 
-        result = process_preview(text) 
-        
+        result = process_preview(text)
+
         return jsonify({"message": result}), 200
-    #except SomeLibrarySpecificError as e:  # replace with a specific exception type
-        #return jsonify({"message": str(e)}), 400
+    # except SomeLibrarySpecificError as e:  # replace with a specific exception type
+        # return jsonify({"message": str(e)}), 400
     except Exception as e:
-        print(f"An error occurred: {str(e)}")  # this should be replaced with proper logging
+        # this should be replaced with proper logging
+        print(f"An error occurred: {str(e)}")
         return jsonify({"message": "Internal Server Error"}), 500
 
 
@@ -64,18 +66,18 @@ def process_slides_request():
         filename = data['filename']
 
         result = process_pptx_split(usermail, project, filename)
-        
+
         return jsonify({"message": result}), 200
-    #except SomeLibrarySpecificError as e: # replace with a specific exception type
-        #return jsonify({"message": str(e)}), 400
+    # except SomeLibrarySpecificError as e: # replace with a specific exception type
+        # return jsonify({"message": str(e)}), 400
     except Exception as e:
-        print(f"An error occurred: {str(e)}") # this should be replaced with proper logging
+        # this should be replaced with proper logging
+        print(f"An error occurred: {str(e)}")
         return jsonify({"message": "Internal Server Error"}), 500
 
 
-    
 if __name__ == "__main__":
-    if ENVIROMENT == "PROD": 
+    if ENVIROMENT == "PROD":
         from waitress import serve
         serve(app, host=HOST, port=PORT)
     elif ENVIROMENT == "DEV":
