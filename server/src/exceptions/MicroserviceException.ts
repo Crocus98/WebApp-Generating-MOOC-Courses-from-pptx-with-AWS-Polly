@@ -1,1 +1,1 @@
-export default class MicroserviceException extends Error { }
+export default class MicroserviceException extends Error {}

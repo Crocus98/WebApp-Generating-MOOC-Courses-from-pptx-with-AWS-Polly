@@ -1,1 +1,1 @@
-export default class FileException extends Error { }
+export default class FileException extends Error {}

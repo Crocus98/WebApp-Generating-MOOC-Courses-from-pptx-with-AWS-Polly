@@ -8,17 +8,9 @@ import { Project } from "@prisma/client";
 import { GetObjectCommandOutput } from "@aws-sdk/client-s3";
 import MicroserviceException from "@/exceptions/MicroserviceException";
 
-export const uploadFileToStorage = async (
-  file: any,
-  projectName: string,
-  email: string
-) => {
+export const uploadFileToStorage = async (file: any, projectName: string, email: string) => {
   try {
-    await storageWrapper.uploadFileToStorageAndDeleteOldOnes(
-      file,
-      projectName,
-      email
-    );
+    await storageWrapper.uploadFileToStorageAndDeleteOldOnes(file, projectName, email);
   } catch (error) {
     if (error instanceof AwsS3Exception) {
       throw new StorageException(error.message);
@@ -33,11 +25,7 @@ export const downloadFileFromStorage = async (
   original = false
 ): Promise<GetObjectCommandOutput> => {
   try {
-    const file = await storageWrapper.getFileFromStorage(
-      email,
-      projectName,
-      original
-    );
+    const file = await storageWrapper.getFileFromStorage(email, projectName, original);
     return file;
   } catch (error) {
     if (error instanceof AwsS3Exception) {
@@ -60,15 +48,9 @@ export const elaborateFile = async (project: Project, email: string) => {
   }
 };
 
-export const deleteFilesByProjectName = async (
-  email: string,
-  projectName: string
-) => {
+export const deleteFilesByProjectName = async (email: string, projectName: string) => {
   try {
-    await storageWrapper.deleteFilesFromStorageByUserEmailAndProjectName(
-      email,
-      projectName
-    );
+    await storageWrapper.deleteFilesFromStorageByUserEmailAndProjectName(email, projectName);
   } catch (error) {
     if (error instanceof AwsS3Exception) {
       throw new StorageException(error.message);

@@ -1,5 +1,3 @@
 import HttpException from "./HttpException";
 
-export {
-  HttpException
-}
+export { HttpException };

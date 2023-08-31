@@ -1,1 +1,1 @@
-export default class LambdaException extends Error { }
+export default class LambdaException extends Error {}

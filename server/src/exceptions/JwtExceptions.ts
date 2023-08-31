@@ -1,2 +1,1 @@
-
-export default class JwtException extends Error { }
+export default class JwtException extends Error {}

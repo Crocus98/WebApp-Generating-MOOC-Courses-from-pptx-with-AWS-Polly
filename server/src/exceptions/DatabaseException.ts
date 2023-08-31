@@ -1,1 +1,1 @@
-export default class DatabaseException extends Error { }
+export default class DatabaseException extends Error {}

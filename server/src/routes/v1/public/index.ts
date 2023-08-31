@@ -1,4 +1,4 @@
-import path from "./route"
-export default path
+import path from "./route";
+export default path;
 
 // recursive indexing

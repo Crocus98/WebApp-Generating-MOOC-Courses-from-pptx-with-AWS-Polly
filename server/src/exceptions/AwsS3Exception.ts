@@ -1,2 +1,1 @@
-
-export default class AwsS3Exception extends Error { }
+export default class AwsS3Exception extends Error {}

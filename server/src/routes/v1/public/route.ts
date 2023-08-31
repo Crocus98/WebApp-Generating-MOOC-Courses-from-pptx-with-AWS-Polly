@@ -28,7 +28,7 @@ path.post("/elaborate", auth, FileController.elaborateFile);
 /** DELETE */
 path.delete("/delete/:projectName", auth, ProjectController.deleteProject);
 /** PUT */
-path.put("/settings/:projectName", auth, ProjectController.updateSettings); // TODO TOCOMPLETE
+//path.put("/settings/:projectName", auth, ProjectController.updateSettings); // TODO
 /** PATCH */
 path.patch("/grant", auth, UserController.grantAdminPermissions);
 path.patch("/revoke", auth, UserController.revokeAdminPermissions);

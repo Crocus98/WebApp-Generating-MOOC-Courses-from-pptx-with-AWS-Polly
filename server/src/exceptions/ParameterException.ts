@@ -1,1 +1,1 @@
-export default class ParameterException extends Error { }
+export default class ParameterException extends Error {}

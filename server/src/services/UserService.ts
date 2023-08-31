@@ -40,13 +40,7 @@ export const login = async (email: string, password: string) => {
   return user;
 };
 
-export const register = async (
-  name: string,
-  surname: string,
-  email: string,
-  password: string,
-  tokenValue: string
-) => {
+export const register = async (name: string, surname: string, email: string, password: string, tokenValue: string) => {
   try {
     const salt = await bcrypt.genSalt(12);
     password = await bcrypt.hash(password, salt);
@@ -69,10 +63,7 @@ export const register = async (
     });
     return result;
   } catch (error) {
-    if (
-      error instanceof PrismaClientKnownRequestError &&
-      error.code === "P2002"
-    ) {
+    if (error instanceof PrismaClientKnownRequestError && error.code === "P2002") {
       return [null, "User already exists with this email"];
     }
     //usually it is the case of people trying to register with the same email or with the same token
@@ -91,19 +82,12 @@ export const generateRegistrationToken = async () => {
   }
 };
 
-export const handleAdminPermissions = async (
-  user: User,
-  handledUserMail: string,
-  setAdmin: boolean
-) => {
+export const handleAdminPermissions = async (user: User, handledUserMail: string, setAdmin: boolean) => {
   try {
     const result = await prisma.PRISMA.$transaction(async () => {
       const handledUser = await getUserByMail(handledUserMail);
       if (!handledUser) {
-        return [
-          false,
-          "The user you are trying to assign admin permissions doesn't exist",
-        ];
+        return [false, "The user you are trying to assign admin permissions doesn't exist"];
       }
       const updatedUser = await prisma.PRISMA.user.update({
         where: { id: handledUser.id },
@@ -113,10 +97,7 @@ export const handleAdminPermissions = async (
     });
     return result;
   } catch (error) {
-    return [
-      false,
-      "An unexpected error occurred while assigning admin permissions.",
-    ];
+    return [false, "An unexpected error occurred while assigning admin permissions."];
   }
 };
 
@@ -143,9 +124,6 @@ export const populateRegistrationPool = async () => {
     }
     console.log("------------------\n");
   } catch (error) {
-    console.log(
-      "Errors while populating registration pool: ",
-      (error as Error).message
-    );
+    console.log("Errors while populating registration pool: ", (error as Error).message);
   }
 };

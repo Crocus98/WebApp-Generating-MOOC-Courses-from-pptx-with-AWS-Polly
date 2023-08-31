@@ -1,1 +1,1 @@
-export default class PreviewException extends Error { }
+export default class PreviewException extends Error {}

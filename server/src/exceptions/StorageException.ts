@@ -1,1 +1,1 @@
-export default class StorageException extends Error { }
+export default class StorageException extends Error {}

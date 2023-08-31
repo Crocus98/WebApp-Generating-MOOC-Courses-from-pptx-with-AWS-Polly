@@ -1,1 +1,1 @@
-export default class ElaborationException extends Error { }
+export default class ElaborationException extends Error {}

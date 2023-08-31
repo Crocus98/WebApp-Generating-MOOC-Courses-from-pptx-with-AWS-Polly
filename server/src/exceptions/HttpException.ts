@@ -11,8 +11,8 @@ export default class HttpException extends Error {
   sendError(res: Response) {
     res.status(this.status || 500).json({
       error: {
-        message: this.message
-      }
-    })
+        message: this.message,
+      },
+    });
   }
 }
