@@ -1,10 +1,9 @@
-from manipulation2 import *
+from manipulation4 import *
 from ssml_validation import *
 
 
 filename1 = 'RandomPresentation-NotesAndTags.pptx'
-filename2 = 'RandomPresentation-RandomNotes.pptx'
-filename3 = 'RandomPresentation-NoNotes'
+filename3 = 'RandomPresentation-NoNotes.pptx'
 testoporva1 = '''<speak>
   <voice voice_name="Joanna">
     Here's a phoneme: <phoneme alphabet="ipa" ph="pɪˈkɑːn"/>. 
@@ -20,7 +19,7 @@ testoporva1 = '''<speak>
     <prosody rate="x-slow">
       Hello, I am speaking slowly and loudly.
     </prosody>
-    <lang lang="en-US">
+    <lang xml:lang="en-US">
       This part is in American English.
     </lang>
     <prosody volume="+6dB">
@@ -38,7 +37,7 @@ testoporva4 = '''<voice voice_name="Matthew">
     <prosody rate="x-slow">
       Hello, I am speaking slowly and loudly.
     </prosody>
-    <lang lang="en-US">
+    <lang xml:lang="en-US">
       This part is in American English.
     </lang>
     <prosody volume="+6dB">
@@ -76,14 +75,13 @@ project = 'Progetto'
 
 
 # Run the test functions
-test_process_pptx(usermail, project, filename1)
-# test_process_pptx(usermail, project, filename2)
+# test_process_pptx(usermail, project, filename1)
 # test_process_pptx(usermail, project, filename3)
+# metti errore 404 per note non esistenti
 # test_process_pptx_split(usermail, project, filename1)
-# test_process_pptx_split(usermail, project, filename2)
 # test_process_pptx_split(usermail, project, filename3)
 
-# test_process_preview(testoporva1)
+test_process_preview(testoporva1)
 # test_process_preview(testoporva2)
 # test_process_preview(testoporva3)
 # test_process_preview(testoporva4)

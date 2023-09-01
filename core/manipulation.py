@@ -1,6 +1,9 @@
-
 # pip install boto3 python-pptx
 
+from zipfile import ZipFile
+import time
+import tempfile
+import subprocess
 import boto3
 import io
 import os
@@ -87,6 +90,19 @@ def combine_audio_files(audio_files):
 
 
 def process_slide(slide):
+    modified = False  # Initialize a flag to track if we modify the slide
+
+    try:
+        notes_slide = slide.notes_slide
+        notes_text = notes_slide.notes_text_frame.text
+    except AttributeError:
+        print("No notes for this slide, skipping...")
+        return modified  # Returning False because no modification occurred
+
+    if not notes_text or not notes_text.strip():
+        print("No notes text for this slide, skipping...")
+        return modified  # Returning False because no modification occurred
+
     try:
         notes_slide = slide.notes_slide
         # print(f"notes_slide: {notes_slide}")
@@ -192,27 +208,33 @@ def process_slide(slide):
             except Exception as e:
                 print(f"Error during audio generation: {str(e)}")
                 return  # Skip the slide if there was an error
-
+        modified = True  # Mark the slide as modified
     except Exception as e:
         print(f"Error during SSML correction/validation/parsing: {str(e)}")
-        return
+    return modified
 
 
 def add_tts_to_pptx(pptx_file):
     pptx_file.seek(0)
     prs = Presentation(pptx_file)
+    modified = False  # Initialize flag
     for slide in prs.slides:
-        process_slide(slide)
+        if process_slide(slide):  # Modify process_slide to return True if modified, else False
+            modified = True
     pptx_file.seek(0)
-    prs.save(pptx_file)
+    if modified:  # Only save if changes were made
+        prs.save(pptx_file)
+    pptx_file.seek(0)
+    return modified
 
 
 def process_pptx(usermail, project, filename):
     print(usermail, project, filename)
     pptx_file = download_pptx_from_s3(usermail, project, filename)
-    add_tts_to_pptx(pptx_file)
-    edited_filename = f"{os.path.splitext(filename)[0]}_edited{os.path.splitext(filename)[1]}"
-    upload_pptx_to_s3(usermail, project, edited_filename, pptx_file)
+    modified = add_tts_to_pptx(pptx_file)  # Capture the modified flag
+    if modified:  # Only upload if changes were made
+        edited_filename = f"{os.path.splitext(filename)[0]}_edited{os.path.splitext(filename)[1]}"
+        upload_pptx_to_s3(usermail, project, edited_filename, pptx_file)
 
 
 def process_preview(text):
@@ -239,16 +261,7 @@ def process_preview(text):
                 print(f"filename: {filename}")
                 audio = AudioSegment.from_file(filename, format='mp3')
                 print(f"audio: {audio}")
-                try:
-                    # Add the combined audio to the slide
-                    left, top, width, height = Inches(
-                        1), Inches(2.5), Inches(1), Inches(1)
-                    slide.shapes.add_movie(
-                        filename, left, top, width, height, mime_type="audio/mp3", poster_frame_image=None)
-                except Exception as e:
-                    print(
-                        f"Error during audio combining/exporting or adding to slide: {str(e)}")
-                    return
+                return audio
 
                 # Remove the temporary files after using them
                 try:
@@ -280,19 +293,8 @@ def process_preview(text):
                     combined_filename = f'combined_{uuid.uuid4()}.mp3'
                     combined_audio.export(
                         combined_filename, format="mp3", bitrate="320k")
-
-                    try:
-                        # Add the combined audio to the slide
-                        left, top, width, height = Inches(
-                            1), Inches(2.5), Inches(1), Inches(1)
-                        slide.shapes.add_movie(
-                            combined_filename, left, top, width, height, mime_type="audio/mp3", poster_frame_image=None)
-                    except Exception as e:
-                        print(
-                            f"Error during audio combining/exporting or adding to slide: {str(e)}")
-                        return
-
-                        # Remove the temporary files after using them
+                    return combined_audio
+                    # Remove the temporary files after using them
                     try:
                         os.remove(combined_filename)
                     except OSError as e:
@@ -301,11 +303,56 @@ def process_preview(text):
         print("SSML validation failed, cannot process the preview.")
 
 
-def pptx_to_pdf(pptx_file):
-    output_pdf_path = f"/tmp/{os.path.basename(pptx_file.name)}.pdf"
-    os.system(
-        f'libreoffice --headless --convert-to pdf {pptx_file.name} --outdir /tmp')
-    return output_pdf_path
+def extract_fonts_from_pptx(pptx_path, extract_to):
+    with ZipFile(pptx_path, 'r') as zip_ref:
+        for file_info in zip_ref.infolist():
+            print(f"Extracted {file_info.filename} to {extract_to}")
+            if 'ppt/fonts/' in file_info.filename:
+                zip_ref.extract(file_info, extract_to)
+                print(f"Extracted {file_info.filename} to {extract_to}")
+
+
+def pptx_to_pdf(pptx_file_path):
+
+    path_to_libreoffice = r"C:\Program Files\LibreOffice\program\soffice.exe"
+    try:
+        # Check if file exists
+        if not os.path.exists(pptx_file_path):
+            print(f"File not found: {pptx_file_path}")
+            return None
+
+        # Check file permissions
+        if not os.access(pptx_file_path, os.R_OK):
+            print(f"No read permissions for file: {pptx_file_path}")
+            return None
+
+        # Generate the output PDF path
+        output_folder = os.path.dirname(pptx_file_path)
+        output_pdf_path = os.path.join(
+            output_folder, f"{os.path.splitext(os.path.basename(pptx_file_path))[0]}.pdf")
+
+        # Form the command for LibreOffice
+        command = f"\"{path_to_libreoffice}\"lowriter --headless --convert-to pdf --outdir \"{output_folder}\" \"{pptx_file_path}\""
+
+        # Start the process
+        process = subprocess.Popen(
+            command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+        # Wait for the process to complete or time out
+        try:
+            stdout, stderr = process.communicate(
+                timeout=60)  # Set timeout to 60 seconds
+            print("Standard Output:", stdout.decode())
+            print("Standard Error:", stderr.decode())
+        except subprocess.TimeoutExpired:
+            print("Process timed out. Killing it.")
+            process.terminate()
+
+        return output_pdf_path
+
+    except Exception as e:
+        print(f"An error occurred: {e}")
+        return None
 
 
 def pdf_to_images(pdf_path):
@@ -321,55 +368,178 @@ def extract_notes_from_slide(slide):
     return slide_number, notes_text
 
 
+def upload_to_s3_subfolder(file_path, usermail, project, subfolder, filename):
+    s3 = boto3.resource('s3', aws_access_key_id=aws_access_key_id,
+                        aws_secret_access_key=aws_secret_access_key, region_name=region)
+    obj = s3.Object(
+        bucket_name, f'{usermail}/{project}/edited/{subfolder}/{filename}')
+    with open(file_path, 'rb') as f:
+        obj.upload_fileobj(f)
+
+
 def extract_notes_and_images_from_pptx(pptx_file):
-    # Save the pptx_file to a temporary file, so that it can be converted to pdf
-    pptx_file_path = f"/tmp/{filename}"
-    with open(pptx_file_path, 'wb') as f:
-        f.write(pptx_file.read())
-
-    pdf_file_path = pptx_to_pdf(pptx_file_path)
-    images = pdf_to_images(pdf_file_path)
-
-    pptx_file.seek(0)
     prs = Presentation(pptx_file)
-
-    notes_and_images = []
+    extracted_data = []
     for i, slide in enumerate(prs.slides):
-        slide_id, notes_text = extract_notes_from_slide(slide)
-        tts_filename = process_preview(
-            notes_text) if notes_text.strip() else None
-        notes_and_images.append({
-            "slide_id": slide_id,
-            "notes": notes_text,
-            "image": images[i],
-            "tts": tts_filename
+        slide_image = io.BytesIO()  # Replace with your actual slide to image conversion
+        notes = slide.notes_slide.notes_text if slide.notes_slide else ''
+        if notes:
+            tts_data = generate_tts(notes)
+        else:
+            tts_data = None
+        extracted_data.append({
+            "slide_image": slide_image,
+            "tts_data": tts_data
         })
+    return extracted_data
 
-    return notes_and_images
+
+def upload_to_s3(usermail, project, filename, file_obj):
+    s3 = boto3.resource('s3', aws_access_key_id=aws_access_key_id,
+                        aws_secret_access_key=aws_secret_access_key, region_name=region)
+    obj = s3.Object(bucket_name, f'{usermail}/{project}/edited/{filename}')
+    file_obj.seek(0)
+    obj.upload_fileobj(file_obj)
+
+
+def generate_tts2(text, voice_id, filename):
+    polly_client = boto3.client('polly', aws_access_key_id=aws_access_key_id,
+                                aws_secret_access_key=aws_secret_access_key, region_name=region)
+    try:
+        response = polly_client.synthesize_speech(
+            VoiceId=voice_id, OutputFormat='mp3', Text=text, TextType='ssml', Engine='neural')
+
+        with open(filename, 'wb') as out:  # open for [w]riting as [b]inary
+            out.write(response['AudioStream'].read())
+    except Exception as e:
+        print(f"Error during audio generation: {str(e)}")
+        return None
 
 
 def process_pptx_split(usermail, project, filename):
-    # Download the pptx file from S3
-    pptx_file = download_pptx_from_s3(usermail, project, filename)
+    tts_generated = False
+    try:
+        # Download the pptx file from S3
+        pptx_file = download_pptx_from_s3(usermail, project, filename)
 
-    # Extract the slide images, notes and tts for each slide
-    slide_data = extract_notes_and_images_from_pptx(pptx_file)
+        # Create a temporary folder
+        temp_folder = 'temp_folder'
+        os.makedirs(temp_folder, exist_ok=True)
 
-    for i, data in enumerate(slide_data):
-        slide_id, notes_text, image, tts = data["slide_id"], data["notes"], data["image"], data["tts"]
+        # Generate the full path where the file will be saved
+        pptx_file_path = os.path.join(temp_folder, filename)
 
-        # Save the image locally
-        image_filename = f"/tmp/slide_{slide_id}.jpg"
-        image.save(image_filename)
+        # Save the BytesIO object to a file
+        with open(pptx_file_path, 'wb') as f:
+            f.write(pptx_file.getbuffer())
 
-        # Save the tts locally
-        tts_filename = f"/tmp/slide_{slide_id}_tts.mp3"
-        with open(tts_filename, "wb") as f:
-            f.write(tts)
+        # Assert that the file exists and is not empty
+        assert os.path.isfile(
+            pptx_file_path), f"{pptx_file_path} is not a file"
 
-        # Replace the image and tts in the data dictionary with their S3 URIs
-        data["image"] = s3_image_uri
-        data["tts"] = s3_tts_uri
+        pptx_file.seek(0)
+        prs = Presentation(pptx_file)
 
-    # Return the slide data (which now contains the URIs for the image and tts) as a JSON string
-    return json.dumps(slide_data)
+        # Convert PPTX to PDF
+        pdf_path = pptx_to_pdf(pptx_file_path).replace('.pptx.pdf', '.pdf')
+
+        # Convert PDF to Images
+        print("prima")
+        images = pdf_to_images(pdf_path)
+        print("dopo")
+
+        slide_data = []
+
+        for i, (slide, image) in enumerate(zip(prs.slides, images)):
+            try:
+                # Extract notes
+                notes_slide = slide.notes_slide
+                notes_text = notes_slide.notes_text_frame.text
+
+                tts_generated = False
+
+                if not notes_text or not notes_text.strip():
+                    print("No notes text for this slide, skipping TTS...")
+                else:
+                    # Correct special characters and validate the SSML
+                    checked_missing_tags = find_missing_tags(notes_text)
+                    corrected_ssml = correct_special_characters(
+                        checked_missing_tags)
+
+                    # Validate SSML
+                    if not validate_ssml(corrected_ssml, schema_path):
+                        print("Invalid SSML, skipping...")
+                    else:
+                        # Parse SSML
+                        parsed_ssml = parse_ssml(corrected_ssml)
+                        try:
+                            if len(parsed_ssml) == 1:
+                                for voice_name, text in parsed_ssml:
+                                    filename = os.path.join(
+                                        temp_folder, f'slide_{i}.mp3')
+                                    # Assuming generate_tts saves the mp3 to the given filename
+                                    generate_tts2(text, voice_name, filename)
+                                    tts_generated = True
+
+                            else:  # For more than one voice tag in the notes
+                                audios = []
+                                for j, (voice_name, text) in enumerate(parsed_ssml):
+                                    filename = os.path.join(
+                                        temp_folder, f'multi_voice_{j}.mp3')
+                                    # Assuming generate_tts saves the mp3 to the given filename
+                                    generate_tts2(text, voice_name, filename)
+                                    audio = AudioSegment.from_file(filename)
+                                    audios.append(audio)
+
+                                # Combine audio data and save to temp folder
+                                combined_audio = sum(audios[1:], audios[0])
+                                combined_filename = os.path.join(
+                                    temp_folder, f'slide_{i}.mp3')
+                                combined_audio.export(
+                                    combined_filename, format="mp3", bitrate="320k")
+                                tts_generated = True
+                        except Exception as e:
+                            print(f"Error during audio generation: {str(e)}")
+                            return  # Skip the slide if there was an error
+                slide_info = {
+                    "slide_id": i,
+                    "image": f"slide_{i}.jpg",
+                    # Set to None if no TTS data
+                    "tts": f"slide_{i}.mp3" if tts_generated else None
+                }
+                slide_data.append(slide_info)
+
+                # Save image and TTS data locally
+                image_path = os.path.join(temp_folder, f'slide_{i}.jpg')
+                image.save(image_path)
+
+                # # Upload image and TTS to S3
+                # with open(image_path, "rb") as f:
+                #     upload_to_s3(usermail, project,
+                #                  f"split/slide_{i}.jpg", f)
+                #     print(
+                #         f"Uploaded image to {usermail}/{project}/split/slide_{i}.jpg")
+
+                # if tts_generated:
+                #     with open(mp3_path, "rb") as f:
+                #         upload_to_s3(usermail, project,
+                #                      f"split/slide_{i}.mp3", f)
+                #         print(
+                #             f"Uploaded TTS to {usermail}/{project}/split/slide_{i}.mp3")
+
+            except Exception as e:
+                print(f"An error occurred while processing slide {i}: {e}")
+
+        # # Cleanup temporary files
+        # os.remove(pptx_file_path)
+        # os.remove(pdf_path)
+        # for i in range(len(images)):
+        #     os.remove(f"/tmp/slide_{i}.jpg")
+        #     if os.path.exists(f"/tmp/slide_{i}.mp3"):
+        #         os.remove(f"/tmp/slide_{i}.mp3")
+
+        return json.dumps({"slides": slide_data})
+
+    except Exception as e:
+        print(f"An exception occurred in process_pptx_split: {e}")
+        return json.dumps({"error": str(e)})
