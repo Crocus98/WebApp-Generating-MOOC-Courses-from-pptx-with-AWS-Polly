@@ -67,7 +67,7 @@ export default function Generator({}: Props) {
   const downloadFile = async () => {
     try {
       setLoading(true);
-      await axios.put("/v1/public/elaborate", { projectName: "default" });
+      await axios.post("/v1/public/elaborate", { projectName: "default" });
       const downloadRes = await axios.get("/v1/public/download/default", {
         responseType: "blob",
       });

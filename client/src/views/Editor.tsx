@@ -32,6 +32,7 @@ export default function Editor({}: Props) {
   const [projectZip, setProjectZip] = useState<JSZip | null>(null);
   const [unsavedChanges, setUnsavedChanges] = useState(false);
   const [loadingSave, setLoadingSave] = useState(false);
+  const [audioPreviews, setAudioPreviews] = useState<string[]>(["http://goldfirestudios.com/proj/howlerjs/sound.ogg", ]);
 
   useEffect(() => {
     async function getProject() {
@@ -126,6 +127,7 @@ export default function Editor({}: Props) {
             goPreviousSlide={() => setSlideFocus((v) => Math.max(v - 1, 0))}
             content={notes[slideFocus]}
             onChange={getSlideOnChange(slideFocus)}
+            audioPreview={audioPreviews[slideFocus]}
           />
         </EditorContainer>
       )}

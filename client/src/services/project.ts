@@ -21,7 +21,7 @@ export const retrieveProject = async (projectName: string) => {
 };
 
 export const elaborateProject = async (projectName: string) => {
-  return axios.put("/v1/public/elaborate", { projectName: projectName });
+  return axios.post("/v1/public/elaborate", { projectName: projectName });
 };
 
 export const downloadProject = async (projectName: string) => {

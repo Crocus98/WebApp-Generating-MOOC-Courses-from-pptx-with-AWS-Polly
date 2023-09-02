@@ -10,6 +10,7 @@ type Props = {
   lastSlideNumber: number;
   goPreviousSlide: () => void;
   goNextSlide: () => void;
+  audioPreview: string | undefined;
 
   content: string;
   onChange: (content: string) => void;
@@ -22,6 +23,7 @@ export default function SlideEditor({
   lastSlideNumber,
   goPreviousSlide,
   goNextSlide,
+  audioPreview,
 
   content,
   onChange,
@@ -63,7 +65,7 @@ export default function SlideEditor({
         </IconButton>
       </SlidePreviewContainer>
       <VoicePreviewContainer>
-        <Player audio={undefined} loading={false} />
+        <Player audio={audioPreview} loading={false} />
       </VoicePreviewContainer>
       <NotesEditorContentContainer>
         <NotesEditorContainer>
