@@ -4,11 +4,7 @@ import html
 import os
 from collections import deque
 from lxml import etree
-from dotenv import load_dotenv
 from xml.etree.ElementTree import ParseError
-
-
-load_dotenv()
 
 schema_path = os.getenv('schema_path')
 
