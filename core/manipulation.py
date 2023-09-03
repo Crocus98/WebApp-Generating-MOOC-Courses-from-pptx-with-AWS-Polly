@@ -28,6 +28,7 @@ aws_access_key_id = os.getenv('aws_access_key_id')
 aws_secret_access_key = os.getenv('aws_secret_access_key')
 bucket_name = os.getenv('bucket_name')
 region = os.getenv('region')
+schema_path = os.getenv('schema_path')
 
 
 # Generate 0.5 seconds of silence
