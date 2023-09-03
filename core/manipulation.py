@@ -23,9 +23,6 @@ from pdf2image import convert_from_path
 from pydub import AudioSegment
 from pydub.playback import play
 
-
-load_dotenv()
-
 # Get environment variables
 aws_access_key_id = os.getenv('aws_access_key_id')
 aws_secret_access_key = os.getenv('aws_secret_access_key')
