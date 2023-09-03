@@ -1,9 +1,8 @@
 from flask import Flask, request, jsonify
 from dotenv import load_dotenv
 from manipulation import *
-import os
 from flask import Response
-
+import os
 
 load_dotenv()
 

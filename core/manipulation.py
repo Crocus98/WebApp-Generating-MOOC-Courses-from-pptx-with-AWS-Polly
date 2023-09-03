@@ -1,27 +1,22 @@
-# pip install boto3 python-pptx
-
 from zipfile import ZipFile
-import time
-import tempfile
-import subprocess
-import boto3
-import io
-import os
-import json
 from pptx import Presentation
 from pptx.util import Inches
 from pptx.enum.shapes import MSO_SHAPE
 from dotenv import load_dotenv
 from pydub import AudioSegment
 from concurrent.futures import ThreadPoolExecutor
-import uuid
-
 from ssml_validation import *
-
 from pdf2image import convert_from_path
-
 from pydub import AudioSegment
 from pydub.playback import play
+import subprocess
+import tempfile
+import boto3
+import uuid
+import time
+import io
+import os
+import json
 
 # Get environment variables
 aws_access_key_id = os.getenv('aws_access_key_id')
