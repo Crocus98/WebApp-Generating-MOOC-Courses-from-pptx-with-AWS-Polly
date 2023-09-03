@@ -1,8 +1,11 @@
 from flask import Flask, request, jsonify
-from manipulation2 import *
+from manipulation import *
 import os
+from dotenv import load_dotenv
 
-ENVIROMENT = os.getenv("ENVIRONMENT")
+load_dotenv()
+
+ENVIRONMENT = os.getenv("ENVIRONMENT")
 HOST = os.getenv("HOST")
 PORT = os.getenv("PORT")
 
@@ -77,10 +80,10 @@ def process_slides_request():
 
 
 if __name__ == "__main__":
-    if ENVIROMENT == "PROD":
+    if ENVIRONMENT == "PROD":
         from waitress import serve
         serve(app, host=HOST, port=PORT)
-    elif ENVIROMENT == "DEV":
+    elif ENVIRONMENT == "DEV":
         app.run(debug=True, host=HOST, port=PORT)
     else:
         raise Exception("Invalid Enviroment")
