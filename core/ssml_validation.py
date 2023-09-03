@@ -1,10 +1,10 @@
 import xml.etree.ElementTree as ET
-import re
-import html
-import os
 from collections import deque
 from lxml import etree
 from xml.etree.ElementTree import ParseError
+import re
+import html
+import os
 
 schema_path = os.getenv('schema_path')
 
