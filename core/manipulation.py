@@ -59,6 +59,21 @@ def upload_pptx_to_s3(usermail, project, filename, pptx_file):
     obj.upload_fileobj(pptx_file)
 
 
+def upload_mp3_to_s3(usermail, project, filename, audio_segment):
+    # Convert AudioSegment to bytes and save in a BytesIO object
+    mp3_buffer = io.BytesIO()
+    audio_segment.export(mp3_buffer, format="mp3")
+
+    # Reset buffer position to the beginning
+    mp3_buffer.seek(0)
+
+    # Upload BytesIO object to S3
+    s3 = boto3.resource('s3', aws_access_key_id=aws_access_key_id,
+                        aws_secret_access_key=aws_secret_access_key, region_name=region)
+    obj = s3.Object(bucket_name, f'{usermail}/{project}/edited/{filename}')
+    obj.upload_fileobj(mp3_buffer)
+
+
 def generate_tts(text, voice_id):
     polly_client = boto3.client('polly', aws_access_key_id=aws_access_key_id,
                                 aws_secret_access_key=aws_secret_access_key, region_name=region)
@@ -258,6 +273,7 @@ def process_preview(text):
                 filename = generate_tts(text, voice_name)
                 print(f"filename: {filename}")
                 audio = AudioSegment.from_file(filename, format='mp3')
+                # upload_mp3_to_s3("", "", filename, audio)
                 print(f"audio: {audio}")
                 return audio
 

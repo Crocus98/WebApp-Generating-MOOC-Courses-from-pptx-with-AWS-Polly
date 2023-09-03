@@ -1,6 +1,8 @@
 from flask import Flask, request, jsonify
 from manipulation import *
 import os
+from flask import Response
+
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -46,8 +48,10 @@ def process_text_request():
         text = data['text']
 
         result = process_preview(text)
-
-        return jsonify({"message": result}), 200
+        byte_io = io.BytesIO()
+        result.export(byte_io, format="mp3")
+        byte_io.seek(0)
+        return Response(byte_io, content_type="audio/mp3"), 200
     # except SomeLibrarySpecificError as e:  # replace with a specific exception type
         # return jsonify({"message": str(e)}), 400
     except Exception as e:
