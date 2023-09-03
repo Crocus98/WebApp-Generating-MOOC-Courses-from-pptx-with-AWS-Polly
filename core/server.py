@@ -2,7 +2,6 @@ from flask import Flask, request, jsonify
 from manipulation import *
 import os
 from flask import Response
-
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -25,16 +24,11 @@ def process_pptx_request():
         usermail = data['email']
         project = data['projectName']
         filename = data['filename']
-
         result = process_pptx(usermail, project, filename)
-
         return jsonify({"message": result}), 200
-    # except SomeLibrarySpecificError as e:  # replace with a specific exception type
-        # return jsonify({"message": str(e)}), 400
     except Exception as e:
-        # this should be replaced with proper logging
-        print(f"An error occurred: {str(e)}")
-        return jsonify({"message": "Internal Server Error"}), 500
+        # print(f"An error occurred: {str(e)}")
+        return jsonify({"message": f"Error: {str(e)}"}), 500
 
 
 @app.post('/process-text')
@@ -46,18 +40,14 @@ def process_text_request():
 
     try:
         text = data['text']
-
         result = process_preview(text)
         byte_io = io.BytesIO()
         result.export(byte_io, format="mp3")
         byte_io.seek(0)
         return Response(byte_io, content_type="audio/mp3"), 200
-    # except SomeLibrarySpecificError as e:  # replace with a specific exception type
-        # return jsonify({"message": str(e)}), 400
     except Exception as e:
-        # this should be replaced with proper logging
-        print(f"An error occurred: {str(e)}")
-        return jsonify({"message": "Internal Server Error"}), 500
+        # print(f"An error occurred: {str(e)}")
+        return jsonify({"message": f"Error: {str(e)}"}), 500
 
 
 @app.post('/process-slides')
@@ -71,16 +61,11 @@ def process_slides_request():
         usermail = data['email']
         project = data['projectName']
         filename = data['filename']
-
         result = process_pptx_split(usermail, project, filename)
-
         return jsonify({"message": result}), 200
-    # except SomeLibrarySpecificError as e: # replace with a specific exception type
-        # return jsonify({"message": str(e)}), 400
     except Exception as e:
-        # this should be replaced with proper logging
-        print(f"An error occurred: {str(e)}")
-        return jsonify({"message": "Internal Server Error"}), 500
+        # print(f"An error occurred: {str(e)}")
+        return jsonify({"message": f"Error: {str(e)}"}), 500
 
 
 if __name__ == "__main__":

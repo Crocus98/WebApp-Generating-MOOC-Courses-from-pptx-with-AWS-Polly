@@ -15,7 +15,7 @@ const upload = multer({ storage: multer.memoryStorage() });
 path.get("/me", auth, UserController.userData);
 path.get("/download/:projectName", auth, FileController.downloadFile); // parameter: original ((true/false) default: false)
 path.get("/list", auth, ProjectController.listProjects);
-path.get("/project/:projectName", auth, ProjectController.getSettings);
+//path.get("/project/:projectName", auth, ProjectController.getSettings); //TODO or TODELETE
 path.get("/slides/:projectName", auth, PreviewController.getSlidesPreview);
 /** POST */
 path.post("/login", UserController.login);
@@ -28,7 +28,7 @@ path.post("/elaborate", auth, FileController.elaborateFile);
 /** DELETE */
 path.delete("/delete/:projectName", auth, ProjectController.deleteProject);
 /** PUT */
-//path.put("/settings/:projectName", auth, ProjectController.updateSettings); // TODO
+//path.put("/settings/:projectName", auth, ProjectController.updateSettings); //TODO or TODELETE
 /** PATCH */
 path.patch("/grant", auth, UserController.grantAdminPermissions);
 path.patch("/revoke", auth, UserController.revokeAdminPermissions);

@@ -20,28 +20,6 @@ export const listProjects = async (req: Request, res: Response) => {
   }
 };
 
-export const getSettings = async (req: Request, res: Response) => {
-  try {
-    const user = res.locals.user as User;
-    const projectName = req.params.projectName;
-    if (!projectName) {
-      throw new ParameterException("No project name provided.");
-    }
-    const project = await ProjectService.findProjectByProjectName(projectName, user);
-    if (!project) {
-      throw new ParameterException("Project not found.");
-    }
-    return res.status(200).send(project);
-  } catch (error) {
-    if (error instanceof DatabaseException) {
-      res.status(500).send(utils.getErrorMessage(error));
-    } else if (error instanceof ParameterException) {
-      res.status(400).send(utils.getErrorMessage(error));
-    }
-    return res.status(500).send(utils.getErrorMessage(error));
-  }
-};
-
 export const createProject = async (req: Request, res: Response) => {
   try {
     const user = res.locals.user as User;
@@ -87,27 +65,50 @@ export const deleteProject = async (req: Request, res: Response) => {
   }
 };
 
-/*
-export const updateSettings = async (req: Request, res: Response) => {
-  try {
-    const user = res.locals.user as User;
-    const projectName = req.params.projectName;
-    if (!projectName) {
-      throw new ParameterException("No project name provided.");
-    }
-    const project = await ProjectService.findProjectByProjectName(projectName, user);
-    if (!project) {
-      throw new ParameterException("Project not found.");
-    }
+//TODO or TODELETE
+// export const getSettings = async (req: Request, res: Response) => {
+//   try {
+//     const user = res.locals.user as User;
+//     const projectName = req.params.projectName;
+//     if (!projectName) {
+//       throw new ParameterException("No project name provided.");
+//     }
+//     const project = await ProjectService.findProjectByProjectName(projectName, user);
+//     if (!project) {
+//       throw new ParameterException("Project not found.");
+//     }
+//     return res.status(200).send(project);
+//   } catch (error) {
+//     if (error instanceof DatabaseException) {
+//       res.status(500).send(utils.getErrorMessage(error));
+//     } else if (error instanceof ParameterException) {
+//       res.status(400).send(utils.getErrorMessage(error));
+//     }
+//     return res.status(500).send(utils.getErrorMessage(error));
+//   }
+// };
 
-    return res.status(200).send("Project settings updated successfully.");
-  } catch (error) {
-    if (error instanceof DatabaseException) {
-      res.status(500).send(utils.getErrorMessage(error));
-    }
-    else if (error instanceof ParameterException) {
-      res.status(400).send(utils.getErrorMessage(error));
-    }
-    return res.status(500).send(utils.getErrorMessage(error));
-  }
-};*/
+//TODO or TODELETE
+// export const updateSettings = async (req: Request, res: Response) => {
+//   try {
+//     const user = res.locals.user as User;
+//     const projectName = req.params.projectName;
+//     if (!projectName) {
+//       throw new ParameterException("No project name provided.");
+//     }
+//     const project = await ProjectService.findProjectByProjectName(projectName, user);
+//     if (!project) {
+//       throw new ParameterException("Project not found.");
+//     }
+
+//     return res.status(200).send("Project settings updated successfully.");
+//   } catch (error) {
+//     if (error instanceof DatabaseException) {
+//       res.status(500).send(utils.getErrorMessage(error));
+//     }
+//     else if (error instanceof ParameterException) {
+//       res.status(400).send(utils.getErrorMessage(error));
+//     }
+//     return res.status(500).send(utils.getErrorMessage(error));
+//   }
+// };
