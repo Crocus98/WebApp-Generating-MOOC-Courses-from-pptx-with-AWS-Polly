@@ -2,9 +2,9 @@ from flask import Flask, request, jsonify
 from manipulation2 import *
 import os
 
-ENVIROMENT = "DEV"  # DEV, PROD
-HOST = "0.0.0.0"
-PORT = 5001
+ENVIROMENT = os.getenv("ENVIRONMENT")
+HOST = os.getenv("HOST")
+PORT = os.getenv("PORT")
 
 app = Flask(__name__)
 
