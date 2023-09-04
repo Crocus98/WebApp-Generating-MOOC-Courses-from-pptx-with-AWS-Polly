@@ -71,7 +71,7 @@ def test_process_pptx(usermail, project, filename):
 
 
 usermail = 'giacomo.vinati@mail.polimi.it'
-project = 'Progetto'
+project = 'GigaChad'
 
 
 # Run the test functions
@@ -81,7 +81,7 @@ project = 'Progetto'
 # test_process_pptx_split(usermail, project, filename1)
 # test_process_pptx_split(usermail, project, filename3)
 
-test_process_preview(testoporva1)
+# test_process_preview(testoporva1)
 # test_process_preview(testoporva2)
 # test_process_preview(testoporva3)
 # test_process_preview(testoporva4)

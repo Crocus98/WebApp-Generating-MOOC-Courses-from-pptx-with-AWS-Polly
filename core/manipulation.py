@@ -12,6 +12,9 @@ import uuid
 import json
 import io
 import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 
 class S3Singleton:
@@ -68,30 +71,25 @@ def split_input_path(input_path):
 
 
 def download_pptx_from_s3(usermail, project, filename):
-    obj = s3_singleton.Object(bucket_name,
-                              f'{usermail}/{project}/{filename}')
+    obj = s3_singleton.s3.Object(bucket_name,
+                                 f'{usermail}/{project}/{filename}')
     pptx_file = io.BytesIO()
     obj.download_fileobj(pptx_file)
     return pptx_file
 
 
 def upload_pptx_to_s3(usermail, project, filename, pptx_file):
-    obj = s3_singleton.Object(bucket_name,
-                              f'{usermail}/{project}/edited/{filename}')
+    obj = s3_singleton.s3.Object(bucket_name,
+                                 f'{usermail}/{project}/edited/{filename}')
     pptx_file.seek(0)
     obj.upload_fileobj(pptx_file)
 
 
 def upload_mp3_to_s3(usermail, project, filename, audio_segment):
-    # Convert AudioSegment to bytes and save in a BytesIO object
     mp3_buffer = io.BytesIO()
     audio_segment.export(mp3_buffer, format="mp3")
-
-    # Reset buffer position to the beginning
-    mp3_buffer.seek(0)
-
-    # Upload BytesIO object to S3
-    obj = s3_singleton.Object(
+    mp3_buffer.seek(0)     # Reset buffer position to the beginning
+    obj = s3_singleton.s3.Object(
         bucket_name, f'{usermail}/{project}/edited/{filename}')
     obj.upload_fileobj(mp3_buffer)
 
@@ -99,12 +97,10 @@ def upload_mp3_to_s3(usermail, project, filename, audio_segment):
 def generate_tts(text, voice_id):
     polly_client = polly_singleton.polly
     try:
-
         response = polly_client.synthesize_speech(
             VoiceId=voice_id, OutputFormat='mp3', Text=text, TextType='ssml', Engine='neural')
-        # Create unique filename for the audio file
         filename = f'tts_{uuid.uuid4()}.mp3'
-        with open(filename, 'wb') as out:  # open for [w]riting as [b]inary
+        with open(filename, 'wb') as out:
             out.write(response['AudioStream'].read())
     except Exception as e:
         print(f"Error during audio generation: {str(e)}")
@@ -125,7 +121,6 @@ def combine_audio_files(audio_files):
 
 def process_slide(slide):
     modified = False  # Initialize a flag to track if we modify the slide
-
     try:
         notes_slide = slide.notes_slide
         notes_text = notes_slide.notes_text_frame.text
@@ -136,17 +131,11 @@ def process_slide(slide):
     if not notes_text or not notes_text.strip():
         print("No notes text for this slide, skipping...")
         return modified  # Returning False because no modification occurred
-
     try:
         notes_slide = slide.notes_slide
-        # print(f"notes_slide: {notes_slide}")
         notes_text = notes_slide.notes_text_frame.text
-        # print(f"notes_text: {notes_text}")
-        if notes_text and notes_text.strip():  # Check if notes_text is not empty
-            # Correct special characters and validate the SSML
-            # print(f"not empty")
+        if notes_text and notes_text.strip():
             checked_missing_tags = find_missing_tags(notes_text)
-            # print(f"checked_missing_tags: {checked_missing_tags}")
             try:
                 corrected_ssml = correct_special_characters(
                     checked_missing_tags)
@@ -154,25 +143,14 @@ def process_slide(slide):
                 print(
                     f"Error during SSML correct_special_characters: {str(e)}")
                 return
-            # print("Corrected SSML: \n", corrected_ssml)
-
             validation_result = validate_ssml(corrected_ssml, schema_path)
-            # print("Validation result: ", validation_result)
-
-            # # Test SSML validation function
             if not validation_result:
                 raise ValueError
-                # print(" NOT VALIDATE SSML")
-            # Process the SSML
-            # print("VALIDATE SSML")
             try:
                 parsed_ssml = parse_ssml(corrected_ssml)
             except Exception as e:
                 print(f"Error during SSML parsing: {str(e)}")
                 return
-            # print(f"parsed_ssml: {parsed_ssml}")
-            # combined_text = ''.join(text for voice_name, text in parsed_ssml)
-            # print(f"Combined text: {combined_text}")
             try:
                 if len(parsed_ssml) == 1:
                     print("len == 1")
@@ -182,7 +160,6 @@ def process_slide(slide):
                         audio = AudioSegment.from_file(filename, format='mp3')
                         print(f"audio: {audio}")
                         try:
-                            # Add the combined audio to the slide
                             left, top, width, height = Inches(
                                 1), Inches(2.5), Inches(1), Inches(1)
                             slide.shapes.add_movie(
@@ -191,40 +168,26 @@ def process_slide(slide):
                             print(
                                 f"Error during audio combining/exporting or adding to slide: {str(e)}")
                             return
-
-                        # Remove the temporary files after using them
                         try:
                             os.remove(filename)
                         except OSError as e:
                             print(f"Error: {e.filename} - {e.strerror}.")
                 else:
                     audios = []
-                    # Generate an mp3 file for each voice and text
                     for voice_name, text in parsed_ssml:
-                        # generate_tts now outputs a file path
                         filename = generate_tts(text, voice_name)
                         print(f"filename: {filename}")
                         audio = AudioSegment.from_mp3(filename)
                         audios.append(audio)
                         audios.append(half_sec_silence)  # 0.5 seconds pause
-                        # combined_text += text
-                        # print(f"combined_text: {combined_text}")
-                        # print(f"audios final: {audios}")
-                    # Remove last silence segment
                     audios.pop()
-                    # print(f"audios final: {audios}")
-                    # Combine all audios into one
                     combined_audio = audios[0]
                     for audio in audios[1:]:
                         combined_audio += audio
-
-                    # Export combined audio to a file
                     combined_filename = f'combined_{uuid.uuid4()}.mp3'
                     combined_audio.export(
                         combined_filename, format="mp3", bitrate="320k")
-
                     try:
-                        # Add the combined audio to the slide
                         left, top, width, height = Inches(
                             1), Inches(2.5), Inches(1), Inches(1)
                         slide.shapes.add_movie(
@@ -233,8 +196,6 @@ def process_slide(slide):
                         print(
                             f"Error during audio combining/exporting or adding to slide: {str(e)}")
                         return
-
-                        # Remove the temporary files after using them
                     try:
                         os.remove(combined_filename)
                     except OSError as e:
@@ -279,17 +240,13 @@ def process_preview(text):
     except Exception as e:
         print(f"Error during SSML correction/validation: {str(e)}")
         return
-
     if validation_result:
         try:
-            # continue processing if SSML validation passed
             parsed_ssml = parse_ssml(corrected_ssml)
         except Exception as e:
             print(f"Error during SSML parsing: {str(e)}")
             return
-
         if len(parsed_ssml) == 1:
-            # print("len == 1")
             for voice_name, text in parsed_ssml:
                 filename = generate_tts(text, voice_name)
                 print(f"filename: {filename}")
@@ -297,43 +254,30 @@ def process_preview(text):
                 # upload_mp3_to_s3("", "", filename, audio)
                 print(f"audio: {audio}")
                 return audio
-
-                # Remove the temporary files after using them
-                try:
-                    os.remove(filename)
-                except OSError as e:
-                    print(f"Error: {e.filename} - {e.strerror}.")
+            # try:
+            #     os.remove(filename)
+            # except OSError as e:
+            #     print(f"Error: {e.filename} - {e.strerror}.")
         else:
             audios = []
-            # Generate an mp3 file for each voice and text
             for voice_name, text in parsed_ssml:
-                # generate_tts now outputs a file path
                 filename = generate_tts(text, voice_name)
                 print(f"filename: {filename}")
                 audio = AudioSegment.from_mp3(filename)
                 audios.append(audio)
                 audios.append(half_sec_silence)  # 0.5 seconds pause
-                # combined_text += text
-                # print(f"combined_text: {combined_text}")
-                # print(f"audios final: {audios}")
-                # Remove last silence segment
                 audios.pop()
-                # print(f"audios final: {audios}")
-                # Combine all audios into one
                 combined_audio = audios[0]
                 for audio in audios[1:]:
                     combined_audio += audio
-
-                    # Export combined audio to a file
                     combined_filename = f'combined_{uuid.uuid4()}.mp3'
                     combined_audio.export(
                         combined_filename, format="mp3", bitrate="320k")
                     return combined_audio
-                    # Remove the temporary files after using them
-                    try:
-                        os.remove(combined_filename)
-                    except OSError as e:
-                        print(f"Error: {e.filename} - {e.strerror}.")
+            # try:
+            #     os.remove(combined_filename)
+            # except OSError as e:
+            #     print(f"Error: {e.filename} - {e.strerror}.")
     else:
         print("SSML validation failed, cannot process the preview.")
 
@@ -376,12 +320,16 @@ def pptx_to_pdf(pptx_file_path):
         # Wait for the process to complete or time out
         try:
             stdout, stderr = process.communicate(
-                timeout=60)  # Set timeout to 60 seconds
+                timeout=20)  # Set timeout to 20 seconds
             print("Standard Output:", stdout.decode())
             print("Standard Error:", stderr.decode())
         except subprocess.TimeoutExpired:
             print("Process timed out. Killing it.")
             process.terminate()
+        # try:
+        #     os.remove(pptx_file_path)
+        # except OSError as e:
+        #     print(f"Error: {e.filename} - {e.strerror}.")
 
         return output_pdf_path
 
@@ -404,9 +352,7 @@ def extract_notes_from_slide(slide):
 
 
 def upload_to_s3_subfolder(file_path, usermail, project, subfolder, filename):
-    s3 = boto3.resource('s3', aws_access_key_id=aws_access_key_id,
-                        aws_secret_access_key=aws_secret_access_key, region_name=region)
-    obj = s3.Object(
+    obj = s3_singleton.Object(
         bucket_name, f'{usermail}/{project}/edited/{subfolder}/{filename}')
     with open(file_path, 'rb') as f:
         obj.upload_fileobj(f)
@@ -430,20 +376,17 @@ def extract_notes_and_images_from_pptx(pptx_file):
 
 
 def upload_to_s3(usermail, project, filename, file_obj):
-    s3 = boto3.resource('s3', aws_access_key_id=aws_access_key_id,
-                        aws_secret_access_key=aws_secret_access_key, region_name=region)
-    obj = s3.Object(bucket_name, f'{usermail}/{project}/edited/{filename}')
+    obj = s3_singleton.Object(
+        bucket_name, f'{usermail}/{project}/edited/{filename}')
     file_obj.seek(0)
     obj.upload_fileobj(file_obj)
 
 
 def generate_tts2(text, voice_id, filename):
-    polly_client = boto3.client('polly', aws_access_key_id=aws_access_key_id,
-                                aws_secret_access_key=aws_secret_access_key, region_name=region)
+    polly_client = polly_singleton.polly
     try:
         response = polly_client.synthesize_speech(
             VoiceId=voice_id, OutputFormat='mp3', Text=text, TextType='ssml', Engine='neural')
-
         with open(filename, 'wb') as out:  # open for [w]riting as [b]inary
             out.write(response['AudioStream'].read())
     except Exception as e:
@@ -499,11 +442,9 @@ def process_pptx_split(usermail, project, filename):
 
         for i, (slide, image) in enumerate(zip(prs.slides, images)):
             try:
-                # Extract notes
                 notes_slide = slide.notes_slide
                 notes_text = notes_slide.notes_text_frame.text
 
-                # Save image and TTS data locally
                 image_path = os.path.join(temp_folder, f'slide_{i}.jpg')
                 image.save(image_path)
                 image_base64 = image_to_base64(image)
@@ -513,23 +454,19 @@ def process_pptx_split(usermail, project, filename):
                 if not notes_text or not notes_text.strip():
                     print("No notes text for this slide, skipping TTS...")
                 else:
-                    # Correct special characters and validate the SSML
                     checked_missing_tags = find_missing_tags(notes_text)
                     corrected_ssml = correct_special_characters(
                         checked_missing_tags)
 
-                    # Validate SSML
                     if not validate_ssml(corrected_ssml, schema_path):
                         print("Invalid SSML, skipping...")
                     else:
-                        # Parse SSML
                         parsed_ssml = parse_ssml(corrected_ssml)
                         try:
                             if len(parsed_ssml) == 1:
                                 for voice_name, text in parsed_ssml:
                                     filename = os.path.join(
                                         temp_folder, f'slide_{i}.mp3')
-                                    # Assuming generate_tts saves the mp3 to the given filename
                                     audio = generate_tts2(
                                         text, voice_name, filename)
                                     audio = AudioSegment.from_file(filename)
@@ -542,12 +479,9 @@ def process_pptx_split(usermail, project, filename):
                                 for j, (voice_name, text) in enumerate(parsed_ssml):
                                     filename = os.path.join(
                                         temp_folder, f'multi_voice_{j}.mp3')
-                                    # Assuming generate_tts saves the mp3 to the given filename
                                     generate_tts2(text, voice_name, filename)
                                     audio = AudioSegment.from_file(filename)
                                     audios.append(audio)
-
-                                # Combine audio data and save to temp folder
                                 combined_audio = sum(audios[1:], audios[0])
                                 combined_filename = os.path.join(
                                     temp_folder, f'slide_{i}.mp3')
@@ -572,20 +506,6 @@ def process_pptx_split(usermail, project, filename):
                 }
 
                 slide_data.append(slide_info)
-
-                # # Upload image and TTS to S3
-                # with open(image_path, "rb") as f:
-                #     upload_to_s3(usermail, project,
-                #                  f"split/slide_{i}.jpg", f)
-                #     print(
-                #         f"Uploaded image to {usermail}/{project}/split/slide_{i}.jpg")
-
-                # if tts_generated:
-                #     with open(mp3_path, "rb") as f:
-                #         upload_to_s3(usermail, project,
-                #                      f"split/slide_{i}.mp3", f)
-                #         print(
-                #             f"Uploaded TTS to {usermail}/{project}/split/slide_{i}.mp3")
 
             except Exception as e:
                 print(f"An error occurred while processing slide {i}: {e}")
