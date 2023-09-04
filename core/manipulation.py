@@ -52,6 +52,7 @@ aws_secret_access_key = os.getenv('aws_secret_access_key')
 bucket_name = os.getenv('bucket_name')
 region = os.getenv('region')
 schema_path = os.getenv('schema_path')
+path_to_libreoffice = os.getenv("path_to_libreoffice")
 
 
 s3_singleton = S3Singleton(
@@ -329,49 +330,42 @@ def extract_fonts_from_pptx(pptx_path, extract_to):
 
 
 def pptx_to_pdf(pptx_file_path):
-    path_to_libreoffice = r"C:\Program Files\LibreOffice\program\soffice.exe"
+    # Check if file exists
+    if not os.path.exists(pptx_file_path):
+        raise ElaborationException(f"Temporary copy of file to elaborate not found: {pptx_file_path}")
+
+    # Check file permissions
+    if not os.access(pptx_file_path, os.R_OK):
+        raise ElaborationException(f"No read permission for temporary copy of file to elaborate: {pptx_file_path}")
+
+    # Generate the output PDF path
+    output_folder = os.path.dirname(pptx_file_path)
+    output_pdf_path = os.path.join(
+        output_folder, f"{os.path.splitext(os.path.basename(pptx_file_path))[0]}.pdf")
+
+    # Form the command for LibreOffice
+    command = f"\"{path_to_libreoffice}\"lowriter --headless --convert-to pdf --outdir \"{output_folder}\" \"{pptx_file_path}\""
+
+    # Start the process
+    process = subprocess.Popen(
+        command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+    # Wait for the process to complete or time out
     try:
-        # Check if file exists
-        if not os.path.exists(pptx_file_path):
-            print(f"File not found: {pptx_file_path}")
-            return None
+        stdout, stderr = process.communicate(
+            timeout=20)  # Set timeout to 20 seconds
+        print("Standard Output:", stdout.decode())
+        print("Standard Error:", stderr.decode())
+    except subprocess.TimeoutExpired:
+        raise ElaborationException(f"Process for pptx conversion timed out. Killing it.")
+    finally:
+        process.terminate()
+    # try:
+    #     os.remove(pptx_file_path)
+    # except OSError as e:
+    #     print(f"Error: {e.filename} - {e.strerror}.")
 
-        # Check file permissions
-        if not os.access(pptx_file_path, os.R_OK):
-            print(f"No read permissions for file: {pptx_file_path}")
-            return None
-
-        # Generate the output PDF path
-        output_folder = os.path.dirname(pptx_file_path)
-        output_pdf_path = os.path.join(
-            output_folder, f"{os.path.splitext(os.path.basename(pptx_file_path))[0]}.pdf")
-
-        # Form the command for LibreOffice
-        command = f"\"{path_to_libreoffice}\"lowriter --headless --convert-to pdf --outdir \"{output_folder}\" \"{pptx_file_path}\""
-
-        # Start the process
-        process = subprocess.Popen(
-            command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-
-        # Wait for the process to complete or time out
-        try:
-            stdout, stderr = process.communicate(
-                timeout=20)  # Set timeout to 20 seconds
-            print("Standard Output:", stdout.decode())
-            print("Standard Error:", stderr.decode())
-        except subprocess.TimeoutExpired:
-            print("Process timed out. Killing it.")
-            process.terminate()
-        # try:
-        #     os.remove(pptx_file_path)
-        # except OSError as e:
-        #     print(f"Error: {e.filename} - {e.strerror}.")
-
-        return output_pdf_path
-
-    except Exception as e:
-        print(f"An error occurred: {e}")
-        return None
+    return output_pdf_path
 
 
 def pdf_to_images(pdf_path):
@@ -452,7 +446,6 @@ def process_pptx_split(usermail, project, filename):
         with open(pptx_file_path, 'wb') as f:
             f.write(pptx_file.getbuffer())
 
-        # TO REMOVE
         assert os.path.isfile(
             pptx_file_path), f"{pptx_file_path} is not a file"
 
