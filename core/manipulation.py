@@ -311,10 +311,12 @@ def process_preview(text):
             f"Critical: could not delete temp file: {e.filename}")
     except AmazonException as e:
         raise AmazonException(e)
+    except ElaborationException as e:
+        raise ElaborationException(e)
     except UserParameterException as e:
         raise UserParameterException(e)
     except Exception as e:
-        raise ElaborationException(f"Exception while processing a slide: {str(e)}")
+        raise ElaborationException(f"Exception while processing text: {str(e)}")
 
 
 def extract_fonts_from_pptx(pptx_path, extract_to):
@@ -327,7 +329,6 @@ def extract_fonts_from_pptx(pptx_path, extract_to):
 
 
 def pptx_to_pdf(pptx_file_path):
-
     path_to_libreoffice = r"C:\Program Files\LibreOffice\program\soffice.exe"
     try:
         # Check if file exists
@@ -444,34 +445,22 @@ def image_to_base64(image):
 def process_pptx_split(usermail, project, filename):
     tts_generated = False
     try:
-        # Download the pptx file from S3
         pptx_file = download_pptx_from_s3(usermail, project, filename)
-
-        # Create a temporary folder
         temp_folder = f"{usermail}_{project}_temp"
         os.makedirs(temp_folder, exist_ok=True)
-
-        # Generate the full path where the file will be saved
         pptx_file_path = os.path.join(temp_folder, filename)
-
-        # Save the BytesIO object to a file
         with open(pptx_file_path, 'wb') as f:
             f.write(pptx_file.getbuffer())
 
-        # Assert that the file exists and is not empty
+        # TO REMOVE
         assert os.path.isfile(
             pptx_file_path), f"{pptx_file_path} is not a file"
 
         pptx_file.seek(0)
         prs = Presentation(pptx_file)
-
-        # Convert PPTX to PDF
+        
         pdf_path = pptx_to_pdf(pptx_file_path).replace('.pptx.pdf', '.pdf')
-
-        # Convert PDF to Images
-        print("prima")
         images = pdf_to_images(pdf_path)
-        print("dopo")
 
         slide_data = []
 
@@ -554,6 +543,14 @@ def process_pptx_split(usermail, project, filename):
         #         os.remove(f"/tmp/slide_{i}.mp3")
         return slide_data
 
+    except OSError as e:
+        raise ElaborationException(
+            f"Critical: could not delete temp file: {e.filename}")
+    except AmazonException as e:
+        raise AmazonException(e)
+    except UserParameterException as e:
+        raise UserParameterException(e)
+    except ElaborationException as e:
+        raise ElaborationException(e)
     except Exception as e:
-        print(f"An exception occurred in process_pptx_split: {e}")
-        return json.dumps({"error": str(e)})
+        raise ElaborationException(f"Exception while processing slides splitting: {str(e)}")
