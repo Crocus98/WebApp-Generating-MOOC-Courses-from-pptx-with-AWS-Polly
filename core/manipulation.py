@@ -11,13 +11,13 @@ from pydub import AudioSegment
 from pydub.playback import play
 import subprocess
 import tempfile
+import base64
 import boto3
 import uuid
 import json
 import time
 import io
 import os
-import base64
 
 
 # Get environment variables
