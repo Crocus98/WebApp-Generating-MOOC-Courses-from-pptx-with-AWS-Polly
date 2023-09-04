@@ -6,6 +6,8 @@ from pydub import AudioSegment
 from ssml_validation import *
 from pdf2image import convert_from_path
 from pydub import AudioSegment
+from dotenv import load_dotenv
+from exceptions import *
 import subprocess
 import base64
 import boto3
@@ -13,8 +15,6 @@ import uuid
 import json
 import io
 import os
-from dotenv import load_dotenv
-from exceptions import *
 
 load_dotenv()
 
@@ -35,7 +35,6 @@ class S3Singleton:
 
 class PollySingleton:
     _instance = None
-    _lock = threading.Lock()
 
     def __new__(cls, aws_access_key_id, aws_secret_access_key, region_name):
         if cls._instance is None:
