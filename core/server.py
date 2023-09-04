@@ -2,6 +2,7 @@ from flask import Flask, request, jsonify
 from dotenv import load_dotenv
 from manipulation import *
 from flask import Response
+from exceptions import *
 import os
 
 load_dotenv()
@@ -26,6 +27,15 @@ def process_pptx_request():
         filename = data['filename']
         result = process_pptx(usermail, project, filename)
         return jsonify({"message": result}), 200
+    except UserParameterException as e:
+        # print(f"An error occurred: {str(e)}")
+        return jsonify({"message": f"Error: {str(e)}"}), 400
+    except ElaborationException as e:
+        # print(f"An error occurred: {str(e)}")
+        return jsonify({"message": f"Error: {str(e)}"}), 500
+    except AmazonException as e:
+        # print(f"An error occurred: {str(e)}")
+        return jsonify({"message": f"Error: {str(e)}"}), 502
     except Exception as e:
         # print(f"An error occurred: {str(e)}")
         return jsonify({"message": f"Error: {str(e)}"}), 500
@@ -45,6 +55,15 @@ def process_text_request():
         result.export(byte_io, format="mp3")
         byte_io.seek(0)
         return Response(byte_io, content_type="audio/mp3"), 200
+    except UserParameterException as e:
+        # print(f"An error occurred: {str(e)}")
+        return jsonify({"message": f"Error: {str(e)}"}), 400
+    except ElaborationException as e:
+        # print(f"An error occurred: {str(e)}")
+        return jsonify({"message": f"Error: {str(e)}"}), 500
+    except AmazonException as e:
+        # print(f"An error occurred: {str(e)}")
+        return jsonify({"message": f"Error: {str(e)}"}), 502
     except Exception as e:
         # print(f"An error occurred: {str(e)}")
         return jsonify({"message": f"Error: {str(e)}"}), 500
@@ -63,6 +82,15 @@ def process_slides_request():
         filename = data['filename']
         result = process_pptx_split(usermail, project, filename)
         return jsonify({"message": result}), 200
+    except UserParameterException as e:
+        # print(f"An error occurred: {str(e)}")
+        return jsonify({"message": f"Error: {str(e)}"}), 400
+    except ElaborationException as e:
+        # print(f"An error occurred: {str(e)}")
+        return jsonify({"message": f"Error: {str(e)}"}), 500
+    except AmazonException as e:
+        # print(f"An error occurred: {str(e)}")
+        return jsonify({"message": f"Error: {str(e)}"}), 502
     except Exception as e:
         # print(f"An error occurred: {str(e)}")
         return jsonify({"message": f"Error: {str(e)}"}), 500

@@ -1,3 +1,4 @@
+import threading
 from zipfile import ZipFile
 from pptx import Presentation
 from pptx.util import Inches
@@ -33,6 +34,7 @@ class S3Singleton:
 
 class PollySingleton:
     _instance = None
+    _lock = threading.Lock()
 
     def __new__(cls, aws_access_key_id, aws_secret_access_key, region_name):
         if cls._instance is None:
@@ -103,9 +105,8 @@ def generate_tts(text, voice_id):
         with open(filename, 'wb') as out:
             out.write(response['AudioStream'].read())
     except Exception as e:
-        print(f"Error during audio generation: {str(e)}")
-        return None
-
+        error_message = f"Error during audio generation: {str(e)}"
+        raise Exception(error_message)
     return filename
 
 
