@@ -154,52 +154,58 @@ def process_slide(slide):
         validation_result = validate_ssml(corrected_ssml, schema_path)
 
         if not validation_result:
-            raise ElaborationException(
-                f"Validation failed.")
+            raise ElaborationException(f"Validation failed.")
         parsed_ssml = parse_ssml(corrected_ssml)
     except UserParameterException as e:
         raise UserParameterException(e)
     except Exception as e:
         raise ElaborationException(
-            f"Exception during SSML correction/validation/parsing: {str(e)}")
+            f"Presentation Elaboration: Exception during SSML correction/validation/parsing: {str(e)}")
     try:
         if len(parsed_ssml) == 1:
             for voice_name, text in parsed_ssml:
-                filename = generate_tts(text, voice_name)
-                audio = AudioSegment.from_file(filename, format='mp3')
                 try:
+                    filename = generate_tts(text, voice_name)
+                    audio = AudioSegment.from_file(filename, format='mp3')
+                
                     left, top, width, height = Inches(
                         1), Inches(2.5), Inches(1), Inches(1)
                     slide.shapes.add_movie(
                         filename, left, top, width, height, mime_type="audio/mp3", poster_frame_image=None)
+                except AmazonException as e:
+                    raise AmazonException(e)
+                except ElaborationException as e:
+                    raise ElaborationException(e)
                 except Exception as e:
                     raise Exception(
                         f"Error during audio combining/exporting or adding to slide: {str(e)}")
                 finally:
                     os.remove(filename)
-
         else:
-            audios = []
-            for voice_name, text in parsed_ssml:
-                filename = generate_tts(text, voice_name)
-                audio = AudioSegment.from_mp3(filename)
-                audios.append(audio)
-                audios.append(half_sec_silence)  # 0.5 seconds pause
-            audios.pop()
-            combined_audio = audios[0]
-            for audio in audios[1:]:
-                combined_audio += audio
-            combined_filename = f'combined_{uuid.uuid4()}.mp3'
-            combined_audio.export(
-                combined_filename, format="mp3", bitrate="320k")
             try:
+                audios = []
+                for voice_name, text in parsed_ssml:
+                    filename = generate_tts(text, voice_name)
+                    audio = AudioSegment.from_mp3(filename)
+                    audios.append(audio)
+                    audios.append(half_sec_silence)
+                audios.pop()
+                combined_audio = audios[0]
+                for audio in audios[1:]:
+                    combined_audio += audio
+                combined_filename = f'combined_{uuid.uuid4()}.mp3'
+                combined_audio.export(
+                    combined_filename, format="mp3", bitrate="320k")
                 left, top, width, height = Inches(
                     1), Inches(2.5), Inches(1), Inches(1)
                 slide.shapes.add_movie(
                     combined_filename, left, top, width, height, mime_type="audio/mp3", poster_frame_image=None)
+            except AmazonException as e:
+                raise AmazonException(e)
+            except ElaborationException as e:
+                raise ElaborationException(e)
             except Exception as e:
-                raise Exception(
-                        f"Error during audio combining/exporting or adding to slide: {str(e)}")
+                raise Exception(f"Error during audio combining/exporting or adding to slide: {str(e)}")
             finally:
                 os.remove(combined_filename)
         modified = True
@@ -252,49 +258,64 @@ def process_preview(text):
         checked_missing_tags = find_missing_tags(text)
         corrected_ssml = correct_special_characters(checked_missing_tags)
         validation_result = validate_ssml(corrected_ssml, schema_path)
+        if not validation_result:
+            raise ElaborationException(
+                f"Validation failed.")
+        parsed_ssml = parse_ssml(corrected_ssml)
+    except UserParameterException as e:
+        raise UserParameterException(e)
     except Exception as e:
-        print(f"Error during SSML correction/validation: {str(e)}")
-        return
-    if validation_result:
-        try:
-            parsed_ssml = parse_ssml(corrected_ssml)
-        except Exception as e:
-            print(f"Error during SSML parsing: {str(e)}")
-            return
+        raise ElaborationException(
+            f"(Audio Preview: Exception during SSML correction/validation/parsing: {str(e)}")
+    try:
         if len(parsed_ssml) == 1:
             for voice_name, text in parsed_ssml:
-                filename = generate_tts(text, voice_name)
-                print(f"filename: {filename}")
-                audio = AudioSegment.from_file(filename, format='mp3')
-                # upload_mp3_to_s3("", "", filename, audio)
-                print(f"audio: {audio}")
-                return audio
-            # try:
-            #     os.remove(filename)
-            # except OSError as e:
-            #     print(f"Error: {e.filename} - {e.strerror}.")
+                try: 
+                    filename = generate_tts(text, voice_name)
+                    audio = AudioSegment.from_file(filename, format='mp3')
+                except AmazonException as e:
+                    raise AmazonException(e)
+                except ElaborationException as e:
+                    raise ElaborationException(e)
+                except Exception as e:
+                    raise Exception(
+                        f"Error during audio exporting: {str(e)}")
+                finally:
+                    os.remove(filename)
+            return audio
         else:
-            audios = []
-            for voice_name, text in parsed_ssml:
-                filename = generate_tts(text, voice_name)
-                print(f"filename: {filename}")
-                audio = AudioSegment.from_mp3(filename)
-                audios.append(audio)
-                audios.append(half_sec_silence)  # 0.5 seconds pause
+            try:
+                audios = []
+                for voice_name, text in parsed_ssml:
+                    filename = generate_tts(text, voice_name)
+                    audio = AudioSegment.from_mp3(filename)
+                    audios.append(audio)
+                    audios.append(half_sec_silence)
                 audios.pop()
                 combined_audio = audios[0]
                 for audio in audios[1:]:
                     combined_audio += audio
-                    combined_filename = f'combined_{uuid.uuid4()}.mp3'
-                    combined_audio.export(
+                combined_filename = f'combined_{uuid.uuid4()}.mp3'
+                combined_audio.export(
                         combined_filename, format="mp3", bitrate="320k")
-                    return combined_audio
-            # try:
-            #     os.remove(combined_filename)
-            # except OSError as e:
-            #     print(f"Error: {e.filename} - {e.strerror}.")
-    else:
-        print("SSML validation failed, cannot process the preview.")
+                return combined_audio
+            except AmazonException as e:
+                raise AmazonException(e)
+            except ElaborationException as e:
+                raise ElaborationException(e)
+            except Exception as e:
+                raise Exception(f"Error during combined audio exporting: {str(e)}")
+            finally:
+                os.remove(combined_filename)
+    except OSError as e:
+        raise ElaborationException(
+            f"Critical: could not delete temp file: {e.filename}")
+    except AmazonException as e:
+        raise AmazonException(e)
+    except UserParameterException as e:
+        raise UserParameterException(e)
+    except Exception as e:
+        raise ElaborationException(f"Exception while processing a slide: {str(e)}")
 
 
 def extract_fonts_from_pptx(pptx_path, extract_to):

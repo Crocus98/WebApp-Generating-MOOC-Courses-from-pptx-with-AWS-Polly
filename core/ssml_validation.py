@@ -2,6 +2,7 @@ import xml.etree.ElementTree as ET
 from collections import deque
 from lxml import etree
 from xml.etree.ElementTree import ParseError
+from exceptions import *
 import re
 import html
 import os
@@ -75,15 +76,12 @@ def escape_ssml_chars(text):
 
 
 def parse_ssml(ssml_text):
-    ssml_text = ssml_text.lstrip()  # Remove leading white spaces
+    ssml_text = ssml_text.lstrip()
     lines = deque()
-
     # Parse the XML document
     root = ET.fromstring(ssml_text)
-
     # Find all 'voice' elements
     voice_elements = root.findall('.//voice')
-
     # If no voice elements are present, create a default one
     if not voice_elements:
         lines.append(('Brian', ssml_text))
@@ -93,25 +91,19 @@ def parse_ssml(ssml_text):
 
             # Start constructing a new 'speak' SSML string
             speak_ssml = "<speak>"
-
             # If the 'voice' tag contains text, add it to the 'speak' SSML string
             if voice_element.text and voice_element.text.strip():
                 # Replace the non-breaking space characters with regular spaces
                 # Also replace newline and tab characters with spaces
-                speak_ssml += voice_element.text.strip().replace('\xa0', ' ').replace('\n',
-                                                                                      ' ').replace('\t', ' ').replace("\\'", "'")
-
+                speak_ssml += voice_element.text.strip().replace('\xa0', ' ').replace('\n',' ').replace('\t', ' ').replace("\\'", "'")
             # Add all child elements of the 'voice' tag to the 'speak' SSML string
             for child in voice_element:
                 # Replace the non-breaking space characters with regular spaces
                 # Also replace newline and tab characters with spaces
-                child_ssml = ET.tostring(child, encoding='unicode').replace('\xa0', ' ').replace('\n',
-                                                                                                 ' ').replace('\t', ' ').replace("\\'", "'")
+                child_ssml = ET.tostring(child, encoding='unicode').replace('\xa0', ' ').replace('\n',' ').replace('\t', ' ').replace("\\'", "'")
                 speak_ssml += child_ssml
-
             speak_ssml += "</speak>"
             lines.append((voice_name, speak_ssml))
-
     return lines
 
 
