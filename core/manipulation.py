@@ -1,23 +1,45 @@
 from zipfile import ZipFile
 from pptx import Presentation
 from pptx.util import Inches
-from pptx.enum.shapes import MSO_SHAPE
-from dotenv import load_dotenv
 from pydub import AudioSegment
-from concurrent.futures import ThreadPoolExecutor
 from ssml_validation import *
 from pdf2image import convert_from_path
 from pydub import AudioSegment
-from pydub.playback import play
 import subprocess
-import tempfile
 import base64
 import boto3
 import uuid
 import json
-import time
 import io
 import os
+
+
+class S3Singleton:
+    _instance = None
+
+    def __new__(cls, aws_access_key_id, aws_secret_access_key, region_name, bucket_name):
+        if cls._instance is None:
+            cls._instance = super(S3Singleton, cls).__new__(cls)
+            cls._instance.s3 = boto3.resource('s3',
+                                              aws_access_key_id=aws_access_key_id,
+                                              aws_secret_access_key=aws_secret_access_key,
+                                              region_name=region_name)
+            cls._instance.bucket_name = bucket_name
+        return cls._instance
+
+
+class PollySingleton:
+    _instance = None
+
+    def __new__(cls, aws_access_key_id, aws_secret_access_key, region_name):
+        if cls._instance is None:
+            cls._instance = super(PollySingleton, cls).__new__(cls)
+            cls._instance.polly = boto3.client('polly',
+                                               aws_access_key_id=aws_access_key_id,
+                                               aws_secret_access_key=aws_secret_access_key,
+                                               region_name=region_name)
+
+        return cls._instance
 
 
 # Get environment variables
@@ -26,6 +48,13 @@ aws_secret_access_key = os.getenv('aws_secret_access_key')
 bucket_name = os.getenv('bucket_name')
 region = os.getenv('region')
 schema_path = os.getenv('schema_path')
+
+
+s3_singleton = S3Singleton(
+    aws_access_key_id, aws_secret_access_key, region, bucket_name)
+
+polly_singleton = PollySingleton(
+    aws_access_key_id, aws_secret_access_key, region)
 
 
 # Generate 0.5 seconds of silence
@@ -39,18 +68,16 @@ def split_input_path(input_path):
 
 
 def download_pptx_from_s3(usermail, project, filename):
-    s3 = boto3.resource('s3', aws_access_key_id=aws_access_key_id,
-                        aws_secret_access_key=aws_secret_access_key, region_name=region)
-    obj = s3.Object(bucket_name, f'{usermail}/{project}/{filename}')
+    obj = s3_singleton.Object(bucket_name,
+                              f'{usermail}/{project}/{filename}')
     pptx_file = io.BytesIO()
     obj.download_fileobj(pptx_file)
     return pptx_file
 
 
 def upload_pptx_to_s3(usermail, project, filename, pptx_file):
-    s3 = boto3.resource('s3', aws_access_key_id=aws_access_key_id,
-                        aws_secret_access_key=aws_secret_access_key, region_name=region)
-    obj = s3.Object(bucket_name, f'{usermail}/{project}/edited/{filename}')
+    obj = s3_singleton.Object(bucket_name,
+                              f'{usermail}/{project}/edited/{filename}')
     pptx_file.seek(0)
     obj.upload_fileobj(pptx_file)
 
@@ -64,15 +91,13 @@ def upload_mp3_to_s3(usermail, project, filename, audio_segment):
     mp3_buffer.seek(0)
 
     # Upload BytesIO object to S3
-    s3 = boto3.resource('s3', aws_access_key_id=aws_access_key_id,
-                        aws_secret_access_key=aws_secret_access_key, region_name=region)
-    obj = s3.Object(bucket_name, f'{usermail}/{project}/edited/{filename}')
+    obj = s3_singleton.Object(
+        bucket_name, f'{usermail}/{project}/edited/{filename}')
     obj.upload_fileobj(mp3_buffer)
 
 
 def generate_tts(text, voice_id):
-    polly_client = boto3.client('polly', aws_access_key_id=aws_access_key_id,
-                                aws_secret_access_key=aws_secret_access_key, region_name=region)
+    polly_client = polly_singleton.polly
     try:
 
         response = polly_client.synthesize_speech(
