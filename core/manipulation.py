@@ -14,6 +14,7 @@ import json
 import io
 import os
 from dotenv import load_dotenv
+from exceptions import *
 
 load_dotenv()
 
@@ -73,11 +74,16 @@ def split_input_path(input_path):
 
 
 def download_pptx_from_s3(usermail, project, filename):
-    obj = s3_singleton.s3.Object(bucket_name,
-                                 f'{usermail}/{project}/{filename}')
-    pptx_file = io.BytesIO()
-    obj.download_fileobj(pptx_file)
-    return pptx_file
+    try:
+        obj = s3_singleton.s3.Object(bucket_name,
+                                     f'{usermail}/{project}/{filename}')
+        pptx_file = io.BytesIO()
+        obj.download_fileobj(pptx_file)
+        if obj is None:
+            raise UserParameterException("File not found: check parameters")
+        return pptx_file
+    except Exception as e:
+        raise AmazonException(e)
 
 
 def upload_pptx_to_s3(usermail, project, filename, pptx_file):
@@ -121,111 +127,108 @@ def combine_audio_files(audio_files):
 
 
 def process_slide(slide):
-    modified = False  # Initialize a flag to track if we modify the slide
     try:
-        notes_slide = slide.notes_slide
-        notes_text = notes_slide.notes_text_frame.text
-    except AttributeError:
-        print("No notes for this slide, skipping...")
-        return modified  # Returning False because no modification occurred
+        modified = False
 
-    if not notes_text or not notes_text.strip():
-        print("No notes text for this slide, skipping...")
-        return modified  # Returning False because no modification occurred
-    try:
         notes_slide = slide.notes_slide
         notes_text = notes_slide.notes_text_frame.text
-        if notes_text and notes_text.strip():
-            checked_missing_tags = find_missing_tags(notes_text)
+
+        if not notes_text or not notes_text.strip():
+            return modified
+
+        checked_missing_tags = find_missing_tags(notes_text)
+        corrected_ssml = correct_special_characters(
+            checked_missing_tags)
+        validation_result = validate_ssml(corrected_ssml, schema_path)
+
+        if not validation_result:
+            raise ElaborationException(
+                f"Validation failed.")
+        parsed_ssml = parse_ssml(corrected_ssml)
+    except UserParameterException as e:
+        raise UserParameterException(e)
+    except Exception as e:
+        raise ElaborationException(
+            f"Exception during SSML correction/validation/parsing: {str(e)}")
+    try:
+        if len(parsed_ssml) == 1:
+            for voice_name, text in parsed_ssml:
+                filename = generate_tts(text, voice_name)
+                audio = AudioSegment.from_file(filename, format='mp3')
+                try:
+                    left, top, width, height = Inches(
+                        1), Inches(2.5), Inches(1), Inches(1)
+                    slide.shapes.add_movie(
+                        filename, left, top, width, height, mime_type="audio/mp3", poster_frame_image=None)
+                except Exception as e:
+                    raise Exception(
+                        f"Error during audio combining/exporting or adding to slide: {str(e)}")
+                finally:
+                    os.remove(filename)
+
+        else:
+            audios = []
+            for voice_name, text in parsed_ssml:
+                filename = generate_tts(text, voice_name)
+                audio = AudioSegment.from_mp3(filename)
+                audios.append(audio)
+                audios.append(half_sec_silence)  # 0.5 seconds pause
+            audios.pop()
+            combined_audio = audios[0]
+            for audio in audios[1:]:
+                combined_audio += audio
+            combined_filename = f'combined_{uuid.uuid4()}.mp3'
+            combined_audio.export(
+                combined_filename, format="mp3", bitrate="320k")
             try:
-                corrected_ssml = correct_special_characters(
-                    checked_missing_tags)
+                left, top, width, height = Inches(
+                    1), Inches(2.5), Inches(1), Inches(1)
+                slide.shapes.add_movie(
+                    combined_filename, left, top, width, height, mime_type="audio/mp3", poster_frame_image=None)
             except Exception as e:
                 print(
-                    f"Error during SSML correct_special_characters: {str(e)}")
+                    f"Error during audio combining/exporting or adding to slide: {str(e)}")
                 return
-            validation_result = validate_ssml(corrected_ssml, schema_path)
-            if not validation_result:
-                raise ValueError
-            try:
-                parsed_ssml = parse_ssml(corrected_ssml)
-            except Exception as e:
-                print(f"Error during SSML parsing: {str(e)}")
-                return
-            try:
-                if len(parsed_ssml) == 1:
-                    print("len == 1")
-                    for voice_name, text in parsed_ssml:
-                        filename = generate_tts(text, voice_name)
-                        print(f"filename: {filename}")
-                        audio = AudioSegment.from_file(filename, format='mp3')
-                        print(f"audio: {audio}")
-                        try:
-                            left, top, width, height = Inches(
-                                1), Inches(2.5), Inches(1), Inches(1)
-                            slide.shapes.add_movie(
-                                filename, left, top, width, height, mime_type="audio/mp3", poster_frame_image=None)
-                        except Exception as e:
-                            print(
-                                f"Error during audio combining/exporting or adding to slide: {str(e)}")
-                            return
-                        try:
-                            os.remove(filename)
-                        except OSError as e:
-                            print(f"Error: {e.filename} - {e.strerror}.")
-                else:
-                    audios = []
-                    for voice_name, text in parsed_ssml:
-                        filename = generate_tts(text, voice_name)
-                        print(f"filename: {filename}")
-                        audio = AudioSegment.from_mp3(filename)
-                        audios.append(audio)
-                        audios.append(half_sec_silence)  # 0.5 seconds pause
-                    audios.pop()
-                    combined_audio = audios[0]
-                    for audio in audios[1:]:
-                        combined_audio += audio
-                    combined_filename = f'combined_{uuid.uuid4()}.mp3'
-                    combined_audio.export(
-                        combined_filename, format="mp3", bitrate="320k")
-                    try:
-                        left, top, width, height = Inches(
-                            1), Inches(2.5), Inches(1), Inches(1)
-                        slide.shapes.add_movie(
-                            combined_filename, left, top, width, height, mime_type="audio/mp3", poster_frame_image=None)
-                    except Exception as e:
-                        print(
-                            f"Error during audio combining/exporting or adding to slide: {str(e)}")
-                        return
-                    try:
-                        os.remove(combined_filename)
-                    except OSError as e:
-                        print(f"Error: {e.filename} - {e.strerror}.")
-            except Exception as e:
-                print(f"Error during audio generation: {str(e)}")
-                return  # Skip the slide if there was an error
-        modified = True  # Mark the slide as modified
+            finally:
+                os.remove(combined_filename)
+
+    except OSError as e:
+        raise ElaborationException(
+            f"Critical: could not delete temp file: {e.filename}")
+    except UserParameterException as e:
+        raise UserParameterException(e)
     except Exception as e:
-        print(f"Error during SSML correction/validation/parsing: {str(e)}")
+        raise Elaborati
+    modified = True  # Mark the slide as modified
+
     return modified
 
 
 def add_tts_to_pptx(pptx_file):
-    pptx_file.seek(0)
-    prs = Presentation(pptx_file)
-    modified = False  # Initialize flag
-    for slide in prs.slides:
-        if process_slide(slide):  # Modify process_slide to return True if modified, else False
-            modified = True
-    pptx_file.seek(0)
-    if modified:  # Only save if changes were made
-        prs.save(pptx_file)
-    pptx_file.seek(0)
-    return modified
+    try:
+        pptx_file.seek(0)
+        prs = Presentation(pptx_file)
+        modified = False
+        for slide in prs.slides:
+            if process_slide(slide):
+                modified = True
+        pptx_file.seek(0)
+        if modified:
+            prs.save(pptx_file)
+        pptx_file.seek(0)
+        return modified
+    except AmazonException as e:
+        raise AmazonException(e)
+    except UserParameterException as e:
+        raise UserParameterException(e)
+    except ElaborationException as e:
+        raise ElaborationException(e)
+    except Exception as e:
+        raise ElaborationException(
+            f"Exception adding tts to pptx: {str(e)}")
 
 
 def process_pptx(usermail, project, filename):
-    print(usermail, project, filename)
     pptx_file = download_pptx_from_s3(usermail, project, filename)
     modified = add_tts_to_pptx(pptx_file)  # Capture the modified flag
     if modified:  # Only upload if changes were made
