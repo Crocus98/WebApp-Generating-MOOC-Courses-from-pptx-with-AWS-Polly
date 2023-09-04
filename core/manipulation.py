@@ -13,10 +13,11 @@ import subprocess
 import tempfile
 import boto3
 import uuid
+import json
 import time
 import io
 import os
-import json
+
 
 # Get environment variables
 aws_access_key_id = os.getenv('aws_access_key_id')
