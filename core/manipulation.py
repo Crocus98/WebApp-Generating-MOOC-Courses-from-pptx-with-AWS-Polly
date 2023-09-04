@@ -49,7 +49,6 @@ def download_pptx_from_s3(usermail, project, filename):
 def upload_pptx_to_s3(usermail, project, filename, pptx_file):
     s3 = boto3.resource('s3', aws_access_key_id=aws_access_key_id,
                         aws_secret_access_key=aws_secret_access_key, region_name=region)
-    # Include the 'edited' directory in the path
     obj = s3.Object(bucket_name, f'{usermail}/{project}/edited/{filename}')
     pptx_file.seek(0)
     obj.upload_fileobj(pptx_file)
@@ -426,6 +425,18 @@ def generate_tts2(text, voice_id, filename):
         return None
 
 
+def audiosegment_to_base64(audio_segment):
+    buffer = io.BytesIO()
+    audio_segment.export(buffer, format="mp3")
+    return base64.b64encode(buffer.getvalue()).decode('utf-8')
+
+
+def image_to_base64(image):
+    image_bytes = io.BytesIO()
+    image.save(image_bytes, format='JPEG')
+    return base64.b64encode(image_bytes.getvalue()).decode('utf-8')
+
+
 def process_pptx_split(usermail, project, filename):
     tts_generated = False
     try:
@@ -433,7 +444,7 @@ def process_pptx_split(usermail, project, filename):
         pptx_file = download_pptx_from_s3(usermail, project, filename)
 
         # Create a temporary folder
-        temp_folder = 'temp_folder'
+        temp_folder = f"{usermail}_{project}_temp"
         os.makedirs(temp_folder, exist_ok=True)
 
         # Generate the full path where the file will be saved
@@ -466,6 +477,11 @@ def process_pptx_split(usermail, project, filename):
                 notes_slide = slide.notes_slide
                 notes_text = notes_slide.notes_text_frame.text
 
+                # Save image and TTS data locally
+                image_path = os.path.join(temp_folder, f'slide_{i}.jpg')
+                image.save(image_path)
+                image_base64 = image_to_base64(image)
+
                 tts_generated = False
 
                 if not notes_text or not notes_text.strip():
@@ -488,7 +504,11 @@ def process_pptx_split(usermail, project, filename):
                                     filename = os.path.join(
                                         temp_folder, f'slide_{i}.mp3')
                                     # Assuming generate_tts saves the mp3 to the given filename
-                                    generate_tts2(text, voice_name, filename)
+                                    audio = generate_tts2(
+                                        text, voice_name, filename)
+                                    audio = AudioSegment.from_file(filename)
+                                    audio_base64 = audiosegment_to_base64(
+                                        audio)
                                     tts_generated = True
 
                             else:  # For more than one voice tag in the notes
@@ -507,21 +527,25 @@ def process_pptx_split(usermail, project, filename):
                                     temp_folder, f'slide_{i}.mp3')
                                 combined_audio.export(
                                     combined_filename, format="mp3", bitrate="320k")
+                                audio_base64 = audiosegment_to_base64(
+                                    combined_audio)
                                 tts_generated = True
                         except Exception as e:
                             print(f"Error during audio generation: {str(e)}")
                             return  # Skip the slide if there was an error
                 slide_info = {
                     "slide_id": i,
-                    "image": f"slide_{i}.jpg",
-                    # Set to None if no TTS data
-                    "tts": f"slide_{i}.mp3" if tts_generated else None
+                    "image": {
+                        "data": image_base64,
+                        "filename": f"slide_{i}.jpg"
+                    },
+                    "tts": {
+                        "data": audio_base64,
+                        "filename": f"slide_{i}.mp3"
+                    } if tts_generated else None
                 }
-                slide_data.append(slide_info)
 
-                # Save image and TTS data locally
-                image_path = os.path.join(temp_folder, f'slide_{i}.jpg')
-                image.save(image_path)
+                slide_data.append(slide_info)
 
                 # # Upload image and TTS to S3
                 # with open(image_path, "rb") as f:
@@ -547,8 +571,7 @@ def process_pptx_split(usermail, project, filename):
         #     os.remove(f"/tmp/slide_{i}.jpg")
         #     if os.path.exists(f"/tmp/slide_{i}.mp3"):
         #         os.remove(f"/tmp/slide_{i}.mp3")
-
-        return json.dumps({"slides": slide_data})
+        return slide_data
 
     except Exception as e:
         print(f"An exception occurred in process_pptx_split: {e}")
