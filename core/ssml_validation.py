@@ -17,45 +17,36 @@ def correct_special_characters(ssml_text):
         '<': '&lt;',
         '>': '&gt;'
     }
+    # Remove leading white spaces
+    ssml_text = ssml_text.lstrip()  
+    # Parse the XML document
+    root = ET.fromstring(ssml_text)
+    # Walk through all elements in the document
+    for element in root.iter():
+        # If the element has a text content, replace the special characters
+        if element.text:
+            element.text = ''.join(escape_chars.get(c, c)
+                                    for c in element.text)
+        # Also check the tail text
+        if element.tail:
+            element.tail = ''.join(escape_chars.get(c, c)
+                                    for c in element.tail)
 
-    try:
-        ssml_text = ssml_text.lstrip()  # Remove leading white spaces
-        # Parse the XML document
-        root = ET.fromstring(ssml_text)
+    # Write the corrected document back to a string
+    corrected_ssml = ET.tostring(root, encoding='unicode')
+    return corrected_ssml
 
-        # Walk through all elements in the document
-        for element in root.iter():
-            # If the element has a text content, replace the special characters
-            if element.text:
-                element.text = ''.join(escape_chars.get(c, c)
-                                       for c in element.text)
-            # Also check the tail text
-            if element.tail:
-                element.tail = ''.join(escape_chars.get(c, c)
-                                       for c in element.tail)
-
-        # Write the corrected document back to a string
-        corrected_ssml = ET.tostring(root, encoding='unicode')
-
-        return corrected_ssml
-    except ParseError as e:
-        print(f"Error parsing SSML text: {ssml_text}")
-        raise e  # re-raise the error after logging
 
 
 def validate_ssml(ssml_text, schema_path):
-    # Load schema
-    ssml_text = ssml_text.lstrip()  # Remove leading white spaces
+    ssml_text = ssml_text.lstrip()
     ssml_text = re.sub(r'\s+', ' ', ssml_text).strip()
-    # print(f"Schema path: {schema_path}")
-    # print(f"SSML text: {ssml_text}")
     try:
         with open(schema_path, 'r') as schema_file:
             schema_root = etree.parse(schema_file)
             schema = etree.XMLSchema(schema_root)
-    except FileNotFoundError:
-        print(f"Schema file not found: {schema_path}")
-        return False  # Indicate an error with a False return value
+    except Exception:
+        raise Exception(f"Schema file for validation not found at path: {schema_path}")
 
     # Correct and parse SSML document
     ssml_text = correct_special_characters(ssml_text)
@@ -63,8 +54,6 @@ def validate_ssml(ssml_text, schema_path):
 
     # Validate SSML document against schema
     if not schema.validate(ssml):
-        print('SSML validation failed')
-        print(schema.error_log)
         return False
 
     # Additional validation
@@ -72,10 +61,7 @@ def validate_ssml(ssml_text, schema_path):
     for tag in text_tags:
         for element in ssml.iter(tag):
             if not re.search('\S', element.text):
-                print(f'Text validation failed for tag: {tag}')
                 return False
-
-    print('SSML validation passed')
     return True
 
 
@@ -135,22 +121,19 @@ def find_missing_tags(ssml_text):
     # Case 1: Both '<speak>' and '<voice>' tags are not present
     if '<speak>' not in ssml_text and '<voice voice_name' not in ssml_text:
         speak_ssml = f'<speak><voice voice_name="{voice_name}">{ssml_text.strip()}</voice></speak>'
-        print("case 1")
 
     # Case 2: '<speak>' tag is present but '<voice>' tag is not
     elif '<speak>' in ssml_text and '<voice voice_name' not in ssml_text:
         speak_ssml = ssml_text.replace('<speak>', f'<speak><voice voice_name="{voice_name}">').replace(
             '</speak>', f'</voice></speak>')
-        print("case 2")
 
     # Case 3: '<voice>' tag is present but '<speak>' tag is not
     elif '<voice voice_name' in ssml_text and '<speak>' not in ssml_text:
         speak_ssml = f'<speak>{ssml_text}</speak>'
-        print("case 3")
+        
     # Case 4: Both '<speak>' and '<voice>' tags are present
     else:
         speak_ssml = ssml_text
-        print("case 4")
 
     return speak_ssml
 

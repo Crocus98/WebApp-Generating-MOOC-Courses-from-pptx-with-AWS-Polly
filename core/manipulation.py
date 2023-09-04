@@ -44,7 +44,6 @@ class PollySingleton:
                                                aws_access_key_id=aws_access_key_id,
                                                aws_secret_access_key=aws_secret_access_key,
                                                region_name=region_name)
-
         return cls._instance
 
 
@@ -82,38 +81,51 @@ def download_pptx_from_s3(usermail, project, filename):
         if obj is None:
             raise UserParameterException("File not found: check parameters")
         return pptx_file
+    except UserParameterException as e:
+        raise UserParameterException(e)
     except Exception as e:
         raise AmazonException(e)
 
 
 def upload_pptx_to_s3(usermail, project, filename, pptx_file):
-    obj = s3_singleton.s3.Object(bucket_name,
-                                 f'{usermail}/{project}/edited/{filename}')
-    pptx_file.seek(0)
-    obj.upload_fileobj(pptx_file)
+    try:
+        obj = s3_singleton.s3.Object(bucket_name,
+                                    f'{usermail}/{project}/edited/{filename}')
+        pptx_file.seek(0)
+        obj.upload_fileobj(pptx_file)
+    except Exception as e:
+        raise AmazonException(e)
 
 
-def upload_mp3_to_s3(usermail, project, filename, audio_segment):
-    mp3_buffer = io.BytesIO()
-    audio_segment.export(mp3_buffer, format="mp3")
-    mp3_buffer.seek(0)     # Reset buffer position to the beginning
-    obj = s3_singleton.s3.Object(
-        bucket_name, f'{usermail}/{project}/edited/{filename}')
-    obj.upload_fileobj(mp3_buffer)
+# def upload_mp3_to_s3(usermail, project, filename, audio_segment):
+#     try:
+#         mp3_buffer = io.BytesIO()
+#         audio_segment.export(mp3_buffer, format="mp3")
+#         mp3_buffer.seek(0)
+#         obj = s3_singleton.s3.Object(
+#             bucket_name, f'{usermail}/{project}/edited/{filename}')
+#         obj.upload_fileobj(mp3_buffer)
+#     except Exception as e:
+#         raise AmazonException(e)
 
 
 def generate_tts(text, voice_id):
-    polly_client = polly_singleton.polly
     try:
-        response = polly_client.synthesize_speech(
-            VoiceId=voice_id, OutputFormat='mp3', Text=text, TextType='ssml', Engine='neural')
+        try:
+            polly_client = polly_singleton.polly
+            response = polly_client.synthesize_speech(
+                VoiceId=voice_id, OutputFormat='mp3', Text=text, TextType='ssml', Engine='neural')
+        except Exception as e:
+            raise AmazonException(f"Exception from Polly: {str(e)}")
         filename = f'tts_{uuid.uuid4()}.mp3'
         with open(filename, 'wb') as out:
             out.write(response['AudioStream'].read())
+        return filename
+    except AmazonException as e:
+        raise AmazonException(e)
     except Exception as e:
-        error_message = f"Error during audio generation: {str(e)}"
-        raise Exception(error_message)
-    return filename
+        raise ElaborationException(f"Exception while saving audio to file: {str(e)}")
+
 
 
 def combine_audio_files(audio_files):
@@ -186,22 +198,21 @@ def process_slide(slide):
                 slide.shapes.add_movie(
                     combined_filename, left, top, width, height, mime_type="audio/mp3", poster_frame_image=None)
             except Exception as e:
-                print(
-                    f"Error during audio combining/exporting or adding to slide: {str(e)}")
-                return
+                raise Exception(
+                        f"Error during audio combining/exporting or adding to slide: {str(e)}")
             finally:
                 os.remove(combined_filename)
-
+        modified = True
+        return modified
     except OSError as e:
         raise ElaborationException(
             f"Critical: could not delete temp file: {e.filename}")
+    except AmazonException as e:
+        raise AmazonException(e)
     except UserParameterException as e:
         raise UserParameterException(e)
     except Exception as e:
-        raise Elaborati
-    modified = True  # Mark the slide as modified
-
-    return modified
+        raise ElaborationException(f"Exception while processing a slide: {str(e)}")
 
 
 def add_tts_to_pptx(pptx_file):
