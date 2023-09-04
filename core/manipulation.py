@@ -17,6 +17,7 @@ import json
 import time
 import io
 import os
+import base64
 
 
 # Get environment variables
