@@ -81,7 +81,7 @@ project = 'GigaChad'
 # test_process_pptx_split(usermail, project, filename1)
 # test_process_pptx_split(usermail, project, filename3)
 
-# test_process_preview(testoporva1)
-# test_process_preview(testoporva2)
-# test_process_preview(testoporva3)
-# test_process_preview(testoporva4)
+test_process_preview(testoporva1)
+test_process_preview(testoporva2)
+test_process_preview(testoporva3)
+test_process_preview(testoporva4)

@@ -1,5 +1,4 @@
-import threading
-from zipfile import ZipFile
+import shutil
 from pptx import Presentation
 from pptx.util import Inches
 from pydub import AudioSegment
@@ -12,7 +11,6 @@ import subprocess
 import base64
 import boto3
 import uuid
-import json
 import io
 import os
 
@@ -90,7 +88,7 @@ def download_pptx_from_s3(usermail, project, filename):
 def upload_pptx_to_s3(usermail, project, filename, pptx_file):
     try:
         obj = s3_singleton.s3.Object(bucket_name,
-                                    f'{usermail}/{project}/edited/{filename}')
+                                     f'{usermail}/{project}/edited/{filename}')
         pptx_file.seek(0)
         obj.upload_fileobj(pptx_file)
     except Exception as e:
@@ -124,21 +122,31 @@ def generate_tts(text, voice_id):
     except AmazonException as e:
         raise AmazonException(e)
     except Exception as e:
-        raise ElaborationException(f"Exception while saving audio to file: {str(e)}")
-
+        raise ElaborationException(
+            f"Exception while saving audio to file: {str(e)}")
 
 
 def combine_audio_files(audio_files):
-    combined = AudioSegment.empty()
-    for audio_file in audio_files:
-        audio = AudioSegment.from_mp3(audio_file)
-        combined += audio
-    combined_filename = f"/tmp/combined_{hash(''.join(audio_files))}.mp3"
-    combined.export(combined_filename, format="mp3")
-    return combined_filename
+    try:
+        combined = AudioSegment.empty()
+        for audio_file in audio_files:
+            audio = AudioSegment.from_mp3(audio_file)
+            combined += audio
+        combined_filename = f"/tmp/combined_{hash(''.join(audio_files))}.mp3"
+        combined.export(combined_filename, format="mp3")
+        return combined_filename
+    except ElaborationException as e:
+        raise ElaborationException(e)
+    except Exception as e:
+        raise Exception(
+            f"Error during audio combining/exporting: {str(e)}")
 
 
 def process_slide(slide):
+    unique_id = uuid.uuid4()
+    temp_folder = f"{unique_id}_temp"
+
+    os.makedirs(temp_folder, exist_ok=True)
     try:
         modified = False
 
@@ -154,7 +162,8 @@ def process_slide(slide):
         validation_result = validate_ssml(corrected_ssml, schema_path)
 
         if not validation_result:
-            raise ElaborationException(f"Validation failed.")
+            raise UserParameterException(
+                f"SSML validation failed, check slide: {str(e)}")
         parsed_ssml = parse_ssml(corrected_ssml)
     except UserParameterException as e:
         raise UserParameterException(e)
@@ -165,9 +174,12 @@ def process_slide(slide):
         if len(parsed_ssml) == 1:
             for voice_name, text in parsed_ssml:
                 try:
-                    filename = generate_tts(text, voice_name)
-                    audio = AudioSegment.from_file(filename, format='mp3')
-                
+                    filename = os.path.join(
+                        temp_folder, f'slide_{voice_name}.mp3')
+                    audio = generate_tts2(
+                        text, voice_name, filename)
+                    audio = AudioSegment.from_file(filename)
+
                     left, top, width, height = Inches(
                         1), Inches(2.5), Inches(1), Inches(1)
                     slide.shapes.add_movie(
@@ -180,20 +192,27 @@ def process_slide(slide):
                     raise Exception(
                         f"Error during audio combining/exporting or adding to slide: {str(e)}")
                 finally:
-                    os.remove(filename)
+                    try:
+                        shutil.rmtree(temp_folder)
+                    except Exception as e:
+                        raise ElaborationException(
+                            f"Critical: Exception while deleting temp folder: {str(e)}")
         else:
             try:
                 audios = []
                 for voice_name, text in parsed_ssml:
-                    filename = generate_tts(text, voice_name)
-                    audio = AudioSegment.from_mp3(filename)
+                    filename = os.path.join(
+                        temp_folder, f'multi_voice_{voice_name}.mp3')
+                    generate_tts2(text, voice_name, filename)
+                    audio = AudioSegment.from_file(filename)
                     audios.append(audio)
                     audios.append(half_sec_silence)
                 audios.pop()
                 combined_audio = audios[0]
                 for audio in audios[1:]:
                     combined_audio += audio
-                combined_filename = f'combined_{uuid.uuid4()}.mp3'
+                combined_filename = os.path.join(
+                    temp_folder, f'combined.mp3')
                 combined_audio.export(
                     combined_filename, format="mp3", bitrate="320k")
                 left, top, width, height = Inches(
@@ -205,9 +224,14 @@ def process_slide(slide):
             except ElaborationException as e:
                 raise ElaborationException(e)
             except Exception as e:
-                raise Exception(f"Error during audio combining/exporting or adding to slide: {str(e)}")
+                raise Exception(
+                    f"Error during audio combining/exporting or adding to slide: {str(e)}")
             finally:
-                os.remove(combined_filename)
+                try:
+                    shutil.rmtree(temp_folder)
+                except Exception as e:
+                    raise ElaborationException(
+                        f"Critical: Exception while deleting temp folder: {str(e)}")
         modified = True
         return modified
     except OSError as e:
@@ -218,7 +242,8 @@ def process_slide(slide):
     except UserParameterException as e:
         raise UserParameterException(e)
     except Exception as e:
-        raise ElaborationException(f"Exception while processing a slide: {str(e)}")
+        raise ElaborationException(
+            f"Exception while processing a slide: {str(e)}")
 
 
 def add_tts_to_pptx(pptx_file):
@@ -254,25 +279,33 @@ def process_pptx(usermail, project, filename):
 
 
 def process_preview(text):
+    unique_id = uuid.uuid4()
+    temp_folder = f"{unique_id}_temp"
+
+    os.makedirs(temp_folder, exist_ok=True)
     try:
+
         checked_missing_tags = find_missing_tags(text)
         corrected_ssml = correct_special_characters(checked_missing_tags)
         validation_result = validate_ssml(corrected_ssml, schema_path)
         if not validation_result:
-            raise ElaborationException(
-                f"Validation failed.")
+            raise UserParameterException(
+                f"SSML validation failed, check slide: {str(e)}")
         parsed_ssml = parse_ssml(corrected_ssml)
     except UserParameterException as e:
         raise UserParameterException(e)
     except Exception as e:
         raise ElaborationException(
-            f"(Audio Preview: Exception during SSML correction/validation/parsing: {str(e)}")
+            f"Audio Preview: Exception during SSML correction/validation/parsing: {str(e)}")
     try:
         if len(parsed_ssml) == 1:
             for voice_name, text in parsed_ssml:
-                try: 
-                    filename = generate_tts(text, voice_name)
-                    audio = AudioSegment.from_file(filename, format='mp3')
+                try:
+                    filename = os.path.join(
+                        temp_folder, f'slide_{voice_name}.mp3')
+                    audio = generate_tts2(
+                        text, voice_name, filename)
+                    audio = AudioSegment.from_file(filename)
                 except AmazonException as e:
                     raise AmazonException(e)
                 except ElaborationException as e:
@@ -281,35 +314,47 @@ def process_preview(text):
                     raise Exception(
                         f"Error during audio exporting: {str(e)}")
                 finally:
-                    os.remove(filename)
+                    try:
+                        shutil.rmtree(temp_folder)
+                    except Exception as e:
+                        raise ElaborationException(
+                            f"Critical: Exception while deleting temp folder: {str(e)}")
             return audio
         else:
             try:
                 audios = []
                 for voice_name, text in parsed_ssml:
-                    filename = generate_tts(text, voice_name)
-                    audio = AudioSegment.from_mp3(filename)
+                    filename = os.path.join(
+                        temp_folder, f'multi_voice_{voice_name}.mp3')
+                    generate_tts2(text, voice_name, filename)
+                    audio = AudioSegment.from_file(filename)
                     audios.append(audio)
                     audios.append(half_sec_silence)
                 audios.pop()
                 combined_audio = audios[0]
                 for audio in audios[1:]:
                     combined_audio += audio
-                combined_filename = f'combined_{uuid.uuid4()}.mp3'
+                combined_filename = os.path.join(
+                    temp_folder, f'combined.mp3')
                 combined_audio.export(
-                        combined_filename, format="mp3", bitrate="320k")
+                    combined_filename, format="mp3", bitrate="320k")
                 return combined_audio
             except AmazonException as e:
                 raise AmazonException(e)
             except ElaborationException as e:
                 raise ElaborationException(e)
             except Exception as e:
-                raise Exception(f"Error during combined audio exporting: {str(e)}")
+                raise Exception(
+                    f"Error during combined audio exporting: {str(e)}")
             finally:
-                os.remove(combined_filename)
+                try:
+                    shutil.rmtree(temp_folder)
+                except Exception as e:
+                    raise ElaborationException(
+                        f"Critical: Exception while deleting temp folder: {str(e)}")
     except OSError as e:
         raise ElaborationException(
-            f"Critical: could not delete temp file: {e.filename}")
+            f"Could not process file due to OS path issue: {e.filename}")
     except AmazonException as e:
         raise AmazonException(e)
     except ElaborationException as e:
@@ -317,39 +362,33 @@ def process_preview(text):
     except UserParameterException as e:
         raise UserParameterException(e)
     except Exception as e:
-        raise ElaborationException(f"Exception while processing text: {str(e)}")
-
-
-def extract_fonts_from_pptx(pptx_path, extract_to):
-    with ZipFile(pptx_path, 'r') as zip_ref:
-        for file_info in zip_ref.infolist():
-            print(f"Extracted {file_info.filename} to {extract_to}")
-            if 'ppt/fonts/' in file_info.filename:
-                zip_ref.extract(file_info, extract_to)
-                print(f"Extracted {file_info.filename} to {extract_to}")
+        raise ElaborationException(
+            f"Exception while processing text: {str(e)}")
 
 
 def pptx_to_pdf(pptx_file_path):
     # Check if file exists
     if not os.path.exists(pptx_file_path):
-        raise ElaborationException(f"Temporary copy of file to elaborate not found: {pptx_file_path}")
-
+        raise ElaborationException(
+            f"Temporary copy of file to elaborate not found: {pptx_file_path}")
     # Check file permissions
     if not os.access(pptx_file_path, os.R_OK):
-        raise ElaborationException(f"No read permission for temporary copy of file to elaborate: {pptx_file_path}")
-
+        raise ElaborationException(
+            f"No read permission for temporary copy of file to elaborate: {pptx_file_path}")
     # Generate the output PDF path
     output_folder = os.path.dirname(pptx_file_path)
     output_pdf_path = os.path.join(
         output_folder, f"{os.path.splitext(os.path.basename(pptx_file_path))[0]}.pdf")
 
     # Form the command for LibreOffice
+    # su linux sudo apt-get install poppler-utils
+    # su linux sudo apt-get install libreoffice
+    #  mettere il path di libreoffice in .env che sará /usr/bin/libreoffice
     command = f"\"{path_to_libreoffice}\"lowriter --headless --convert-to pdf --outdir \"{output_folder}\" \"{pptx_file_path}\""
 
     # Start the process
     process = subprocess.Popen(
         command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-
     # Wait for the process to complete or time out
     try:
         stdout, stderr = process.communicate(
@@ -357,52 +396,54 @@ def pptx_to_pdf(pptx_file_path):
         print("Standard Output:", stdout.decode())
         print("Standard Error:", stderr.decode())
     except subprocess.TimeoutExpired:
-        raise ElaborationException(f"Process for pptx conversion timed out. Killing it.")
+        raise ElaborationException(
+            f"Process for pptx conversion timed out. Killing it.")
     finally:
         process.terminate()
-    # try:
-    #     os.remove(pptx_file_path)
-    # except OSError as e:
-    #     print(f"Error: {e.filename} - {e.strerror}.")
-
     return output_pdf_path
 
 
 def pdf_to_images(pdf_path):
-    return convert_from_path(pdf_path)
+    try:
+        return convert_from_path(pdf_path)
+    except ElaborationException as e:
+        raise ElaborationException(e)
+    except Exception as e:
+        raise ElaborationException(
+            f"Exception while converting PDF to images: {str(e)}")
 
 
-def extract_notes_from_slide(slide):
-    slide_number = slide.slide_id
-    notes_text = ""
-    if slide.has_notes_slide:
-        notes_slide = slide.notes_slide
-        notes_text = notes_slide.notes_text_frame.text
-    return slide_number, notes_text
+# def extract_notes_from_slide(slide):
+#     slide_number = slide.slide_id
+#     notes_text = ""
+#     if slide.has_notes_slide:
+#         notes_slide = slide.notes_slide
+#         notes_text = notes_slide.notes_text_frame.text
+#     return slide_number, notes_text
 
 
-def upload_to_s3_subfolder(file_path, usermail, project, subfolder, filename):
-    obj = s3_singleton.Object(
-        bucket_name, f'{usermail}/{project}/edited/{subfolder}/{filename}')
-    with open(file_path, 'rb') as f:
-        obj.upload_fileobj(f)
+# def upload_to_s3_subfolder(file_path, usermail, project, subfolder, filename):
+#     obj = s3_singleton.Object(
+#         bucket_name, f'{usermail}/{project}/edited/{subfolder}/{filename}')
+#     with open(file_path, 'rb') as f:
+#         obj.upload_fileobj(f)
 
 
-def extract_notes_and_images_from_pptx(pptx_file):
-    prs = Presentation(pptx_file)
-    extracted_data = []
-    for i, slide in enumerate(prs.slides):
-        slide_image = io.BytesIO()  # Replace with your actual slide to image conversion
-        notes = slide.notes_slide.notes_text if slide.notes_slide else ''
-        if notes:
-            tts_data = generate_tts(notes)
-        else:
-            tts_data = None
-        extracted_data.append({
-            "slide_image": slide_image,
-            "tts_data": tts_data
-        })
-    return extracted_data
+# def extract_notes_and_images_from_pptx(pptx_file):
+#     prs = Presentation(pptx_file)
+#     extracted_data = []
+#     for i, slide in enumerate(prs.slides):
+#         slide_image = io.BytesIO()  # Replace with your actual slide to image conversion
+#         notes = slide.notes_slide.notes_text if slide.notes_slide else ''
+#         if notes:
+#             tts_data = generate_tts(notes)
+#         else:
+#             tts_data = None
+#         extracted_data.append({
+#             "slide_image": slide_image,
+#             "tts_data": tts_data
+#         })
+#     return extracted_data
 
 
 def upload_to_s3(usermail, project, filename, file_obj):
@@ -413,27 +454,44 @@ def upload_to_s3(usermail, project, filename, file_obj):
 
 
 def generate_tts2(text, voice_id, filename):
-    polly_client = polly_singleton.polly
     try:
-        response = polly_client.synthesize_speech(
-            VoiceId=voice_id, OutputFormat='mp3', Text=text, TextType='ssml', Engine='neural')
+        try:
+            polly_client = polly_singleton.polly
+            response = polly_client.synthesize_speech(
+                VoiceId=voice_id, OutputFormat='mp3', Text=text, TextType='ssml', Engine='neural')
+        except Exception as e:
+            raise AmazonException(f"Exception from Polly: {str(e)}")
         with open(filename, 'wb') as out:  # open for [w]riting as [b]inary
             out.write(response['AudioStream'].read())
+    except AmazonException as e:
+        raise AmazonException(e)
     except Exception as e:
-        print(f"Error during audio generation: {str(e)}")
-        return None
+        raise ElaborationException(
+            f"Exception while saving audio to file: {str(e)}")
 
 
 def audiosegment_to_base64(audio_segment):
-    buffer = io.BytesIO()
-    audio_segment.export(buffer, format="mp3")
-    return base64.b64encode(buffer.getvalue()).decode('utf-8')
+    try:
+        buffer = io.BytesIO()
+        audio_segment.export(buffer, format="mp3")
+        return base64.b64encode(buffer.getvalue()).decode('utf-8')
+    except ElaborationException as e:
+        raise ElaborationException(e)
+    except Exception as e:
+        raise ElaborationException(
+            f"Exception while converting audio to base64: {str(e)}")
 
 
 def image_to_base64(image):
-    image_bytes = io.BytesIO()
-    image.save(image_bytes, format='JPEG')
-    return base64.b64encode(image_bytes.getvalue()).decode('utf-8')
+    try:
+        image_bytes = io.BytesIO()
+        image.save(image_bytes, format='JPEG')
+        return base64.b64encode(image_bytes.getvalue()).decode('utf-8')
+    except ElaborationException as e:
+        raise ElaborationException(e)
+    except Exception as e:
+        raise ElaborationException(
+            f"Exception while converting image to base64: {str(e)}")
 
 
 def process_pptx_split(usermail, project, filename):
@@ -446,99 +504,89 @@ def process_pptx_split(usermail, project, filename):
         with open(pptx_file_path, 'wb') as f:
             f.write(pptx_file.getbuffer())
 
-        assert os.path.isfile(
-            pptx_file_path), f"{pptx_file_path} is not a file"
-
         pptx_file.seek(0)
         prs = Presentation(pptx_file)
-        
         pdf_path = pptx_to_pdf(pptx_file_path).replace('.pptx.pdf', '.pdf')
         images = pdf_to_images(pdf_path)
 
         slide_data = []
 
         for i, (slide, image) in enumerate(zip(prs.slides, images)):
-            try:
-                notes_slide = slide.notes_slide
-                notes_text = notes_slide.notes_text_frame.text
 
-                image_path = os.path.join(temp_folder, f'slide_{i}.jpg')
-                image.save(image_path)
-                image_base64 = image_to_base64(image)
+            notes_slide = slide.notes_slide
+            notes_text = notes_slide.notes_text_frame.text
 
-                tts_generated = False
+            image_path = os.path.join(temp_folder, f'slide_{i}.jpg')
+            image.save(image_path)
+            image_base64 = image_to_base64(image)
 
-                if not notes_text or not notes_text.strip():
-                    print("No notes text for this slide, skipping TTS...")
-                else:
-                    checked_missing_tags = find_missing_tags(notes_text)
-                    corrected_ssml = correct_special_characters(
-                        checked_missing_tags)
+            tts_generated = False
 
-                    if not validate_ssml(corrected_ssml, schema_path):
-                        print("Invalid SSML, skipping...")
+            if not notes_text or not notes_text.strip():
+                continue
+            else:
+                checked_missing_tags = find_missing_tags(notes_text)
+                corrected_ssml = correct_special_characters(
+                    checked_missing_tags)
+
+                if not validate_ssml(corrected_ssml, schema_path):
+                    raise UserParameterException(
+                        f"SSML validation failed, check slide: {str(e)}")
+                parsed_ssml = parse_ssml(corrected_ssml)
+                try:
+                    if len(parsed_ssml) == 1:
+                        for voice_name, text in parsed_ssml:
+                            filename = os.path.join(
+                                temp_folder, f'slide_{i}.mp3')
+                            audio = generate_tts2(
+                                text, voice_name, filename)
+                            audio = AudioSegment.from_file(filename)
+                            audio_base64 = audiosegment_to_base64(
+                                audio)
+                            tts_generated = True
+
                     else:
-                        parsed_ssml = parse_ssml(corrected_ssml)
-                        try:
-                            if len(parsed_ssml) == 1:
-                                for voice_name, text in parsed_ssml:
-                                    filename = os.path.join(
-                                        temp_folder, f'slide_{i}.mp3')
-                                    audio = generate_tts2(
-                                        text, voice_name, filename)
-                                    audio = AudioSegment.from_file(filename)
-                                    audio_base64 = audiosegment_to_base64(
-                                        audio)
-                                    tts_generated = True
+                        audios = []
+                        for j, (voice_name, text) in enumerate(parsed_ssml):
+                            filename = os.path.join(
+                                temp_folder, f'multi_voice_{j}.mp3')
+                            generate_tts2(text, voice_name, filename)
+                            audio = AudioSegment.from_file(filename)
+                            audios.append(audio)
+                            audios.append(half_sec_silence)
+                        combined_audio = sum(audios[1:], audios[0])
+                        combined_filename = os.path.join(
+                            temp_folder, f'slide_{i}.mp3')
+                        combined_audio.export(
+                            combined_filename, format="mp3", bitrate="320k")
+                        audio_base64 = audiosegment_to_base64(
+                            combined_audio)
+                        tts_generated = True
+                except AmazonException as e:
+                    raise AmazonException(e)
+                except Exception as e:
+                    raise ElaborationException(
+                        f"Exception while saving audio to file: {str(e)}")
 
-                            else:  # For more than one voice tag in the notes
-                                audios = []
-                                for j, (voice_name, text) in enumerate(parsed_ssml):
-                                    filename = os.path.join(
-                                        temp_folder, f'multi_voice_{j}.mp3')
-                                    generate_tts2(text, voice_name, filename)
-                                    audio = AudioSegment.from_file(filename)
-                                    audios.append(audio)
-                                combined_audio = sum(audios[1:], audios[0])
-                                combined_filename = os.path.join(
-                                    temp_folder, f'slide_{i}.mp3')
-                                combined_audio.export(
-                                    combined_filename, format="mp3", bitrate="320k")
-                                audio_base64 = audiosegment_to_base64(
-                                    combined_audio)
-                                tts_generated = True
-                        except Exception as e:
-                            print(f"Error during audio generation: {str(e)}")
-                            return  # Skip the slide if there was an error
-                slide_info = {
-                    "slide_id": i,
-                    "image": {
-                        "data": image_base64,
-                        "filename": f"slide_{i}.jpg"
-                    },
-                    "tts": {
-                        "data": audio_base64,
-                        "filename": f"slide_{i}.mp3"
-                    } if tts_generated else None
-                }
+            slide_info = {
+                "slide_id": i,
+                "image": {
+                    "data": image_base64,
+                    "filename": f"slide_{i}.jpg"
+                },
+                "tts": {
+                    "data": audio_base64,
+                    "filename": f"slide_{i}.mp3"
+                } if tts_generated else None
+            }
 
-                slide_data.append(slide_info)
+            slide_data.append(slide_info)
 
-            except Exception as e:
-                print(f"An error occurred while processing slide {i}: {e}")
-
-        # # Cleanup temporary files
-        # os.remove(pptx_file_path)
-        # os.remove(pdf_path)
-        # for i in range(len(images)):
-        #     os.remove(f"/tmp/slide_{i}.jpg")
-        #     if os.path.exists(f"/tmp/slide_{i}.mp3"):
-        #         os.remove(f"/tmp/slide_{i}.mp3")
         return slide_data
 
     except OSError as e:
         raise ElaborationException(
-            f"Critical: could not delete temp file: {e.filename}")
+            f"Could not process file due to OS path issue: {e.filename}")
     except AmazonException as e:
         raise AmazonException(e)
     except UserParameterException as e:
@@ -546,4 +594,11 @@ def process_pptx_split(usermail, project, filename):
     except ElaborationException as e:
         raise ElaborationException(e)
     except Exception as e:
-        raise ElaborationException(f"Exception while processing slides splitting: {str(e)}")
+        raise ElaborationException(
+            f"Exception while processing slides splitting: {str(e)}")
+    finally:
+        try:
+            shutil.rmtree(temp_folder)
+        except Exception as e:
+            raise ElaborationException(
+                f"Critical: Exception while deleting temp folder: {str(e)}")
