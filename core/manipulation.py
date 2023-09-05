@@ -393,8 +393,6 @@ def pptx_to_pdf(pptx_file_path):
     try:
         stdout, stderr = process.communicate(
             timeout=20)  # Set timeout to 20 seconds
-        print("Standard Output:", stdout.decode())
-        print("Standard Error:", stderr.decode())
     except subprocess.TimeoutExpired:
         raise ElaborationException(
             f"Process for pptx conversion timed out. Killing it.")
