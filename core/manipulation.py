@@ -151,9 +151,11 @@ def process_slide(slide):
         modified = False
 
         notes_slide = slide.notes_slide
-        notes_text = notes_slide.notes_text_frame.text
-
-        if not notes_text or not notes_text.strip():
+        if notes_slide and notes_slide.notes_text_frame:
+            notes_text = notes_slide.notes_text_frame.text
+            if not notes_text or not notes_text.strip():
+                return modified
+        else:
             return modified
 
         checked_missing_tags = find_missing_tags(notes_text)
@@ -163,7 +165,7 @@ def process_slide(slide):
 
         if not validation_result:
             raise UserParameterException(
-                f"SSML validation failed, check slide: {str(e)}")
+                f"SSML validation failed, check slide")
         parsed_ssml = parse_ssml(corrected_ssml)
     except UserParameterException as e:
         raise UserParameterException(e)
@@ -276,6 +278,8 @@ def process_pptx(usermail, project, filename):
     if modified:  # Only upload if changes were made
         edited_filename = f"{os.path.splitext(filename)[0]}_edited{os.path.splitext(filename)[1]}"
         upload_pptx_to_s3(usermail, project, edited_filename, pptx_file)
+    else:
+        raise ElaborationException("PPTX has no notes to elaborate")
 
 
 def process_preview(text):
@@ -290,7 +294,7 @@ def process_preview(text):
         validation_result = validate_ssml(corrected_ssml, schema_path)
         if not validation_result:
             raise UserParameterException(
-                f"SSML validation failed, check slide: {str(e)}")
+                f"SSML validation failed, check slide")
         parsed_ssml = parse_ssml(corrected_ssml)
     except UserParameterException as e:
         raise UserParameterException(e)
@@ -514,73 +518,74 @@ def process_pptx_split(usermail, project, filename):
         for i, (slide, image) in enumerate(zip(prs.slides, images)):
 
             notes_slide = slide.notes_slide
-            notes_text = notes_slide.notes_text_frame.text
+            if notes_slide and notes_slide.notes_text_frame:
+                notes_text = notes_slide.notes_text_frame.text
+                if not notes_text or not notes_text.strip():
+                    continue
+                else:
+                    image_path = os.path.join(temp_folder, f'slide_{i}.jpg')
+                    image.save(image_path)
+                    image_base64 = image_to_base64(image)
 
-            image_path = os.path.join(temp_folder, f'slide_{i}.jpg')
-            image.save(image_path)
-            image_base64 = image_to_base64(image)
+                    tts_generated = False
+                    checked_missing_tags = find_missing_tags(notes_text)
+                    corrected_ssml = correct_special_characters(
+                        checked_missing_tags)
 
-            tts_generated = False
+                    if not validate_ssml(corrected_ssml, schema_path):
+                        raise UserParameterException(
+                            f"SSML validation failed, check slide")
+                    parsed_ssml = parse_ssml(corrected_ssml)
+                    try:
+                        if len(parsed_ssml) == 1:
+                            for voice_name, text in parsed_ssml:
+                                filename = os.path.join(
+                                    temp_folder, f'slide_{i}.mp3')
+                                audio = generate_tts2(
+                                    text, voice_name, filename)
+                                audio = AudioSegment.from_file(filename)
+                                audio_base64 = audiosegment_to_base64(
+                                    audio)
+                                tts_generated = True
 
-            if not notes_text or not notes_text.strip():
-                continue
-            else:
-                checked_missing_tags = find_missing_tags(notes_text)
-                corrected_ssml = correct_special_characters(
-                    checked_missing_tags)
-
-                if not validate_ssml(corrected_ssml, schema_path):
-                    raise UserParameterException(
-                        f"SSML validation failed, check slide: {str(e)}")
-                parsed_ssml = parse_ssml(corrected_ssml)
-                try:
-                    if len(parsed_ssml) == 1:
-                        for voice_name, text in parsed_ssml:
-                            filename = os.path.join(
+                        else:
+                            audios = []
+                            for j, (voice_name, text) in enumerate(parsed_ssml):
+                                filename = os.path.join(
+                                    temp_folder, f'multi_voice_{j}.mp3')
+                                generate_tts2(text, voice_name, filename)
+                                audio = AudioSegment.from_file(filename)
+                                audios.append(audio)
+                                audios.append(half_sec_silence)
+                            combined_audio = sum(audios[1:], audios[0])
+                            combined_filename = os.path.join(
                                 temp_folder, f'slide_{i}.mp3')
-                            audio = generate_tts2(
-                                text, voice_name, filename)
-                            audio = AudioSegment.from_file(filename)
+                            combined_audio.export(
+                                combined_filename, format="mp3", bitrate="320k")
                             audio_base64 = audiosegment_to_base64(
-                                audio)
+                                combined_audio)
                             tts_generated = True
+                    except AmazonException as e:
+                        raise AmazonException(e)
+                    except Exception as e:
+                        raise ElaborationException(
+                            f"Exception while saving audio to file: {str(e)}")
 
-                    else:
-                        audios = []
-                        for j, (voice_name, text) in enumerate(parsed_ssml):
-                            filename = os.path.join(
-                                temp_folder, f'multi_voice_{j}.mp3')
-                            generate_tts2(text, voice_name, filename)
-                            audio = AudioSegment.from_file(filename)
-                            audios.append(audio)
-                            audios.append(half_sec_silence)
-                        combined_audio = sum(audios[1:], audios[0])
-                        combined_filename = os.path.join(
-                            temp_folder, f'slide_{i}.mp3')
-                        combined_audio.export(
-                            combined_filename, format="mp3", bitrate="320k")
-                        audio_base64 = audiosegment_to_base64(
-                            combined_audio)
-                        tts_generated = True
-                except AmazonException as e:
-                    raise AmazonException(e)
-                except Exception as e:
-                    raise ElaborationException(
-                        f"Exception while saving audio to file: {str(e)}")
+                slide_info = {
+                    "slide_id": i,
+                    "image": {
+                        "data": image_base64,
+                        "filename": f"slide_{i}.jpg"
+                    },
+                    "tts": {
+                        "data": audio_base64,
+                        "filename": f"slide_{i}.mp3"
+                    } if tts_generated else None
+                }
 
-            slide_info = {
-                "slide_id": i,
-                "image": {
-                    "data": image_base64,
-                    "filename": f"slide_{i}.jpg"
-                },
-                "tts": {
-                    "data": audio_base64,
-                    "filename": f"slide_{i}.mp3"
-                } if tts_generated else None
-            }
-
-            slide_data.append(slide_info)
+                slide_data.append(slide_info)
+            else:
+                continue
 
         return slide_data
 

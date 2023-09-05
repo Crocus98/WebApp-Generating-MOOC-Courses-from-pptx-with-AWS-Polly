@@ -3,47 +3,12 @@ from ssml_validation import *
 
 
 filename1 = 'RandomPresentation-NotesAndTags.pptx'
-filename3 = 'RandomPresentation-NoNotes.pptx'
-testoporva1 = '''<speak>
-  <voice voice_name="Joanna">
-    Here's a phoneme: <phoneme alphabet="ipa" ph="pɪˈkɑːn"/>. 
-    And here's a date: <say-as interpret-as="date" format="ymd">2023-07-26</say-as>.
-  </voice>
-   <voice voice_name="Matthew">
-        Nice to meet you, Joanna.
-     </voice>
-     <voice voice_name="Amy">
-    The word <sub alias="kilogram">kg</sub> is an abbreviation for kilogram.
-  </voice>
-   <voice voice_name="Matthew">
-    <prosody rate="x-slow">
-      Hello, I am speaking slowly and loudly.
-    </prosody>
-    <lang xml:lang="en-US">
-      This part is in American English.
-    </lang>
-    <prosody volume="+6dB">
-      Hello, I am speaking slowly and loudly.
-    </prosody>
-  </voice>
-</speak>'''
-
-testoporva2 = ''' CIaociao ciao ciao '''
-testoporva3 = '''<speak>
-    Here's a phoneme: <phoneme alphabet="ipa" ph="pɪˈkɑːn"/>. 
-    And here's a date: <say-as interpret-as="date" format="ymd">2023-07-26</say-as>.
-</speak>'''
-testoporva4 = '''<voice voice_name="Matthew">
-    <prosody rate="x-slow">
-      Hello, I am speaking slowly and loudly.
-    </prosody>
-    <lang xml:lang="en-US">
-      This part is in American English.
-    </lang>
-    <prosody volume="+6dB">
-      Hello, I am speaking slowly and loudly.
-    </prosody>
-  </voice>'''
+filename2 = 'empty_pptx.pptx'
+filename3 = '10_slides_with_tags.pptx'
+filename4 = '10_slides_no_tags.pptx'
+filename5 = '5_slides_extreme_tags.pptx'
+filename6 = '50_slides_mixed.pptx'
+filename7 = '5_slides_no_notes.pptx'
 
 
 def test_process_pptx_split(usermail, project, filename):
@@ -76,12 +41,12 @@ project = 'GigaChad'
 
 # Run the test functions
 # test_process_pptx(usermail, project, filename1)
-# test_process_pptx(usermail, project, filename3)
+test_process_pptx(usermail, project, filename3)
 # metti errore 404 per note non esistenti
-# test_process_pptx_split(usermail, project, filename1)
+# test_process_pptx_split(usermail, project, filename7)
 # test_process_pptx_split(usermail, project, filename3)
 
-test_process_preview(testoporva1)
-test_process_preview(testoporva2)
-test_process_preview(testoporva3)
-test_process_preview(testoporva4)
+# test_process_preview(testoporva1)
+# test_process_preview(testoporva2)
+# test_process_preview(testoporva3)
+# test_process_preview(testoporva4)
