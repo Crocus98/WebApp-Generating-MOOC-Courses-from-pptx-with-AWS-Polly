@@ -154,7 +154,9 @@ def generate_audio(index, folder, prefix, text, voice_name, base64):
 
 
 def combine_audios_and_generate_file(index, folder, audios, base64):
-    combined_audio = sum(audios)
+    combined_audio = audios[0]
+    for audio in audios[1:]:
+        combined_audio += audio
     combined_filename = os.path.join(folder, f'slide_{index}.mp3')
     combined_audio.export(combined_filename, format="mp3", bitrate="320k")
     if (base64):
