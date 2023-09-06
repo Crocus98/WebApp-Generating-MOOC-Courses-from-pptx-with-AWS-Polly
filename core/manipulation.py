@@ -53,9 +53,7 @@ s3_singleton = S3Singleton(aws_access_key_id, aws_secret_access_key, region, buc
 polly_object = Polly(aws_access_key_id, aws_secret_access_key, region)
 
 
-# Generate 0.5 seconds of silence
-half_sec_silence = AudioSegment.silent(
-    duration=500)  # duration in milliseconds
+half_sec_silence = AudioSegment.silent(duration=500)
 
 
 def split_input_path(input_path):
@@ -80,8 +78,7 @@ def download_pptx_from_s3(usermail, project, filename):
 
 def upload_pptx_to_s3(usermail, project, filename, pptx_file):
     try:
-        obj = s3_singleton.s3.Object(bucket_name,
-                                     f'{usermail}/{project}/edited/{filename}')
+        obj = s3_singleton.s3.Object(bucket_name,f'{usermail}/{project}/edited/{filename}')
         pptx_file.seek(0)
         obj.upload_fileobj(pptx_file)
     except Exception as e:
@@ -98,25 +95,6 @@ def upload_pptx_to_s3(usermail, project, filename, pptx_file):
 #         obj.upload_fileobj(mp3_buffer)
 #     except Exception as e:
 #         raise AmazonException(e)
-
-
-def generate_tts(text, voice_id):
-    try:
-        try:
-            polly_client = polly_object.polly
-            response = polly_client.synthesize_speech(
-                VoiceId=voice_id, OutputFormat='mp3', Text=text, TextType='ssml', Engine='neural')
-        except Exception as e:
-            raise AmazonException(f"Exception from Polly: {str(e)}")
-        filename = f'tts_{uuid.uuid4()}.mp3'
-        with open(filename, 'wb') as out:
-            out.write(response['AudioStream'].read())
-        return filename
-    except AmazonException as e:
-        raise AmazonException(e)
-    except Exception as e:
-        raise ElaborationException(
-            f"Exception while saving audio to file: {str(e)}")
 
 
 def combine_audio_files(audio_files):
@@ -165,7 +143,7 @@ def process_slide(slide, temp_folder):
                 try:
                     filename = os.path.join(
                         temp_folder, f'slide_{unique_id}.mp3')
-                    audio = generate_tts2(
+                    audio = generate_tts(
                         text, voice_name, filename)
                     audio = AudioSegment.from_file(filename)
 
@@ -187,7 +165,7 @@ def process_slide(slide, temp_folder):
                     unique_id = uuid.uuid4()
                     filename = os.path.join(
                         temp_folder, f'multi_voice_{unique_id}.mp3')
-                    generate_tts2(text, voice_name, filename)
+                    generate_tts(text, voice_name, filename)
                     audio = AudioSegment.from_file(filename)
                     audios.append(audio)
                     audios.append(half_sec_silence)
@@ -293,7 +271,7 @@ def process_preview(text):
                 try:
                     filename = os.path.join(
                         temp_folder, f'slide_{voice_name}.mp3')
-                    audio = generate_tts2(
+                    audio = generate_tts(
                         text, voice_name, filename)
                     audio = AudioSegment.from_file(filename)
                 except AmazonException as e:
@@ -312,7 +290,7 @@ def process_preview(text):
                 for voice_name, text in parsed_ssml:
                     filename = os.path.join(
                         temp_folder, f'multi_voice_{voice_name}.mp3')
-                    generate_tts2(text, voice_name, filename)
+                    generate_tts(text, voice_name, filename)
                     audio = AudioSegment.from_file(filename)
                     audios.append(audio)
                     audios.append(half_sec_silence)
@@ -432,15 +410,13 @@ def upload_to_s3(usermail, project, filename, file_obj):
     obj.upload_fileobj(file_obj)
 
 
-def generate_tts2(text, voice_id, filename):
+def generate_tts(text, voice_id, filename):
     try:
         try:
-            polly_client = polly_object.polly
-            response = polly_client.synthesize_speech(
-                VoiceId=voice_id, OutputFormat='mp3', Text=text, TextType='ssml', Engine='neural')
+            response = polly_object.polly.synthesize_speech(VoiceId=voice_id, OutputFormat='mp3', Text=text, TextType='ssml', Engine='neural')
         except Exception as e:
             raise AmazonException(f"Exception from Polly: {str(e)}")
-        with open(filename, 'wb') as out:  # open for [w]riting as [b]inary
+        with open(filename, 'wb') as out:
             out.write(response['AudioStream'].read())
     except AmazonException as e:
         raise AmazonException(e)
@@ -513,7 +489,7 @@ def process_pptx_split(usermail, project, filename):
                             for voice_name, text in parsed_ssml:
                                 filename = os.path.join(
                                     temp_folder, f'slide_{i}.mp3')
-                                audio = generate_tts2(
+                                audio = generate_tts(
                                     text, voice_name, filename)
                                 audio = AudioSegment.from_file(filename)
                                 audio_base64 = audiosegment_to_base64(
@@ -525,7 +501,7 @@ def process_pptx_split(usermail, project, filename):
                             for j, (voice_name, text) in enumerate(parsed_ssml):
                                 filename = os.path.join(
                                     temp_folder, f'multi_voice_{j}.mp3')
-                                generate_tts2(text, voice_name, filename)
+                                generate_tts(text, voice_name, filename)
                                 audio = AudioSegment.from_file(filename)
                                 audios.append(audio)
                                 audios.append(half_sec_silence)
