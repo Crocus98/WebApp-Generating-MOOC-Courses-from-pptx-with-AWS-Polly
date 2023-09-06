@@ -93,7 +93,7 @@ def slide_split_data(index, image_base64, audio_base64):
         } if audio_base64 is not None else None
     }
 
-def extract_image_from_slide(folder, image_path):
+def extract_image_from_slide(folder, image):
     image_path = os.path.join(folder, f'slide_{i}.jpg')
     image.save(image_path)
     return image_to_base64(image)

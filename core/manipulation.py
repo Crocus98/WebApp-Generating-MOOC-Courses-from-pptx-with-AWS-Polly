@@ -291,13 +291,12 @@ def process_preview(text):
         delete_folder(temp_folder)
 
 #PPTX SPLIT BLOCK
-
 def process_slide_split(index, slide, image, folder):
     notes_text, have_notes = check_slide_have_notes(slide.notes_slide)
-    image_base64 = extract_image_from_slide(folder,image_path)
+    image_base64 = extract_image_from_slide(folder,image)
     if not have_notes:
         return slide_split_data(index, image_base64, None)
-    parsed_ssml = check_correct_validate_parse_text(text)
+    parsed_ssml = check_correct_validate_parse_text(notes_text)
     try:
         audio_base64 = None
         if len(parsed_ssml) == 1:
