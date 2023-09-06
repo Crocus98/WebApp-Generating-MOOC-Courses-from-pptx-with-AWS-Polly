@@ -276,7 +276,7 @@ def process_preview(text):
             for voice_name, text in parsed_ssml:
                 audios.append(generate_audio(voice_name, temp_folder,"multi_voice", text, voice_name, False))
                 audios.append(half_sec_silence)
-            audio_base64 = combine_audios_and_generate_file("combined", temp_folder, audios)
+            combined_audio = combine_audios_and_generate_file("combined", temp_folder, audios)
             return combined_audio
     except AmazonException as e:
         raise AmazonException(e)
