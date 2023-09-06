@@ -161,11 +161,7 @@ def process_slide(slide):
         checked_missing_tags = find_missing_tags(notes_text)
         corrected_ssml = correct_special_characters(
             checked_missing_tags)
-        validation_result = validate_ssml(corrected_ssml, schema_path)
-
-        if not validation_result:
-            raise UserParameterException(
-                f"SSML validation failed, check slide")
+        validate_ssml(corrected_ssml, schema_path)
         parsed_ssml = parse_ssml(corrected_ssml)
     except UserParameterException as e:
         raise UserParameterException(e)
@@ -200,19 +196,36 @@ def process_slide(slide):
                         raise ElaborationException(
                             f"Critical: Exception while deleting temp folder: {str(e)}")
         else:
-            try:
-                audios = []
-                for voice_name, text in parsed_ssml:
+            audios = []
+            for voice_name, text in parsed_ssml:
+                try:
+                    flag = False
                     filename = os.path.join(
                         temp_folder, f'multi_voice_{voice_name}.mp3')
                     generate_tts2(text, voice_name, filename)
                     audio = AudioSegment.from_file(filename)
                     audios.append(audio)
                     audios.append(half_sec_silence)
-                audios.pop()
-                combined_audio = audios[0]
-                for audio in audios[1:]:
-                    combined_audio += audio
+                    flag = True
+                except AmazonException as e:
+                    raise AmazonException(e)
+                except ElaborationException as e:
+                    raise ElaborationException(e)
+                except Exception as e:
+                    raise Exception(
+                        f"Error during audio combining/exporting or adding to slide: {str(e)}")
+                finally:
+                    try:
+                        if not flag:
+                            shutil.rmtree(temp_folder)
+                    except Exception as e:
+                        raise ElaborationException(
+                            f"Critical: Exception while deleting temp folder: {str(e)}")
+            audios.pop()
+            combined_audio = audios[0]
+            for audio in audios[1:]:
+                combined_audio += audio
+            try:
                 combined_filename = os.path.join(
                     temp_folder, f'combined.mp3')
                 combined_audio.export(
@@ -231,6 +244,7 @@ def process_slide(slide):
             finally:
                 try:
                     shutil.rmtree(temp_folder)
+
                 except Exception as e:
                     raise ElaborationException(
                         f"Critical: Exception while deleting temp folder: {str(e)}")
@@ -291,10 +305,7 @@ def process_preview(text):
 
         checked_missing_tags = find_missing_tags(text)
         corrected_ssml = correct_special_characters(checked_missing_tags)
-        validation_result = validate_ssml(corrected_ssml, schema_path)
-        if not validation_result:
-            raise UserParameterException(
-                f"SSML validation failed, check slide")
+        validate_ssml(corrected_ssml, schema_path)
         parsed_ssml = parse_ssml(corrected_ssml)
     except UserParameterException as e:
         raise UserParameterException(e)
@@ -319,7 +330,9 @@ def process_preview(text):
                         f"Error during audio exporting: {str(e)}")
                 finally:
                     try:
+                        print("single: ", temp_folder)
                         shutil.rmtree(temp_folder)
+
                     except Exception as e:
                         raise ElaborationException(
                             f"Critical: Exception while deleting temp folder: {str(e)}")
@@ -352,7 +365,9 @@ def process_preview(text):
                     f"Error during combined audio exporting: {str(e)}")
             finally:
                 try:
+                    print("combined: ", temp_folder)
                     shutil.rmtree(temp_folder)
+
                 except Exception as e:
                     raise ElaborationException(
                         f"Critical: Exception while deleting temp folder: {str(e)}")
@@ -395,8 +410,7 @@ def pptx_to_pdf(pptx_file_path):
         command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     # Wait for the process to complete or time out
     try:
-        stdout, stderr = process.communicate(
-            timeout=20)  # Set timeout to 20 seconds
+        process.communicate(timeout=20)  # Set timeout to 20 seconds
     except subprocess.TimeoutExpired:
         raise ElaborationException(
             f"Process for pptx conversion timed out. Killing it.")
@@ -529,10 +543,7 @@ def process_pptx_split(usermail, project, filename):
                     checked_missing_tags = find_missing_tags(notes_text)
                     corrected_ssml = correct_special_characters(
                         checked_missing_tags)
-
-                    if not validate_ssml(corrected_ssml, schema_path):
-                        raise UserParameterException(
-                            f"SSML validation failed, check slide")
+                    validate_ssml(corrected_ssml, schema_path)
                     parsed_ssml = parse_ssml(corrected_ssml)
                     try:
                         if len(parsed_ssml) == 1:

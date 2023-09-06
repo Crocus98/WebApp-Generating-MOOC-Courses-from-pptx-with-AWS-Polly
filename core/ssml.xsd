@@ -68,6 +68,14 @@
     <xs:complexType mixed="true">
       <xs:choice minOccurs="0" maxOccurs="unbounded">
         <xs:element ref="break"/>
+        <xs:element ref="lang"/>
+        <xs:element ref="mark"/>
+        <xs:element ref="phoneme"/>
+        <xs:element ref="s"/>
+        <xs:element ref="say-as"/>
+        <xs:element ref="sub"/>
+        <xs:element ref="w"/>
+        <xs:element ref="prosody"/>
       </xs:choice>
       <xs:attribute ref="xml:lang" use="required"/>
     </xs:complexType>
@@ -83,9 +91,18 @@
     <xs:complexType mixed="true">
       <xs:choice minOccurs="0" maxOccurs="unbounded">
         <xs:element ref="break"/>
+        <xs:element ref="lang"/>
+        <xs:element ref="mark"/>
+        <xs:element ref="phoneme"/>
+        <xs:element ref="s"/>
+        <xs:element ref="say-as"/>
+        <xs:element ref="sub"/>
+        <xs:element ref="w"/>
+        <xs:element ref="prosody"/>
       </xs:choice>
     </xs:complexType>
   </xs:element>
+
 
   <xs:element name="phoneme">
     <xs:complexType mixed="true">
@@ -101,6 +118,14 @@
     <xs:complexType mixed="true">
       <xs:choice minOccurs="0" maxOccurs="unbounded">
         <xs:element ref="break"/>
+        <xs:element ref="lang"/>
+        <xs:element ref="mark"/>
+        <xs:element ref="phoneme"/>
+        <xs:element ref="s"/>
+        <xs:element ref="say-as"/>
+        <xs:element ref="sub"/>
+        <xs:element ref="w"/>
+        <xs:element ref="prosody"/>
       </xs:choice>
     </xs:complexType>
   </xs:element>
@@ -128,7 +153,7 @@
 
 <xs:element name="prosody">
     <xs:complexType mixed="true">
-        <xs:sequence minOccurs="0" maxOccurs="unbounded">
+        <xs:choice minOccurs="0" maxOccurs="unbounded">
             <xs:element ref="break"/>
             <xs:element ref="lang"/>
             <xs:element ref="mark"/>
@@ -138,7 +163,7 @@
             <xs:element ref="say-as"/>
             <xs:element ref="sub"/>
             <xs:element ref="w"/>
-        </xs:sequence>
+        </xs:choice>
         <xs:attributeGroup ref="prosodyAttr"/>
     </xs:complexType>
 </xs:element>

@@ -41,10 +41,22 @@ project = 'GigaChad'
 
 # Run the test functions
 # test_process_pptx(usermail, project, filename1)
-test_process_pptx(usermail, project, filename3)
-# metti errore 404 per note non esistenti
-# test_process_pptx_split(usermail, project, filename7)
+# test_process_pptx(usermail, project, filename2)
+# test_process_pptx(usermail, project, filename3)
+# test_process_pptx(usermail, project, filename4)
+# test_process_pptx(usermail, project, filename5)
+test_process_pptx(usermail, project, filename6)
+# test_process_pptx(usermail, project, filename7)
+
+
+# test_process_pptx_split(usermail, project, filename1)
+# test_process_pptx_split(usermail, project, filename2)
 # test_process_pptx_split(usermail, project, filename3)
+# test_process_pptx_split(usermail, project, filename4)
+# test_process_pptx_split(usermail, project, filename5)
+# test_process_pptx_split(usermail, project, filename6)
+# test_process_pptx_split(usermail, project, filename7)
+
 
 # test_process_preview(testoporva1)
 # test_process_preview(testoporva2)
