@@ -324,8 +324,8 @@ def process_slide_split(index, slide, image, folder):
     if not have_notes:
         return slide_split_data(index, image_base64, None)
     parsed_ssml = check_correct_validate_parse_text(text)
-    tts_generated = False
     try:
+        audio_base64 = None
         if len(parsed_ssml) == 1:
             for voice_name, text in parsed_ssml:
                 audio_base64 = generate_audio_base64(index, folder,"slide", True)
@@ -341,9 +341,6 @@ def process_slide_split(index, slide, image, folder):
                 combined_filename, format="mp3", bitrate="320k")
             audio_base64 = audiosegment_to_base64(
                 combined_audio)
-        tts_generated = True
-        if not tts_generated:
-            audio_base64 = None
         return slide_split_data(index, image_base64, audio_base64)
     except AmazonException as e:
         raise AmazonException(e)
