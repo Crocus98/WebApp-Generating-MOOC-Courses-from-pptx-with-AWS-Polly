@@ -350,23 +350,23 @@ def process_slide_split(slide, image):
             audio_base64 = audiosegment_to_base64(
                 combined_audio)
             tts_generated = True
+        slide_info = {
+            "slide_id": i,
+            "image": {
+                "data": image_base64,
+                "filename": f"slide_{i}.jpg"
+            },
+            "tts": {
+                "data": audio_base64,
+                "filename": f"slide_{i}.mp3"
+            } if tts_generated else None
+        }
+        return slide_info
     except AmazonException as e:
         raise AmazonException(e)
     except Exception as e:
         raise ElaborationException(
             f"Exception while saving audio to file: {str(e)}")
-slide_info = {
-    "slide_id": i,
-    "image": {
-        "data": image_base64,
-        "filename": f"slide_{i}.jpg"
-    },
-    "tts": {
-        "data": audio_base64,
-        "filename": f"slide_{i}.mp3"
-    } if tts_generated else None
-}
-return slide_info
 
 def process_pptx_split(usermail, project, filename):
     tts_generated = False
