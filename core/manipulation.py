@@ -316,7 +316,6 @@ def process_slide_split(index, slide, image, folder):
             f"Exception while saving audio to file: {str(e)}")
 
 def process_pptx_split(usermail, project, filename):
-    tts_generated = False
     try:
         temp_folder, prs, images = get_folder_prs_images_from_pptx(usermail, project, filename)
         slide_data = []
