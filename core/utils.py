@@ -67,7 +67,7 @@ def is_pptx_file(file_path):
 def file_ispptx_exists_readpermission(file_path):
     return is_pptx_file and os.path.exists(file_path) and os.access(file_path, os.R_OK)
 
-def check_slides_modified(notes_slide):
+def check_slide_have_notes(notes_slide):
     if notes_slide and notes_slide.notes_text_frame:
         notes_text = notes_slide.notes_text_frame.text
         if notes_text and notes_text.strip():

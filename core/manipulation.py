@@ -158,7 +158,7 @@ def add_tts_to_pptx(pptx_file, usermail, project):
 
 def process_slide(slide, temp_folder):
     try:
-        notes_text, modified = check_slides_modified(slide.notes_slide)
+        notes_text, modified = check_slide_have_notes(slide.notes_slide)
         if not modified:
             return modified
         parse_ssml = check_correct_validate_parse_text(notes_text)
@@ -311,9 +311,9 @@ def process_preview(text):
             f"Exception while processing text: {str(e)}")
 
 def process_slide_split(index, slide, image, folder):
-    notes_text, modified = check_slides_modified(slide.notes_slide)
+    notes_text, have_notes = check_slide_have_notes(slide.notes_slide)
     image_base64 = extract_image_from_slide(folder,image_path)
-    if not modified:
+    if not have_notes:
         return slide_split_data(index, image_base64, None)
     parse_ssml = check_correct_validate_parse_text(text)
     tts_generated = False
