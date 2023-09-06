@@ -324,6 +324,12 @@ def generate_audio_base64 (index, folder, prefix, base64):
         return audiosegment_to_base64(audio)
     return audio
 
+def combine_audios_and_generate_file(index, folder, audios):
+    combined_audio = sum(audios)
+    combined_filename = os.path.join(folder, f'slide_{index}.mp3')
+    combined_audio.export(combined_filename, format="mp3", bitrate="320k")
+    return audiosegment_to_base64(combined_audio)
+
 def process_slide_split(index, slide, image, folder):
     notes_text, have_notes = check_slide_have_notes(slide.notes_slide)
     image_base64 = extract_image_from_slide(folder,image_path)
@@ -340,13 +346,7 @@ def process_slide_split(index, slide, image, folder):
             for j, (voice_name, text) in enumerate(parsed_ssml):
                 audios.append(generate_audio_base64(index, folder,"multi_voice", False))
                 audios.append(half_sec_silence)
-            combined_audio = sum(audios[1:], audios[0])
-            combined_filename = os.path.join(
-                temp_folder, f'slide_{index}.mp3')
-            combined_audio.export(
-                combined_filename, format="mp3", bitrate="320k")
-            audio_base64 = audiosegment_to_base64(
-                combined_audio)
+            audio_base64 = combine_audios_and_generate_file(index, folder, audios)
         return slide_split_data(index, image_base64, audio_base64)
     except AmazonException as e:
         raise AmazonException(e)
@@ -376,35 +376,3 @@ def process_pptx_split(usermail, project, filename):
             f"Exception while processing slides splitting: {str(e)}")
     finally:
         delete_folder(temp_folder)
-
-# def extract_notes_from_slide(slide):
-#     slide_number = slide.slide_id
-#     notes_text = ""
-#     if slide.has_notes_slide:
-#         notes_slide = slide.notes_slide
-#         notes_text = notes_slide.notes_text_frame.text
-#     return slide_number, notes_text
-
-
-# def upload_to_s3_subfolder(file_path, usermail, project, subfolder, filename):
-#     obj = s3_singleton.Object(
-#         bucket_name, f'{usermail}/{project}/edited/{subfolder}/{filename}')
-#     with open(file_path, 'rb') as f:
-#         obj.upload_fileobj(f)
-
-
-# def extract_notes_and_images_from_pptx(pptx_file):
-#     prs = Presentation(pptx_file)
-#     extracted_data = []
-#     for i, slide in enumerate(prs.slides):
-#         slide_image = io.BytesIO()  # Replace with your actual slide to image conversion
-#         notes = slide.notes_slide.notes_text if slide.notes_slide else ''
-#         if notes:
-#             tts_data = generate_tts(notes)
-#         else:
-#             tts_data = None
-#         extracted_data.append({
-#             "slide_image": slide_image,
-#             "tts_data": tts_data
-#         })
-#     return extracted_data
