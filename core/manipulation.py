@@ -15,9 +15,6 @@ import uuid
 import io
 import os
 
-load_dotenv()
-
-
 class S3Singleton:
     _instance = None
 
@@ -31,18 +28,15 @@ class S3Singleton:
             cls._instance.bucket_name = bucket_name
         return cls._instance
 
-
-class PollySingleton:
-    _instance = None
-
-    def __new__(cls, aws_access_key_id, aws_secret_access_key, region_name):
-        if cls._instance is None:
-            cls._instance = super(PollySingleton, cls).__new__(cls)
-            cls._instance.polly = boto3.client('polly',
-                                               aws_access_key_id=aws_access_key_id,
-                                               aws_secret_access_key=aws_secret_access_key,
-                                               region_name=region_name)
-        return cls._instance
+class Polly:
+    def __init__(self, aws_access_key_id, aws_secret_access_key, region_name):
+            self.polly = boto3.client('polly',
+                                  aws_access_key_id=aws_access_key_id,
+                                  aws_secret_access_key=aws_secret_access_key,
+                                  region_name=region_name)
+    
+    def __del__(self):
+        self.polly = None
 
 
 # Get environment variables
@@ -54,11 +48,9 @@ schema_path = os.getenv('schema_path')
 path_to_libreoffice = os.getenv("path_to_libreoffice")
 
 
-s3_singleton = S3Singleton(
-    aws_access_key_id, aws_secret_access_key, region, bucket_name)
+s3_singleton = S3Singleton(aws_access_key_id, aws_secret_access_key, region, bucket_name)
 
-polly_singleton = PollySingleton(
-    aws_access_key_id, aws_secret_access_key, region)
+polly_object = Polly(aws_access_key_id, aws_secret_access_key, region)
 
 
 # Generate 0.5 seconds of silence
@@ -111,7 +103,7 @@ def upload_pptx_to_s3(usermail, project, filename, pptx_file):
 def generate_tts(text, voice_id):
     try:
         try:
-            polly_client = polly_singleton.polly
+            polly_client = polly_object.polly
             response = polly_client.synthesize_speech(
                 VoiceId=voice_id, OutputFormat='mp3', Text=text, TextType='ssml', Engine='neural')
         except Exception as e:
@@ -443,7 +435,7 @@ def upload_to_s3(usermail, project, filename, file_obj):
 def generate_tts2(text, voice_id, filename):
     try:
         try:
-            polly_client = polly_singleton.polly
+            polly_client = polly_object.polly
             response = polly_client.synthesize_speech(
                 VoiceId=voice_id, OutputFormat='mp3', Text=text, TextType='ssml', Engine='neural')
         except Exception as e:
