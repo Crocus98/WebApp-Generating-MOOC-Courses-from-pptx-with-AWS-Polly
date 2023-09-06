@@ -1,6 +1,8 @@
+from pdf2image import convert_from_path
 from exceptions import *
 import shutil
 import base64
+import os
 import io
 
 def delete_folder(folder_name):
@@ -45,3 +47,21 @@ def combine_audio_files(audio_files):
     except Exception as e:
         raise Exception(
             f"Error during audio combining/exporting: {str(e)}")
+
+def create_folder(folder_path):
+    os.makedirs(folder_path, exist_ok=True)
+    return folder_path
+
+def pdf_to_images(pdf_path):
+    try:
+        return convert_from_path(pdf_path)
+    except Exception as e:
+        raise ElaborationException(
+            f"Exception while converting PDF to images: {str(e)}")
+
+def is_pptx_file(file_path):
+    _, file_extension = os.path.splitext(file_path)
+    return file_extension.lower() == ".pptx"
+
+def file_ispptx_exists_readpermission(file_path):
+    return is_pptx_file and os.path.exists(file_path) and os.access(file_path, os.R_OK)

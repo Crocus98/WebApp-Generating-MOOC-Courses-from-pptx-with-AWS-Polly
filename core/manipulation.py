@@ -50,46 +50,103 @@ polly_object = Polly(aws_access_key_id, aws_secret_access_key, region)
 
 half_sec_silence = AudioSegment.silent(duration=500)
 
-
-def download_pptx_from_s3(usermail, project, filename):
+def download_file_from_s3(usermail, project, filename):
     try:
         obj = s3_singleton.s3.Object(bucket_name,f'{usermail}/{project}/{filename}')
         if not obj.get():
             raise UserParameterException("File not found: check parameters")
-        pptx_file = io.BytesIO()
-        obj.download_fileobj(pptx_file)
-        if pptx_file is None:
-            raise AmazonException("pptx_file is None")
-        return pptx_file
+        file = io.BytesIO()
+        obj.download_fileobj(file)
+        if file is None:
+            raise AmazonException("file is None")
+        return file
     except UserParameterException as e:
         raise UserParameterException(e)
     except Exception as e:
-        raise AmazonException(f"Exception downloading pptx from s3: {str(e)}")
+        raise AmazonException(f"Exception downloading file from s3: {str(e)}")
 
-
-def upload_pptx_to_s3(usermail, project, filename, pptx_file):
+def upload_file_to_s3(usermail, project, filename, file):
     try:
         obj = s3_singleton.s3.Object(bucket_name,f'{usermail}/{project}/edited/{filename}')
-        pptx_file.seek(0)
-        obj.upload_fileobj(pptx_file)
+        if(is_pptx_file(filename)):
+            file.seek(0)
+        obj.upload_fileobj(file)
+        response = obj.get()
+        if not (response and response['ResponseMetadata']['HTTPStatusCode'] == 200):
+            raise AmazonException("Upload to S3 failed")
     except Exception as e:
+        raise AmazonException(f"Exception uploading pptx to s3: {str(e)}")
+
+def generate_tts(text, voice_id, filename):
+    try:
+        try:
+            response = polly_object.polly.synthesize_speech(VoiceId=voice_id, OutputFormat='mp3', Text=text, TextType='ssml', Engine='neural')
+            if not response['ResponseMetadata']['HTTPStatusCode'] == 200:
+                raise AmazonException(f"Polly failed to elaborate tts. Response is not 200.")
+        except Exception as e:
+            raise AmazonException(f"Exception from Polly: {str(e)}")
+        with open(filename, 'wb') as out:
+            out.write(response['AudioStream'].read())
+    except AmazonException as e:
         raise AmazonException(e)
+    except Exception as e:
+        raise ElaborationException(
+            f"Exception while saving audio into file: {str(e)}")
 
+def pptx_to_pdf(pptx_file_path):
+    if not file_ispptx_exists_readpermission(pptx_file_path):
+        raise ElaborationException(f"Temporary copy of file is either not found, not a pptx or not readable due to permissions: {pptx_file_path}")
 
-# def upload_mp3_to_s3(usermail, project, filename, audio_segment):
-#     try:
-#         mp3_buffer = io.BytesIO()
-#         audio_segment.export(mp3_buffer, format="mp3")
-#         mp3_buffer.seek(0)
-#         obj = s3_singleton.s3.Object(
-#             bucket_name, f'{usermail}/{project}/edited/{filename}')
-#         obj.upload_fileobj(mp3_buffer)
-#     except Exception as e:
-#         raise AmazonException(e)
+    output_folder = os.path.dirname(pptx_file_path)
+    output_pdf_path = os.path.join(output_folder, f"{os.path.splitext(os.path.basename(pptx_file_path))[0]}.pdf")
 
+    command = f"\"{path_to_libreoffice}\"lowriter --headless --convert-to pdf --outdir \"{output_folder}\" \"{pptx_file_path}\""
+
+    process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    try:
+        process.communicate(timeout=20)
+    except subprocess.TimeoutExpired:
+        raise ElaborationException(
+            f"Process for pptx conversion timed out. Killing it.")
+    finally:
+        process.terminate()
+    return output_pdf_path
+
+def process_pptx(usermail, project, filename):
+    pptx_file = download_file_from_s3(usermail, project, filename)
+    if add_tts_to_pptx(pptx_file, usermail, project):
+        edited_filename = f"{os.path.splitext(filename)[0]}_edited{os.path.splitext(filename)[1]}"
+        upload_file_to_s3(usermail, project, edited_filename, pptx_file)
+    else:
+        raise ElaborationException("PPTX has no notes to elaborate")
+
+def add_tts_to_pptx(pptx_file, usermail, project):
+    try:
+        temp_folder = create_folder(f"{usermail}_{project}_temp")
+        pptx_file.seek(0)
+        prs = Presentation(pptx_file)
+        modified = False
+        for slide in prs.slides:
+            if process_slide(slide, temp_folder):
+                modified = True
+        pptx_file.seek(0)
+        if modified:
+            prs.save(pptx_file)
+        pptx_file.seek(0)
+        return modified
+    except AmazonException as e:
+        raise AmazonException(e)
+    except UserParameterException as e:
+        raise UserParameterException(e)
+    except ElaborationException as e:
+        raise ElaborationException(e)
+    except Exception as e:
+        raise ElaborationException(
+            f"Exception adding tts to pptx: {str(e)}")
+    finally:
+        delete_folder(temp_folder)
 
 def process_slide(slide, temp_folder):
-
     try:
         modified = False
 
@@ -185,50 +242,9 @@ def process_slide(slide, temp_folder):
         raise ElaborationException(
             f"Exception while processing a slide: {str(e)}")
 
-
-def add_tts_to_pptx(pptx_file, usermail, project):
-    try:
-        temp_folder = f"{usermail}_{project}_temp"
-        os.makedirs(temp_folder, exist_ok=True)
-        pptx_file.seek(0)
-        prs = Presentation(pptx_file)
-        modified = False
-        for slide in prs.slides:
-            if process_slide(slide, temp_folder):
-                modified = True
-        pptx_file.seek(0)
-        if modified:
-            prs.save(pptx_file)
-        pptx_file.seek(0)
-        return modified
-    except AmazonException as e:
-        raise AmazonException(e)
-    except UserParameterException as e:
-        raise UserParameterException(e)
-    except ElaborationException as e:
-        raise ElaborationException(e)
-    except Exception as e:
-        raise ElaborationException(
-            f"Exception adding tts to pptx: {str(e)}")
-    finally:
-        delete_folder(temp_folder)
-
-
-def process_pptx(usermail, project, filename):
-    pptx_file = download_pptx_from_s3(usermail, project, filename)
-    modified = add_tts_to_pptx(pptx_file, usermail, project)
-    if modified:
-        edited_filename = f"{os.path.splitext(filename)[0]}_edited{os.path.splitext(filename)[1]}"
-        upload_pptx_to_s3(usermail, project, edited_filename, pptx_file)
-    else:
-        raise ElaborationException("PPTX has no notes to elaborate")
-
-
 def process_preview(text):
     unique_id = uuid.uuid4()
-    temp_folder = f"{unique_id}_temp"
-
-    os.makedirs(temp_folder, exist_ok=True)
+    temp_folder = create_folder(f"{unique_id}_temp")
     try:
 
         checked_missing_tags = find_missing_tags(text)
@@ -300,115 +316,11 @@ def process_preview(text):
         raise ElaborationException(
             f"Exception while processing text: {str(e)}")
 
-
-def pptx_to_pdf(pptx_file_path):
-    # Check if file exists
-    if not os.path.exists(pptx_file_path):
-        raise ElaborationException(
-            f"Temporary copy of file to elaborate not found: {pptx_file_path}")
-    # Check file permissions
-    if not os.access(pptx_file_path, os.R_OK):
-        raise ElaborationException(
-            f"No read permission for temporary copy of file to elaborate: {pptx_file_path}")
-    # Generate the output PDF path
-    output_folder = os.path.dirname(pptx_file_path)
-    output_pdf_path = os.path.join(
-        output_folder, f"{os.path.splitext(os.path.basename(pptx_file_path))[0]}.pdf")
-
-    # Form the command for LibreOffice
-    # su linux sudo apt-get install poppler-utils
-    # su linux sudo apt-get install libreoffice
-    #  mettere il path di libreoffice in .env che sará /usr/bin/libreoffice
-    command = f"\"{path_to_libreoffice}\"lowriter --headless --convert-to pdf --outdir \"{output_folder}\" \"{pptx_file_path}\""
-
-    # Start the process
-    process = subprocess.Popen(
-        command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    # Wait for the process to complete or time out
-    try:
-        process.communicate(timeout=20)  # Set timeout to 20 seconds
-    except subprocess.TimeoutExpired:
-        raise ElaborationException(
-            f"Process for pptx conversion timed out. Killing it.")
-    finally:
-        process.terminate()
-    return output_pdf_path
-
-
-def pdf_to_images(pdf_path):
-    try:
-        return convert_from_path(pdf_path)
-    except ElaborationException as e:
-        raise ElaborationException(e)
-    except Exception as e:
-        raise ElaborationException(
-            f"Exception while converting PDF to images: {str(e)}")
-
-
-# def extract_notes_from_slide(slide):
-#     slide_number = slide.slide_id
-#     notes_text = ""
-#     if slide.has_notes_slide:
-#         notes_slide = slide.notes_slide
-#         notes_text = notes_slide.notes_text_frame.text
-#     return slide_number, notes_text
-
-
-# def upload_to_s3_subfolder(file_path, usermail, project, subfolder, filename):
-#     obj = s3_singleton.Object(
-#         bucket_name, f'{usermail}/{project}/edited/{subfolder}/{filename}')
-#     with open(file_path, 'rb') as f:
-#         obj.upload_fileobj(f)
-
-
-# def extract_notes_and_images_from_pptx(pptx_file):
-#     prs = Presentation(pptx_file)
-#     extracted_data = []
-#     for i, slide in enumerate(prs.slides):
-#         slide_image = io.BytesIO()  # Replace with your actual slide to image conversion
-#         notes = slide.notes_slide.notes_text if slide.notes_slide else ''
-#         if notes:
-#             tts_data = generate_tts(notes)
-#         else:
-#             tts_data = None
-#         extracted_data.append({
-#             "slide_image": slide_image,
-#             "tts_data": tts_data
-#         })
-#     return extracted_data
-
-
-def upload_to_s3(usermail, project, filename, file_obj):
-    obj = s3_singleton.Object(
-        bucket_name, f'{usermail}/{project}/edited/{filename}')
-    file_obj.seek(0)
-    obj.upload_fileobj(file_obj)
-
-
-def generate_tts(text, voice_id, filename):
-    try:
-        try:
-            response = polly_object.polly.synthesize_speech(VoiceId=voice_id, OutputFormat='mp3', Text=text, TextType='ssml', Engine='neural')
-            if not response['ResponseMetadata']['HTTPStatusCode'] == 200:
-                raise AmazonException(f"Polly failed to elaborate tts. Response is not 200.")
-        except Exception as e:
-            raise AmazonException(f"Exception from Polly: {str(e)}")
-        with open(filename, 'wb') as out:
-            out.write(response['AudioStream'].read())
-    except AmazonException as e:
-        raise AmazonException(e)
-    except Exception as e:
-        raise ElaborationException(
-            f"Exception while saving audio into file: {str(e)}")
-
-
-
 def process_pptx_split(usermail, project, filename):
     tts_generated = False
     try:
-        pptx_file = download_pptx_from_s3(usermail, project, filename)
-        temp_folder = f"{usermail}_{project}_temp"
-        os.makedirs(temp_folder, exist_ok=True)
+        pptx_file = download_file_from_s3(usermail, project, filename)
+        temp_folder = create_folder(f"{usermail}_{project}_temp")
         pptx_file_path = os.path.join(temp_folder, filename)
         with open(pptx_file_path, 'wb') as f:
             f.write(pptx_file.getbuffer())
@@ -505,3 +417,35 @@ def process_pptx_split(usermail, project, filename):
             f"Exception while processing slides splitting: {str(e)}")
     finally:
         delete_folder(temp_folder)
+
+# def extract_notes_from_slide(slide):
+#     slide_number = slide.slide_id
+#     notes_text = ""
+#     if slide.has_notes_slide:
+#         notes_slide = slide.notes_slide
+#         notes_text = notes_slide.notes_text_frame.text
+#     return slide_number, notes_text
+
+
+# def upload_to_s3_subfolder(file_path, usermail, project, subfolder, filename):
+#     obj = s3_singleton.Object(
+#         bucket_name, f'{usermail}/{project}/edited/{subfolder}/{filename}')
+#     with open(file_path, 'rb') as f:
+#         obj.upload_fileobj(f)
+
+
+# def extract_notes_and_images_from_pptx(pptx_file):
+#     prs = Presentation(pptx_file)
+#     extracted_data = []
+#     for i, slide in enumerate(prs.slides):
+#         slide_image = io.BytesIO()  # Replace with your actual slide to image conversion
+#         notes = slide.notes_slide.notes_text if slide.notes_slide else ''
+#         if notes:
+#             tts_data = generate_tts(notes)
+#         else:
+#             tts_data = None
+#         extracted_data.append({
+#             "slide_image": slide_image,
+#             "tts_data": tts_data
+#         })
+#     return extracted_data
