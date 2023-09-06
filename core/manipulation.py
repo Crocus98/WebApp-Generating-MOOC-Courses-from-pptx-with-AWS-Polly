@@ -122,6 +122,8 @@ def get_folder_prs_images_from_pptx(usermail, project, filename):
     images = pdf_to_images(pdf_path)
     return folder, prs, images
 
+#PROCESS PPTX BLOCK
+
 def process_pptx(usermail, project, filename):
     pptx_file = download_file_from_s3(usermail, project, filename)
     if add_tts_to_pptx(pptx_file, usermail, project):
@@ -239,6 +241,8 @@ def process_slide(slide, temp_folder):
         raise ElaborationException(
             f"Exception while processing a slide: {str(e)}")
 
+#TTS TEXT PREVIEW BLOCK
+
 def process_preview(text):
     unique_id = uuid.uuid4()
     temp_folder = create_folder(f"{unique_id}_temp")
@@ -309,6 +313,8 @@ def process_preview(text):
     except Exception as e:
         raise ElaborationException(
             f"Exception while processing text: {str(e)}")
+
+#PPTX SPLIT BLOCK
 
 def generate_audio_base64 (index, folder, prefix, base64):
     filename = os.path.join(folder, f'{prefix}_{index}.mp3')
