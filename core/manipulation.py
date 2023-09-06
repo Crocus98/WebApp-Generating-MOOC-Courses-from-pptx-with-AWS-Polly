@@ -4,7 +4,6 @@ from pydub import AudioSegment
 from ssml_validation import *
 from pdf2image import convert_from_path
 from pydub import AudioSegment
-from dotenv import load_dotenv
 from exceptions import *
 from utils import *
 import subprocess
@@ -38,7 +37,6 @@ class Polly:
     def __del__(self):
         self.polly = None
 
-
 # Get environment variables
 aws_access_key_id = os.getenv('aws_access_key_id')
 aws_secret_access_key = os.getenv('aws_secret_access_key')
@@ -47,33 +45,26 @@ region = os.getenv('region')
 schema_path = os.getenv('schema_path')
 path_to_libreoffice = os.getenv("path_to_libreoffice")
 
-
 s3_singleton = S3Singleton(aws_access_key_id, aws_secret_access_key, region, bucket_name)
-
 polly_object = Polly(aws_access_key_id, aws_secret_access_key, region)
-
 
 half_sec_silence = AudioSegment.silent(duration=500)
 
 
-def split_input_path(input_path):
-    usermail, filename = input_path.split('/', 1)
-    return usermail, filename
-
-
 def download_pptx_from_s3(usermail, project, filename):
     try:
-        obj = s3_singleton.s3.Object(bucket_name,
-                                     f'{usermail}/{project}/{filename}')
+        obj = s3_singleton.s3.Object(bucket_name,f'{usermail}/{project}/{filename}')
+        if not obj.get():
+            raise UserParameterException("File not found: check parameters")
         pptx_file = io.BytesIO()
         obj.download_fileobj(pptx_file)
-        if obj is None:
-            raise UserParameterException("File not found: check parameters")
+        if pptx_file is None:
+            raise AmazonException("pptx_file is None")
         return pptx_file
     except UserParameterException as e:
         raise UserParameterException(e)
     except Exception as e:
-        raise AmazonException(e)
+        raise AmazonException(f"Exception downloading pptx from s3: {str(e)}")
 
 
 def upload_pptx_to_s3(usermail, project, filename, pptx_file):
@@ -95,22 +86,6 @@ def upload_pptx_to_s3(usermail, project, filename, pptx_file):
 #         obj.upload_fileobj(mp3_buffer)
 #     except Exception as e:
 #         raise AmazonException(e)
-
-
-def combine_audio_files(audio_files):
-    try:
-        combined = AudioSegment.empty()
-        for audio_file in audio_files:
-            audio = AudioSegment.from_mp3(audio_file)
-            combined += audio
-        combined_filename = f"/tmp/combined_{hash(''.join(audio_files))}.mp3"
-        combined.export(combined_filename, format="mp3")
-        return combined_filename
-    except ElaborationException as e:
-        raise ElaborationException(e)
-    except Exception as e:
-        raise Exception(
-            f"Error during audio combining/exporting: {str(e)}")
 
 
 def process_slide(slide, temp_folder):
@@ -426,29 +401,6 @@ def generate_tts(text, voice_id, filename):
         raise ElaborationException(
             f"Exception while saving audio into file: {str(e)}")
 
-
-def audiosegment_to_base64(audio_segment):
-    try:
-        buffer = io.BytesIO()
-        audio_segment.export(buffer, format="mp3")
-        return base64.b64encode(buffer.getvalue()).decode('utf-8')
-    except ElaborationException as e:
-        raise ElaborationException(e)
-    except Exception as e:
-        raise ElaborationException(
-            f"Exception while converting audio to base64: {str(e)}")
-
-
-def image_to_base64(image):
-    try:
-        image_bytes = io.BytesIO()
-        image.save(image_bytes, format='JPEG')
-        return base64.b64encode(image_bytes.getvalue()).decode('utf-8')
-    except ElaborationException as e:
-        raise ElaborationException(e)
-    except Exception as e:
-        raise ElaborationException(
-            f"Exception while converting image to base64: {str(e)}")
 
 
 def process_pptx_split(usermail, project, filename):
