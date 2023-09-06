@@ -122,7 +122,7 @@ def get_folder_prs_images_from_pptx(usermail, project, filename):
     images = pdf_to_images(pdf_path)
     return folder, prs, images
 
-def generate_audio(index, folder, prefix, base64):
+def generate_audio(index, folder, prefix, text, voice_name, base64):
     filename = os.path.join(folder, f'{prefix}_{index}.mp3')
     generate_tts(text, voice_name, filename)
     audio = AudioSegment.from_file(filename)
@@ -270,11 +270,11 @@ def process_preview(text):
     try:
         if len(parsed_ssml) == 1:
             for voice_name, text in parsed_ssml:
-                return generate_audio(voice_name, temp_folder,"slide", False)
+                return generate_audio(voice_name, temp_folder,"slide", text, voice_name, False)
         else:
             audios = []
             for voice_name, text in parsed_ssml:
-                audios.append(generate_audio(voice_name, temp_folder,"multi_voice", False))
+                audios.append(generate_audio(voice_name, temp_folder,"multi_voice", text, voice_name, False))
                 audios.append(half_sec_silence)
             audio_base64 = combine_audios_and_generate_file("combined", temp_folder, audios)
             return combined_audio
@@ -302,11 +302,11 @@ def process_slide_split(index, slide, image, folder):
         audio_base64 = None
         if len(parsed_ssml) == 1:
             for voice_name, text in parsed_ssml:
-                audio_base64 = generate_audio(index, folder,"slide", True)
+                audio_base64 = generate_audio(index, folder,"slide",text, voice_name, True)
         else:
             audios = []
             for j, (voice_name, text) in enumerate(parsed_ssml):
-                audios.append(generate_audio(index, folder,"multi_voice", False))
+                audios.append(generate_audio(index, folder,"multi_voice",text, voice_name, False))
                 audios.append(half_sec_silence)
             audio_base64 = combine_audios_and_generate_file(index, folder, audios)
         return slide_split_data(index, image_base64, audio_base64)
