@@ -414,6 +414,8 @@ def generate_tts(text, voice_id, filename):
     try:
         try:
             response = polly_object.polly.synthesize_speech(VoiceId=voice_id, OutputFormat='mp3', Text=text, TextType='ssml', Engine='neural')
+            if not response['ResponseMetadata']['HTTPStatusCode'] == 200:
+                raise AmazonException(f"Polly failed to elaborate tts. Response is not 200.")
         except Exception as e:
             raise AmazonException(f"Exception from Polly: {str(e)}")
         with open(filename, 'wb') as out:
@@ -422,7 +424,7 @@ def generate_tts(text, voice_id, filename):
         raise AmazonException(e)
     except Exception as e:
         raise ElaborationException(
-            f"Exception while saving audio to file: {str(e)}")
+            f"Exception while saving audio into file: {str(e)}")
 
 
 def audiosegment_to_base64(audio_segment):
