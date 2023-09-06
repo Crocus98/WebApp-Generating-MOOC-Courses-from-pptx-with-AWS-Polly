@@ -148,14 +148,8 @@ def add_tts_to_pptx(pptx_file, usermail, project):
 
 def process_slide(slide, temp_folder):
     try:
-        modified = False
-
-        notes_slide = slide.notes_slide
-        if notes_slide and notes_slide.notes_text_frame:
-            notes_text = notes_slide.notes_text_frame.text
-            if not notes_text or not notes_text.strip():
-                return modified
-        else:
+        notes_text, modified = check_slides_modified(slide.notes_slide)
+        if not modified:
             return modified
 
         checked_missing_tags = find_missing_tags(notes_text)
@@ -228,8 +222,6 @@ def process_slide(slide, temp_folder):
             except Exception as e:
                 raise Exception(
                     f"Error during audio combining/exporting or adding to slide: {str(e)}")
-
-        modified = True
         return modified
     except OSError as e:
         raise ElaborationException(
