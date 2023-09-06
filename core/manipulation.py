@@ -13,6 +13,9 @@ import boto3
 import uuid
 import io
 import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 
 class S3Singleton:
@@ -50,6 +53,7 @@ path_to_libreoffice = os.getenv("path_to_libreoffice")
 s3_singleton = S3Singleton(
     aws_access_key_id, aws_secret_access_key, region, bucket_name)
 polly_object = Polly(aws_access_key_id, aws_secret_access_key, region)
+
 
 half_sec_silence = AudioSegment.silent(duration=500)
 
@@ -290,7 +294,7 @@ def process_slide_split(index, slide, image, folder):
             audios = []
             for j, (voice_name, text) in enumerate(parsed_ssml):
                 audios.append(generate_audio(
-                    index, folder, "multi_voice", text, voice_name, False))
+                    j, folder, "multi_voice", text, voice_name, False))
                 audios.append(half_sec_silence)
             audio_base64 = combine_audios_and_generate_file(
                 index, folder, audios, True)

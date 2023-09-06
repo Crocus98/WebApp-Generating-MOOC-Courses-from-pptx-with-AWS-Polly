@@ -6,9 +6,13 @@ from exceptions import *
 import re
 import html
 import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 schema_path = os.getenv('schema_path')
 # schema_path = 'WebApp\core\ssml.xsd'
+
 
 def correct_special_characters(ssml_text):
     escape_chars = {
@@ -37,6 +41,7 @@ def correct_special_characters(ssml_text):
     corrected_ssml = ET.tostring(root, encoding='unicode')
     return corrected_ssml
 
+
 def has_non_whitespace_text(element):
     if element.text and re.search(r'\S', element.text):
         return True
@@ -44,6 +49,7 @@ def has_non_whitespace_text(element):
         if has_non_whitespace_text(child):
             return True
     return False
+
 
 def validate_ssml(ssml_text, schema_path):
     ssml_text = ssml_text.lstrip()
@@ -73,6 +79,7 @@ def validate_ssml(ssml_text, schema_path):
                 raise UserParameterException(
                     f"SSML validation failed, check slide")
 
+
 def escape_ssml_chars(text):
     escape_chars = {
         '<': '&lt;',
@@ -80,6 +87,7 @@ def escape_ssml_chars(text):
         '&': '&amp;'
     }
     return ''.join(escape_chars.get(c, c) for c in text)
+
 
 def parse_ssml(ssml_text):
     ssml_text = ssml_text.lstrip()
@@ -113,6 +121,7 @@ def parse_ssml(ssml_text):
             speak_ssml += "</speak>"
             lines.append((voice_name, speak_ssml))
     return lines
+
 
 def find_missing_tags(ssml_text):
     voice_name = 'Brian'
