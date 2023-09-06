@@ -122,6 +122,20 @@ def get_folder_prs_images_from_pptx(usermail, project, filename):
     images = pdf_to_images(pdf_path)
     return folder, prs, images
 
+def generate_audio(index, folder, prefix, base64):
+    filename = os.path.join(folder, f'{prefix}_{index}.mp3')
+    generate_tts(text, voice_name, filename)
+    audio = AudioSegment.from_file(filename)
+    if(base64):
+        return audiosegment_to_base64(audio)
+    return audio
+
+def combine_audios_and_generate_file(index, folder, audios):
+    combined_audio = sum(audios)
+    combined_filename = os.path.join(folder, f'slide_{index}.mp3')
+    combined_audio.export(combined_filename, format="mp3", bitrate="320k")
+    return audiosegment_to_base64(combined_audio)
+
 #PROCESS PPTX BLOCK
 
 def process_pptx(usermail, project, filename):
@@ -253,57 +267,17 @@ def process_preview(text):
     except Exception as e:
         raise ElaborationException(
             f"Audio Preview: Exception during SSML correction/validation/parsing: {str(e)}")
-
     try:
         if len(parsed_ssml) == 1:
             for voice_name, text in parsed_ssml:
-                try:
-                    filename = os.path.join(
-                        temp_folder, f'slide_{voice_name}.mp3')
-                    audio = generate_tts(
-                        text, voice_name, filename)
-                    audio = AudioSegment.from_file(filename)
-                except AmazonException as e:
-                    raise AmazonException(e)
-                except ElaborationException as e:
-                    raise ElaborationException(e)
-                except Exception as e:
-                    raise Exception(
-                        f"Error during audio exporting: {str(e)}")
-                finally:
-                    delete_folder(temp_folder)
-            return audio
+                return generate_audio(voice_name, temp_folder,"slide", False)
         else:
-            try:
-                audios = []
-                for voice_name, text in parsed_ssml:
-                    filename = os.path.join(
-                        temp_folder, f'multi_voice_{voice_name}.mp3')
-                    generate_tts(text, voice_name, filename)
-                    audio = AudioSegment.from_file(filename)
-                    audios.append(audio)
-                    audios.append(half_sec_silence)
-                audios.pop()
-                combined_audio = audios[0]
-                for audio in audios[1:]:
-                    combined_audio += audio
-                combined_filename = os.path.join(
-                    temp_folder, f'combined.mp3')
-                combined_audio.export(
-                    combined_filename, format="mp3", bitrate="320k")
-                return combined_audio
-            except AmazonException as e:
-                raise AmazonException(e)
-            except ElaborationException as e:
-                raise ElaborationException(e)
-            except Exception as e:
-                raise Exception(
-                    f"Error during combined audio exporting: {str(e)}")
-            finally:
-                delete_folder(temp_folder)
-    except OSError as e:
-        raise ElaborationException(
-            f"Could not process file due to OS path issue: {e.filename}")
+            audios = []
+            for voice_name, text in parsed_ssml:
+                audios.append(generate_audio(voice_name, temp_folder,"multi_voice", False))
+                audios.append(half_sec_silence)
+            audio_base64 = combine_audios_and_generate_file("combined", temp_folder, audios)
+            return combined_audio
     except AmazonException as e:
         raise AmazonException(e)
     except ElaborationException as e:
@@ -313,22 +287,10 @@ def process_preview(text):
     except Exception as e:
         raise ElaborationException(
             f"Exception while processing text: {str(e)}")
+    finally:
+        delete_folder(temp_folder)
 
 #PPTX SPLIT BLOCK
-
-def generate_audio_base64 (index, folder, prefix, base64):
-    filename = os.path.join(folder, f'{prefix}_{index}.mp3')
-    generate_tts(text, voice_name, filename)
-    audio = AudioSegment.from_file(filename)
-    if(base64):
-        return audiosegment_to_base64(audio)
-    return audio
-
-def combine_audios_and_generate_file(index, folder, audios):
-    combined_audio = sum(audios)
-    combined_filename = os.path.join(folder, f'slide_{index}.mp3')
-    combined_audio.export(combined_filename, format="mp3", bitrate="320k")
-    return audiosegment_to_base64(combined_audio)
 
 def process_slide_split(index, slide, image, folder):
     notes_text, have_notes = check_slide_have_notes(slide.notes_slide)
@@ -340,11 +302,11 @@ def process_slide_split(index, slide, image, folder):
         audio_base64 = None
         if len(parsed_ssml) == 1:
             for voice_name, text in parsed_ssml:
-                audio_base64 = generate_audio_base64(index, folder,"slide", True)
+                audio_base64 = generate_audio(index, folder,"slide", True)
         else:
             audios = []
             for j, (voice_name, text) in enumerate(parsed_ssml):
-                audios.append(generate_audio_base64(index, folder,"multi_voice", False))
+                audios.append(generate_audio(index, folder,"multi_voice", False))
                 audios.append(half_sec_silence)
             audio_base64 = combine_audios_and_generate_file(index, folder, audios)
         return slide_split_data(index, image_base64, audio_base64)
