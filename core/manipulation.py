@@ -130,11 +130,13 @@ def generate_audio(index, folder, prefix, text, voice_name, base64):
         return audiosegment_to_base64(audio)
     return audio
 
-def combine_audios_and_generate_file(index, folder, audios):
+def combine_audios_and_generate_file(index, folder, audios, base64):
     combined_audio = sum(audios)
     combined_filename = os.path.join(folder, f'slide_{index}.mp3')
     combined_audio.export(combined_filename, format="mp3", bitrate="320k")
-    return audiosegment_to_base64(combined_audio)
+    if(base64):
+        return audiosegment_to_base64(combined_audio)
+    return combined_audio
 
 #PROCESS PPTX BLOCK
 
@@ -187,73 +189,27 @@ def process_slide(slide, temp_folder):
         if len(parsed_ssml) == 1:
             unique_id = uuid.uuid4()
             for voice_name, text in parsed_ssml:
-                try:
-                    filename = os.path.join(
-                        temp_folder, f'slide_{unique_id}.mp3')
-                    audio = generate_tts(
-                        text, voice_name, filename)
-                    audio = AudioSegment.from_file(filename)
-
-                    left, top, width, height = Inches(
-                        1), Inches(2.5), Inches(1), Inches(1)
-                    slide.shapes.add_movie(
-                        filename, left, top, width, height, mime_type="audio/mp3", poster_frame_image=None)
-                except AmazonException as e:
-                    raise AmazonException(e)
-                except ElaborationException as e:
-                    raise ElaborationException(e)
-                except Exception as e:
-                    raise Exception(
-                        f"Error during audio combining/exporting or adding to slide: {str(e)}")
+                audio = generate_audio(unique_id,temp_folder,"slide",text, voice_name, False)
+                left, top, width, height = Inches(1), Inches(2.5), Inches(1), Inches(1)
+                slide.shapes.add_movie(filename, left, top, width, height, mime_type="audio/mp3", poster_frame_image=None)
         else:
             audios = []
             for voice_name, text in parsed_ssml:
-                try:
-                    unique_id = uuid.uuid4()
-                    filename = os.path.join(
-                        temp_folder, f'multi_voice_{unique_id}.mp3')
-                    generate_tts(text, voice_name, filename)
-                    audio = AudioSegment.from_file(filename)
-                    audios.append(audio)
-                    audios.append(half_sec_silence)
-                except AmazonException as e:
-                    raise AmazonException(e)
-                except ElaborationException as e:
-                    raise ElaborationException(e)
-                except Exception as e:
-                    raise Exception(
-                        f"Error during audio combining/exporting or adding to slide: {str(e)}")
-            audios.pop()
-            combined_audio = audios[0]
-            for audio in audios[1:]:
-                combined_audio += audio
-            try:
-                combined_filename = os.path.join(
-                    temp_folder, f'combined.mp3')
-                combined_audio.export(
-                    combined_filename, format="mp3", bitrate="320k")
-                left, top, width, height = Inches(
-                    1), Inches(2.5), Inches(1), Inches(1)
-                slide.shapes.add_movie(
-                    combined_filename, left, top, width, height, mime_type="audio/mp3", poster_frame_image=None)
-            except AmazonException as e:
-                raise AmazonException(e)
-            except ElaborationException as e:
-                raise ElaborationException(e)
-            except Exception as e:
-                raise Exception(
-                    f"Error during audio combining/exporting or adding to slide: {str(e)}")
+                unique_id = uuid.uuid4()
+                audios.append(generate_audio(unique_id,temp_folder,"multi_voice",text, voice_name, False))
+                audios.append(half_sec_silence)
+            combined_audio = combine_audios_and_generate_file("combined",temp_folder,audios, False)
+            left, top, width, height = Inches(
+                1), Inches(2.5), Inches(1), Inches(1)
+            slide.shapes.add_movie(
+                combined_filename, left, top, width, height, mime_type="audio/mp3", poster_frame_image=None)
         return modified
-    except OSError as e:
-        raise ElaborationException(
-            f"Critical: could not delete temp file: {e.filename}")
     except AmazonException as e:
         raise AmazonException(e)
     except UserParameterException as e:
         raise UserParameterException(e)
     except Exception as e:
-        raise ElaborationException(
-            f"Exception while processing a slide: {str(e)}")
+        raise ElaborationException(f"Exception while processing a slide: {str(e)}")
 
 #TTS TEXT PREVIEW BLOCK
 
@@ -276,7 +232,7 @@ def process_preview(text):
             for voice_name, text in parsed_ssml:
                 audios.append(generate_audio(voice_name, temp_folder,"multi_voice", text, voice_name, False))
                 audios.append(half_sec_silence)
-            combined_audio = combine_audios_and_generate_file("combined", temp_folder, audios)
+            combined_audio = combine_audios_and_generate_file("combined", temp_folder, audios, True)
             return combined_audio
     except AmazonException as e:
         raise AmazonException(e)
@@ -307,7 +263,7 @@ def process_slide_split(index, slide, image, folder):
             for j, (voice_name, text) in enumerate(parsed_ssml):
                 audios.append(generate_audio(index, folder,"multi_voice",text, voice_name, False))
                 audios.append(half_sec_silence)
-            audio_base64 = combine_audios_and_generate_file(index, folder, audios)
+            audio_base64 = combine_audios_and_generate_file(index, folder, audios, True)
         return slide_split_data(index, image_base64, audio_base64)
     except AmazonException as e:
         raise AmazonException(e)
