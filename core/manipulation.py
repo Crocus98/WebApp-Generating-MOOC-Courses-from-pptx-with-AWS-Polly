@@ -1,4 +1,3 @@
-import shutil
 from pptx import Presentation
 from pptx.util import Inches
 from pydub import AudioSegment
@@ -7,7 +6,9 @@ from pdf2image import convert_from_path
 from pydub import AudioSegment
 from dotenv import load_dotenv
 from exceptions import *
+from utils import *
 import subprocess
+import shutil
 import base64
 import boto3
 import uuid
@@ -187,26 +188,17 @@ def process_slide(slide, temp_folder):
                 except Exception as e:
                     raise Exception(
                         f"Error during audio combining/exporting or adding to slide: {str(e)}")
-                # finally:
-                #     try:
-                #         print("single:", temp_folder)
-                #         shutil.rmtree(temp_folder)
-                #     except Exception as e:
-                #         raise ElaborationException(
-                #             f"Critical: Exception while deleting temp folder: {str(e)}")
         else:
             audios = []
             for voice_name, text in parsed_ssml:
                 try:
                     unique_id = uuid.uuid4()
-                    # flag = False
                     filename = os.path.join(
                         temp_folder, f'multi_voice_{unique_id}.mp3')
                     generate_tts2(text, voice_name, filename)
                     audio = AudioSegment.from_file(filename)
                     audios.append(audio)
                     audios.append(half_sec_silence)
-                    # flag = True
                 except AmazonException as e:
                     raise AmazonException(e)
                 except ElaborationException as e:
@@ -214,14 +206,6 @@ def process_slide(slide, temp_folder):
                 except Exception as e:
                     raise Exception(
                         f"Error during audio combining/exporting or adding to slide: {str(e)}")
-                # finally:
-                #     try:
-                #         if not flag:
-                #             for audio in audios:
-                #                 os.remove(audio)
-                #     except Exception as e:
-                #         raise ElaborationException(
-                #             f"Critical: Exception while deleting temp folder: {str(e)}")
             audios.pop()
             combined_audio = audios[0]
             for audio in audios[1:]:
@@ -282,19 +266,13 @@ def add_tts_to_pptx(pptx_file, usermail, project):
         raise ElaborationException(
             f"Exception adding tts to pptx: {str(e)}")
     finally:
-        try:
-            print("single:", temp_folder)
-            shutil.rmtree(temp_folder)
-        except Exception as e:
-            raise ElaborationException(
-                f"Critical: Exception while deleting temp folder: {str(e)}")
+        delete_folder(temp_folder)
 
 
 def process_pptx(usermail, project, filename):
     pptx_file = download_pptx_from_s3(usermail, project, filename)
-    # Capture the modified flag
     modified = add_tts_to_pptx(pptx_file, usermail, project)
-    if modified:  # Only upload if changes were made
+    if modified:
         edited_filename = f"{os.path.splitext(filename)[0]}_edited{os.path.splitext(filename)[1]}"
         upload_pptx_to_s3(usermail, project, edited_filename, pptx_file)
     else:
@@ -334,13 +312,7 @@ def process_preview(text):
                     raise Exception(
                         f"Error during audio exporting: {str(e)}")
                 finally:
-                    try:
-                        print("single: ", temp_folder)
-                        shutil.rmtree(temp_folder)
-
-                    except Exception as e:
-                        raise ElaborationException(
-                            f"Critical: Exception while deleting temp folder: {str(e)}")
+                    delete_folder(temp_folder)
             return audio
         else:
             try:
@@ -369,13 +341,7 @@ def process_preview(text):
                 raise Exception(
                     f"Error during combined audio exporting: {str(e)}")
             finally:
-                try:
-                    print("combined: ", temp_folder)
-                    shutil.rmtree(temp_folder)
-
-                except Exception as e:
-                    raise ElaborationException(
-                        f"Critical: Exception while deleting temp folder: {str(e)}")
+                delete_folder(temp_folder)
     except OSError as e:
         raise ElaborationException(
             f"Could not process file due to OS path issue: {e.filename}")
@@ -616,8 +582,4 @@ def process_pptx_split(usermail, project, filename):
         raise ElaborationException(
             f"Exception while processing slides splitting: {str(e)}")
     finally:
-        try:
-            shutil.rmtree(temp_folder)
-        except Exception as e:
-            raise ElaborationException(
-                f"Critical: Exception while deleting temp folder: {str(e)}")
+        delete_folder(temp_folder)
