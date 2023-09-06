@@ -161,7 +161,7 @@ def process_slide(slide, temp_folder):
         notes_text, modified = check_slide_have_notes(slide.notes_slide)
         if not modified:
             return modified
-        parse_ssml = check_correct_validate_parse_text(notes_text)
+        parsed_ssml = check_correct_validate_parse_text(notes_text)
     except UserParameterException as e:
         raise UserParameterException(e)
     except Exception as e:
@@ -243,7 +243,7 @@ def process_preview(text):
     unique_id = uuid.uuid4()
     temp_folder = create_folder(f"{unique_id}_temp")
     try:
-        parse_ssml = check_correct_validate_parse_text(text)
+        parsed_ssml = check_correct_validate_parse_text(text)
     except UserParameterException as e:
         raise UserParameterException(e)
     except Exception as e:
@@ -310,35 +310,33 @@ def process_preview(text):
         raise ElaborationException(
             f"Exception while processing text: {str(e)}")
 
+def generate_audio_base64 (index, folder, prefix, base64):
+    filename = os.path.join(folder, f'{prefix}_{index}.mp3')
+    generate_tts(text, voice_name, filename)
+    audio = AudioSegment.from_file(filename)
+    if(base64):
+        return audiosegment_to_base64(audio)
+    return audio
+
 def process_slide_split(index, slide, image, folder):
     notes_text, have_notes = check_slide_have_notes(slide.notes_slide)
     image_base64 = extract_image_from_slide(folder,image_path)
     if not have_notes:
         return slide_split_data(index, image_base64, None)
-    parse_ssml = check_correct_validate_parse_text(text)
+    parsed_ssml = check_correct_validate_parse_text(text)
     tts_generated = False
     try:
         if len(parsed_ssml) == 1:
             for voice_name, text in parsed_ssml:
-                filename = os.path.join(
-                    folder, f'slide_{i}.mp3')
-                audio = generate_tts(
-                    text, voice_name, filename)
-                audio = AudioSegment.from_file(filename)
-                audio_base64 = audiosegment_to_base64(
-                    audio)
+                audio_base64 = generate_audio_base64(index, folder,"slide", True)
         else:
             audios = []
             for j, (voice_name, text) in enumerate(parsed_ssml):
-                filename = os.path.join(
-                    folder, f'multi_voice_{j}.mp3')
-                generate_tts(text, voice_name, filename)
-                audio = AudioSegment.from_file(filename)
-                audios.append(audio)
+                audios.append(generate_audio_base64(index, folder,"multi_voice", False))
                 audios.append(half_sec_silence)
             combined_audio = sum(audios[1:], audios[0])
             combined_filename = os.path.join(
-                temp_folder, f'slide_{i}.mp3')
+                temp_folder, f'slide_{index}.mp3')
             combined_audio.export(
                 combined_filename, format="mp3", bitrate="320k")
             audio_base64 = audiosegment_to_base64(
