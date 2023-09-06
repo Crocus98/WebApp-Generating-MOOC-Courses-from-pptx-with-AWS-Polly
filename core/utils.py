@@ -1,4 +1,5 @@
 from pdf2image import convert_from_path
+from ssml_validation import *
 from exceptions import *
 import shutil
 import base64
@@ -72,3 +73,9 @@ def check_slides_modified(notes_slide):
         if notes_text and notes_text.strip():
             return notes_text, True
     return None, False
+
+def check_correct_validate_parse_text(notes_text):
+    checked_missing_tags = find_missing_tags(notes_text)
+    corrected_ssml = correct_special_characters(checked_missing_tags)
+    validate_ssml(corrected_ssml, schema_path)
+    return parse_ssml(corrected_ssml)

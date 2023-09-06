@@ -151,12 +151,7 @@ def process_slide(slide, temp_folder):
         notes_text, modified = check_slides_modified(slide.notes_slide)
         if not modified:
             return modified
-
-        checked_missing_tags = find_missing_tags(notes_text)
-        corrected_ssml = correct_special_characters(
-            checked_missing_tags)
-        validate_ssml(corrected_ssml, schema_path)
-        parsed_ssml = parse_ssml(corrected_ssml)
+        parse_ssml = check_correct_validate_parse_text(notes_text)
     except UserParameterException as e:
         raise UserParameterException(e)
     except Exception as e:
@@ -238,16 +233,13 @@ def process_preview(text):
     unique_id = uuid.uuid4()
     temp_folder = create_folder(f"{unique_id}_temp")
     try:
-
-        checked_missing_tags = find_missing_tags(text)
-        corrected_ssml = correct_special_characters(checked_missing_tags)
-        validate_ssml(corrected_ssml, schema_path)
-        parsed_ssml = parse_ssml(corrected_ssml)
+        parse_ssml = check_correct_validate_parse_text(text)
     except UserParameterException as e:
         raise UserParameterException(e)
     except Exception as e:
         raise ElaborationException(
             f"Audio Preview: Exception during SSML correction/validation/parsing: {str(e)}")
+
     try:
         if len(parsed_ssml) == 1:
             for voice_name, text in parsed_ssml:
@@ -337,11 +329,7 @@ def process_pptx_split(usermail, project, filename):
                     image_base64 = image_to_base64(image)
 
                     tts_generated = False
-                    checked_missing_tags = find_missing_tags(notes_text)
-                    corrected_ssml = correct_special_characters(
-                        checked_missing_tags)
-                    validate_ssml(corrected_ssml, schema_path)
-                    parsed_ssml = parse_ssml(corrected_ssml)
+                    parse_ssml = check_correct_validate_parse_text(text)
                     try:
                         if len(parsed_ssml) == 1:
                             for voice_name, text in parsed_ssml:
