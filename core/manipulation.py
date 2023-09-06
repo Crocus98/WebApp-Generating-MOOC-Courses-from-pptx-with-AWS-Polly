@@ -142,11 +142,8 @@ def combine_audio_files(audio_files):
             f"Error during audio combining/exporting: {str(e)}")
 
 
-def process_slide(slide):
-    unique_id = uuid.uuid4()
-    temp_folder = f"{unique_id}_temp"
+def process_slide(slide, temp_folder):
 
-    os.makedirs(temp_folder, exist_ok=True)
     try:
         modified = False
 
@@ -170,10 +167,11 @@ def process_slide(slide):
             f"Presentation Elaboration: Exception during SSML correction/validation/parsing: {str(e)}")
     try:
         if len(parsed_ssml) == 1:
+            unique_id = uuid.uuid4()
             for voice_name, text in parsed_ssml:
                 try:
                     filename = os.path.join(
-                        temp_folder, f'slide_{voice_name}.mp3')
+                        temp_folder, f'slide_{unique_id}.mp3')
                     audio = generate_tts2(
                         text, voice_name, filename)
                     audio = AudioSegment.from_file(filename)
@@ -189,24 +187,26 @@ def process_slide(slide):
                 except Exception as e:
                     raise Exception(
                         f"Error during audio combining/exporting or adding to slide: {str(e)}")
-                finally:
-                    try:
-                        shutil.rmtree(temp_folder)
-                    except Exception as e:
-                        raise ElaborationException(
-                            f"Critical: Exception while deleting temp folder: {str(e)}")
+                # finally:
+                #     try:
+                #         print("single:", temp_folder)
+                #         shutil.rmtree(temp_folder)
+                #     except Exception as e:
+                #         raise ElaborationException(
+                #             f"Critical: Exception while deleting temp folder: {str(e)}")
         else:
             audios = []
             for voice_name, text in parsed_ssml:
                 try:
-                    flag = False
+                    unique_id = uuid.uuid4()
+                    # flag = False
                     filename = os.path.join(
-                        temp_folder, f'multi_voice_{voice_name}.mp3')
+                        temp_folder, f'multi_voice_{unique_id}.mp3')
                     generate_tts2(text, voice_name, filename)
                     audio = AudioSegment.from_file(filename)
                     audios.append(audio)
                     audios.append(half_sec_silence)
-                    flag = True
+                    # flag = True
                 except AmazonException as e:
                     raise AmazonException(e)
                 except ElaborationException as e:
@@ -214,13 +214,14 @@ def process_slide(slide):
                 except Exception as e:
                     raise Exception(
                         f"Error during audio combining/exporting or adding to slide: {str(e)}")
-                finally:
-                    try:
-                        if not flag:
-                            shutil.rmtree(temp_folder)
-                    except Exception as e:
-                        raise ElaborationException(
-                            f"Critical: Exception while deleting temp folder: {str(e)}")
+                # finally:
+                #     try:
+                #         if not flag:
+                #             for audio in audios:
+                #                 os.remove(audio)
+                #     except Exception as e:
+                #         raise ElaborationException(
+                #             f"Critical: Exception while deleting temp folder: {str(e)}")
             audios.pop()
             combined_audio = audios[0]
             for audio in audios[1:]:
@@ -241,13 +242,7 @@ def process_slide(slide):
             except Exception as e:
                 raise Exception(
                     f"Error during audio combining/exporting or adding to slide: {str(e)}")
-            finally:
-                try:
-                    shutil.rmtree(temp_folder)
 
-                except Exception as e:
-                    raise ElaborationException(
-                        f"Critical: Exception while deleting temp folder: {str(e)}")
         modified = True
         return modified
     except OSError as e:
@@ -262,13 +257,15 @@ def process_slide(slide):
             f"Exception while processing a slide: {str(e)}")
 
 
-def add_tts_to_pptx(pptx_file):
+def add_tts_to_pptx(pptx_file, usermail, project):
     try:
+        temp_folder = f"{usermail}_{project}_temp"
+        os.makedirs(temp_folder, exist_ok=True)
         pptx_file.seek(0)
         prs = Presentation(pptx_file)
         modified = False
         for slide in prs.slides:
-            if process_slide(slide):
+            if process_slide(slide, temp_folder):
                 modified = True
         pptx_file.seek(0)
         if modified:
@@ -284,11 +281,19 @@ def add_tts_to_pptx(pptx_file):
     except Exception as e:
         raise ElaborationException(
             f"Exception adding tts to pptx: {str(e)}")
+    finally:
+        try:
+            print("single:", temp_folder)
+            shutil.rmtree(temp_folder)
+        except Exception as e:
+            raise ElaborationException(
+                f"Critical: Exception while deleting temp folder: {str(e)}")
 
 
 def process_pptx(usermail, project, filename):
     pptx_file = download_pptx_from_s3(usermail, project, filename)
-    modified = add_tts_to_pptx(pptx_file)  # Capture the modified flag
+    # Capture the modified flag
+    modified = add_tts_to_pptx(pptx_file, usermail, project)
     if modified:  # Only upload if changes were made
         edited_filename = f"{os.path.splitext(filename)[0]}_edited{os.path.splitext(filename)[1]}"
         upload_pptx_to_s3(usermail, project, edited_filename, pptx_file)
