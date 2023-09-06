@@ -79,3 +79,21 @@ def check_correct_validate_parse_text(notes_text):
     corrected_ssml = correct_special_characters(checked_missing_tags)
     validate_ssml(corrected_ssml, schema_path)
     return parse_ssml(corrected_ssml)
+
+def slide_split_data(index, image_base64, audio_base64):
+    return {
+        "slide_id": i,
+        "image": {
+            "data": image_base64,
+            "filename": f"slide_{i}.jpg"
+        },
+        "tts": {
+            "data": audio_base64,
+            "filename": f"slide_{i}.mp3"
+        } if audio_base64 is not None else None
+    }
+
+def extract_image_from_slide(folder, image_path):
+    image_path = os.path.join(folder, f'slide_{i}.jpg')
+    image.save(image_path)
+    return image_to_base64(image)

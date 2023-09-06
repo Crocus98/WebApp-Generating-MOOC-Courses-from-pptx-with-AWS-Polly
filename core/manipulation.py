@@ -310,34 +310,28 @@ def process_preview(text):
         raise ElaborationException(
             f"Exception while processing text: {str(e)}")
 
-def process_slide_split(slide, image):
+def process_slide_split(index, slide, image, folder):
     notes_text, modified = check_slides_modified(slide.notes_slide)
+    image_base64 = extract_image_from_slide(folder,image_path)
     if not modified:
-        return
-    
-    image_path = os.path.join(temp_folder, f'slide_{i}.jpg')
-    image.save(image_path)
-    image_base64 = image_to_base64(image)
-
-    tts_generated = False
+        return slide_split_data(index, image_base64, None)
     parse_ssml = check_correct_validate_parse_text(text)
+    tts_generated = False
     try:
         if len(parsed_ssml) == 1:
             for voice_name, text in parsed_ssml:
                 filename = os.path.join(
-                    temp_folder, f'slide_{i}.mp3')
+                    folder, f'slide_{i}.mp3')
                 audio = generate_tts(
                     text, voice_name, filename)
                 audio = AudioSegment.from_file(filename)
                 audio_base64 = audiosegment_to_base64(
                     audio)
-                tts_generated = True
-
         else:
             audios = []
             for j, (voice_name, text) in enumerate(parsed_ssml):
                 filename = os.path.join(
-                    temp_folder, f'multi_voice_{j}.mp3')
+                    folder, f'multi_voice_{j}.mp3')
                 generate_tts(text, voice_name, filename)
                 audio = AudioSegment.from_file(filename)
                 audios.append(audio)
@@ -349,19 +343,10 @@ def process_slide_split(slide, image):
                 combined_filename, format="mp3", bitrate="320k")
             audio_base64 = audiosegment_to_base64(
                 combined_audio)
-            tts_generated = True
-        slide_info = {
-            "slide_id": i,
-            "image": {
-                "data": image_base64,
-                "filename": f"slide_{i}.jpg"
-            },
-            "tts": {
-                "data": audio_base64,
-                "filename": f"slide_{i}.mp3"
-            } if tts_generated else None
-        }
-        return slide_info
+        tts_generated = True
+        if not tts_generated:
+            audio_base64 = None
+        return slide_split_data(index, image_base64, audio_base64)
     except AmazonException as e:
         raise AmazonException(e)
     except Exception as e:
@@ -374,7 +359,7 @@ def process_pptx_split(usermail, project, filename):
         temp_folder, prs, images = get_folder_prs_images_from_pptx(usermail, project, filename)
         slide_data = []
         for i, (slide, image) in enumerate(zip(prs.slides, images)):
-            slide_data.append(process_slide_split(slide, image))
+            slide_data.append(process_slide_split(i, slide, image, temp_folder))
         return slide_data
     except OSError as e:
         raise ElaborationException(
