@@ -33,11 +33,9 @@ class Polly:
                                   aws_access_key_id=aws_access_key_id,
                                   aws_secret_access_key=aws_secret_access_key,
                                   region_name=region_name)
-    
     def __del__(self):
-        self.polly = None
+        self.polly = None  #called with -> del obj
 
-# Get environment variables
 aws_access_key_id = os.getenv('aws_access_key_id')
 aws_secret_access_key = os.getenv('aws_secret_access_key')
 bucket_name = os.getenv('bucket_name')
@@ -111,6 +109,18 @@ def pptx_to_pdf(pptx_file_path):
     finally:
         process.terminate()
     return output_pdf_path
+
+def get_folder_prs_images_from_pptx(usermail, project, filename):
+    pptx_file = download_file_from_s3(usermail, project, filename)
+    folder = create_folder(f"{usermail}_{project}_temp")
+    pptx_file_path = os.path.join(folder, filename)
+    with open(pptx_file_path, 'wb') as f:
+        f.write(pptx_file.getbuffer())
+    pptx_file.seek(0)
+    prs = Presentation(pptx_file)
+    pdf_path = pptx_to_pdf(pptx_file_path).replace('.pptx.pdf', '.pdf')
+    images = pdf_to_images(pdf_path)
+    return folder, prs, images
 
 def process_pptx(usermail, project, filename):
     pptx_file = download_file_from_s3(usermail, project, filename)
@@ -303,21 +313,9 @@ def process_preview(text):
 def process_pptx_split(usermail, project, filename):
     tts_generated = False
     try:
-        pptx_file = download_file_from_s3(usermail, project, filename)
-        temp_folder = create_folder(f"{usermail}_{project}_temp")
-        pptx_file_path = os.path.join(temp_folder, filename)
-        with open(pptx_file_path, 'wb') as f:
-            f.write(pptx_file.getbuffer())
-
-        pptx_file.seek(0)
-        prs = Presentation(pptx_file)
-        pdf_path = pptx_to_pdf(pptx_file_path).replace('.pptx.pdf', '.pdf')
-        images = pdf_to_images(pdf_path)
-
+        temp_folder, prs, images = get_folder_prs_images_from_pptx(usermail, project, filename)
         slide_data = []
-
         for i, (slide, image) in enumerate(zip(prs.slides, images)):
-
             notes_slide = slide.notes_slide
             if notes_slide and notes_slide.notes_text_frame:
                 notes_text = notes_slide.notes_text_frame.text
@@ -364,7 +362,6 @@ def process_pptx_split(usermail, project, filename):
                     except Exception as e:
                         raise ElaborationException(
                             f"Exception while saving audio to file: {str(e)}")
-
                 slide_info = {
                     "slide_id": i,
                     "image": {
@@ -376,7 +373,6 @@ def process_pptx_split(usermail, project, filename):
                         "filename": f"slide_{i}.mp3"
                     } if tts_generated else None
                 }
-
                 slide_data.append(slide_info)
             else:
                 continue
