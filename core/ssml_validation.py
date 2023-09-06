@@ -1,17 +1,14 @@
 import xml.etree.ElementTree as ET
 from collections import deque
 from lxml import etree
-from xml.etree.ElementTree import ParseError
 from exceptions import *
 import re
-import html
 import os
 from dotenv import load_dotenv
 
 load_dotenv()
 
 schema_path = os.getenv('schema_path')
-# schema_path = 'WebApp\core\ssml.xsd'
 
 
 def correct_special_characters(ssml_text):

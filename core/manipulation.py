@@ -1,19 +1,15 @@
 from pptx import Presentation
-from pptx.util import Inches
 from pydub import AudioSegment
+from dotenv import load_dotenv
 from ssml_validation import *
-from pdf2image import convert_from_path
-from pydub import AudioSegment
 from exceptions import *
 from utils import *
 import subprocess
-import shutil
-import base64
 import boto3
 import uuid
 import io
 import os
-from dotenv import load_dotenv
+
 
 load_dotenv()
 
@@ -154,6 +150,7 @@ def generate_audio(index, folder, prefix, text, voice_name, base64):
 
 
 def combine_audios_and_generate_file(index, folder, audios, base64):
+    audios.pop()
     combined_audio = audios[0]
     for audio in audios[1:]:
         combined_audio += audio
@@ -224,8 +221,9 @@ def process_slide(slide, temp_folder):
             audios = []
             for voice_name, text in parsed_ssml:
                 unique_id = uuid.uuid4()
-                audios.append(generate_audio(unique_id, temp_folder,
-                              "multi_voice", text, voice_name, False))
+                audio, _ = generate_audio(unique_id, temp_folder,
+                                          "multi_voice", text, voice_name, False)
+                audios.append(audio)
                 audios.append(half_sec_silence)
             combined_audio, combined_filename = combine_audios_and_generate_file(
                 "combined", temp_folder, audios, False)
@@ -259,8 +257,9 @@ def process_preview(text):
         else:
             audios = []
             for voice_name, text in parsed_ssml:
-                audios.append(generate_audio(voice_name, temp_folder,
-                              "multi_voice", text, voice_name, False))
+                audio, _ = generate_audio(voice_name, temp_folder,
+                                          "multi_voice", text, voice_name, False)
+                audios.append(audio)
                 audios.append(half_sec_silence)
             combined_audio = combine_audios_and_generate_file(
                 "combined", temp_folder, audios, True)
@@ -295,8 +294,9 @@ def process_slide_split(index, slide, image, folder):
         else:
             audios = []
             for j, (voice_name, text) in enumerate(parsed_ssml):
-                audios.append(generate_audio(
-                    j, folder, "multi_voice", text, voice_name, False))
+                audio, _ = generate_audio(
+                    j, folder, "multi_voice", text, voice_name, False)
+                audios.append(audio)
                 audios.append(half_sec_silence)
             audio_base64 = combine_audios_and_generate_file(
                 index, folder, audios, True)

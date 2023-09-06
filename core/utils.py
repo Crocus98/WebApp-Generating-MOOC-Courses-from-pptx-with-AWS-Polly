@@ -1,12 +1,12 @@
 from pdf2image import convert_from_path
+from pydub import AudioSegment
+from pptx.util import Inches
 from ssml_validation import *
 from exceptions import *
 import shutil
 import base64
 import os
 import io
-from pptx.util import Inches
-from pydub import AudioSegment
 
 
 def delete_folder(folder):
