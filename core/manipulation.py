@@ -128,7 +128,7 @@ def generate_audio(index, folder, prefix, text, voice_name, base64):
     audio = AudioSegment.from_file(filename)
     if(base64):
         return audiosegment_to_base64(audio)
-    return audio
+    return audio, filename
 
 def combine_audios_and_generate_file(index, folder, audios, base64):
     combined_audio = sum(audios)
@@ -136,7 +136,7 @@ def combine_audios_and_generate_file(index, folder, audios, base64):
     combined_audio.export(combined_filename, format="mp3", bitrate="320k")
     if(base64):
         return audiosegment_to_base64(combined_audio)
-    return combined_audio
+    return combined_audio, combined_filename
 
 #PROCESS PPTX BLOCK
 
@@ -189,7 +189,7 @@ def process_slide(slide, temp_folder):
         if len(parsed_ssml) == 1:
             unique_id = uuid.uuid4()
             for voice_name, text in parsed_ssml:
-                audio = generate_audio(unique_id,temp_folder,"slide",text, voice_name, False)
+                audio, filename = generate_audio(unique_id,temp_folder,"slide",text, voice_name, False)
                 left, top, width, height = Inches(1), Inches(2.5), Inches(1), Inches(1)
                 slide.shapes.add_movie(filename, left, top, width, height, mime_type="audio/mp3", poster_frame_image=None)
         else:
@@ -198,7 +198,7 @@ def process_slide(slide, temp_folder):
                 unique_id = uuid.uuid4()
                 audios.append(generate_audio(unique_id,temp_folder,"multi_voice",text, voice_name, False))
                 audios.append(half_sec_silence)
-            combined_audio = combine_audios_and_generate_file("combined",temp_folder,audios, False)
+            combined_audio, combined_filename = combine_audios_and_generate_file("combined",temp_folder,audios, False)
             left, top, width, height = Inches(
                 1), Inches(2.5), Inches(1), Inches(1)
             slide.shapes.add_movie(
