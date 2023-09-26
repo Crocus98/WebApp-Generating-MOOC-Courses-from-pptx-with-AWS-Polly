@@ -26,6 +26,16 @@ def audiosegment_to_base64(audio_segment):
         raise ElaborationException(
             f"Exception while converting audio to base64: {str(e)}")
 
+def audiosegment_to_stream(audio_segment):
+    try:
+        buffer = io.BytesIO()
+        audio_segment.export(buffer, format="mp3")
+        buffer.seek(0)
+        return buffer
+    except Exception as e:
+        raise ElaborationException(
+            f"Exception while converting audio to stream: {str(e)}")
+
 
 def image_to_base64(image):
     try:
@@ -58,7 +68,7 @@ def combine_audio_files(audio_files):
 
 def create_folder(folder_path):
     os.makedirs(folder_path, exist_ok=True)
-    return folder_path
+    return os.path.abspath(folder_path)
 
 
 def pdf_to_images(pdf_path):

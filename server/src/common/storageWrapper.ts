@@ -2,11 +2,9 @@ import config from "@config";
 import {
   S3Client,
   PutObjectCommand,
-  DeleteObjectCommand,
   DeleteObjectsCommand,
   ListObjectsCommand,
   GetObjectCommand,
-  GetObjectCommandOutput,
 } from "@aws-sdk/client-s3";
 import AwsS3Exception from "@/exceptions/AwsS3Exception";
 

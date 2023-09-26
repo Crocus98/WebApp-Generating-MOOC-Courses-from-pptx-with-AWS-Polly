@@ -1,9 +1,13 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_file
 from dotenv import load_dotenv
 from manipulation import *
 from flask import Response
 from exceptions import *
+from zipfile import ZipFile
+import io
 import os
+import json
+
 
 load_dotenv()
 
@@ -31,12 +35,14 @@ def process_pptx_request():
         # print(f"An error occurred: {str(e)}")
         return jsonify({"message": f"Error: {str(e)}"}), 400
     except ElaborationException as e:
+        print(e)
         # print(f"An error occurred: {str(e)}")
         return jsonify({"message": f"Error: {str(e)}"}), 500
     except AmazonException as e:
         # print(f"An error occurred: {str(e)}")
         return jsonify({"message": f"Error: {str(e)}"}), 502
     except Exception as e:
+        print(e)
         # print(f"An error occurred: {str(e)}")
         return jsonify({"message": f"Error: {str(e)}"}), 500
 
@@ -51,10 +57,7 @@ def process_text_request():
     try:
         text = data['text']
         result = process_preview(text)
-        byte_io = io.BytesIO()
-        result.export(byte_io, format="mp3")
-        byte_io.seek(0)
-        return Response(byte_io, content_type="audio/mp3"), 200
+        return send_file(result, download_name="preview.mp3", as_attachment=True), 200
     except UserParameterException as e:
         # print(f"An error occurred: {str(e)}")
         return jsonify({"message": f"Error: {str(e)}"}), 400
@@ -66,6 +69,8 @@ def process_text_request():
         return jsonify({"message": f"Error: {str(e)}"}), 502
     except Exception as e:
         # print(f"An error occurred: {str(e)}")
+        traceback.print_exc()
+
         return jsonify({"message": f"Error: {str(e)}"}), 500
 
 
@@ -76,12 +81,23 @@ def process_slides_request():
     if not all(key in data for key in ('email', 'projectName', 'filename')):
         return jsonify({"message": "Missing parameters"}), 400
 
+    print(data["filename"])
+
     try:
         usermail = data['email']
         project = data['projectName']
         filename = data['filename']
+        
+        '''
+        stream = io.BytesIO()
+        with ZipFile(stream, 'w') as zip:
+            result = process_pptx_split(usermail, project, filename)
+            zip.writestr('preview.json', json.dumps(result))
+        stream.seek(0)
+        return send_file(stream, download_name="preview.zip", as_attachment=True), 200
+        '''
         result = process_pptx_split(usermail, project, filename)
-        return jsonify({"message": result}), 200
+        return send_file(result, download_name="archive.zip", as_attachment=True), 200
     except UserParameterException as e:
         # print(f"An error occurred: {str(e)}")
         return jsonify({"message": f"Error: {str(e)}"}), 400
@@ -92,6 +108,7 @@ def process_slides_request():
         # print(f"An error occurred: {str(e)}")
         return jsonify({"message": f"Error: {str(e)}"}), 502
     except Exception as e:
+        traceback.print_exc()
         # print(f"An error occurred: {str(e)}")
         return jsonify({"message": f"Error: {str(e)}"}), 500
 

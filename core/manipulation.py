@@ -1,6 +1,7 @@
 from pptx import Presentation
 from pydub import AudioSegment
 from dotenv import load_dotenv
+from zipfile import ZipFile
 from ssml_validation import *
 from exceptions import *
 from utils import *
@@ -9,6 +10,8 @@ import boto3
 import uuid
 import io
 import os
+import traceback
+
 
 
 load_dotenv()
@@ -113,10 +116,12 @@ def pptx_to_pdf(pptx_file_path):
     output_pdf_path = os.path.join(
         output_folder, f"{os.path.splitext(os.path.basename(pptx_file_path))[0]}.pdf")
 
-    command = f"\"{path_to_libreoffice}\"lowriter --headless --convert-to pdf --outdir \"{output_folder}\" \"{pptx_file_path}\""
+    command = f"{path_to_libreoffice} --headless --convert-to pdf --outdir \"{output_folder}\" \"{pptx_file_path}\""
 
     process = subprocess.Popen(
-        command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+       command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+
+    
     try:
         process.communicate(timeout=20)
     except subprocess.TimeoutExpired:
@@ -124,12 +129,12 @@ def pptx_to_pdf(pptx_file_path):
             f"Process for pptx conversion timed out. Killing it.")
     finally:
         process.terminate()
+    
     return output_pdf_path
 
 
-def get_folder_prs_images_from_pptx(usermail, project, filename):
+def get_folder_prs_images_from_pptx(usermail, project, filename, folder):
     pptx_file = download_file_from_s3(usermail, project, filename)
-    folder = create_folder(f"{usermail}_{project}_temp")
     pptx_file_path = os.path.join(folder, filename)
     with open(pptx_file_path, 'wb') as f:
         f.write(pptx_file.getbuffer())
@@ -137,7 +142,8 @@ def get_folder_prs_images_from_pptx(usermail, project, filename):
     prs = Presentation(pptx_file)
     pdf_path = pptx_to_pdf(pptx_file_path).replace('.pptx.pdf', '.pdf')
     images = pdf_to_images(pdf_path)
-    return folder, prs, images
+    images[0]
+    return prs, images
 
 
 def generate_audio(index, folder, prefix, text, voice_name, base64):
@@ -147,7 +153,6 @@ def generate_audio(index, folder, prefix, text, voice_name, base64):
     if (base64):
         return audiosegment_to_base64(audio)
     return audio, filename
-
 
 def combine_audios_and_generate_file(index, folder, audios, base64):
     audios.pop()
@@ -253,7 +258,9 @@ def process_preview(text):
     try:
         if len(parsed_ssml) == 1:
             for voice_name, text in parsed_ssml:
-                return generate_audio(voice_name, temp_folder, "slide", text, voice_name, False)
+                audio, _ = generate_audio(voice_name, temp_folder, "slide", text, voice_name, False)
+                audio_buffer = audiosegment_to_stream(audio)
+                return audio_buffer
         else:
             audios = []
             for voice_name, text in parsed_ssml:
@@ -261,9 +268,11 @@ def process_preview(text):
                                           "multi_voice", text, voice_name, False)
                 audios.append(audio)
                 audios.append(half_sec_silence)
-            combined_audio = combine_audios_and_generate_file(
-                "combined", temp_folder, audios, True)
-            return combined_audio
+            combined_audio, _ = combine_audios_and_generate_file(
+                "combined", temp_folder, audios, False)
+            audio_buffer = audiosegment_to_stream(combined_audio)
+
+            return audio_buffer
     except AmazonException as e:
         raise AmazonException(e)
     except ElaborationException as e:
@@ -278,7 +287,7 @@ def process_preview(text):
 
 # PPTX SPLIT BLOCK
 
-
+#OUTDATED
 def process_slide_split(index, slide, image, folder):
     notes_text, have_notes = check_slide_have_notes(slide.notes_slide)
     image_base64 = extract_image_from_slide(index, folder, image)
@@ -306,17 +315,57 @@ def process_slide_split(index, slide, image, folder):
     except Exception as e:
         raise ElaborationException(
             f"Exception while saving audio to file: {str(e)}")
-
+    
+def get_slide_audio_preview(index, slide, folder):
+    notes_text, have_notes = check_slide_have_notes(slide.notes_slide)
+    if not have_notes:
+        return None
+    parsed_ssml = check_correct_validate_parse_text(notes_text)
+    try:
+        audio_mp3 = None
+        if len(parsed_ssml) == 1:
+            for voice_name, text in parsed_ssml:
+                audio_mp3, _ = generate_audio(
+                    index, folder, "slide", text, voice_name, False)
+        else:
+            audios = []
+            for j, (voice_name, text) in enumerate(parsed_ssml):
+                audio, _ = generate_audio(
+                    j, folder, "multi_voice", text, voice_name, False)
+                audios.append(audio)
+                audios.append(half_sec_silence)
+            audio_mp3, _ = combine_audios_and_generate_file(
+                index, folder, audios, False)
+        return audio_mp3
+    except AmazonException as e:
+        raise AmazonException(e)
+    except Exception as e:
+        raise ElaborationException(
+            f"Exception while saving audio to file: {str(e)}")
 
 def process_pptx_split(usermail, project, filename):
     try:
-        temp_folder, prs, images = get_folder_prs_images_from_pptx(
-            usermail, project, filename)
-        slide_data = []
-        for i, (slide, image) in enumerate(zip(prs.slides, images)):
-            slide_data.append(process_slide_split(
-                i, slide, image, temp_folder))
-        return slide_data
+        temp_folder = create_folder(f"{usermail}_{project}_temp")
+        prs, images = get_folder_prs_images_from_pptx(
+            usermail, project, filename, temp_folder)
+        
+        stream = io.BytesIO()
+        with ZipFile(stream, "w") as zf:
+            for i, (slide, image) in enumerate(zip(prs.slides, images)):
+                #audio_segment = get_slide_audio_preview(i, slide, temp_folder)
+                img_buffer = io.BytesIO()
+                image.save(img_buffer, 'PNG')
+                img_buffer.seek(0)
+                zf.writestr(f"slide_{i}.png", img_buffer.read())
+                #if(audio_segment):
+                #    audio_buffer = audiosegment_to_stream(audio_segment)
+                #    zf.writestr(f"audio_{i}.mp3", audio_buffer.read())
+        stream.seek(0)
+        return stream
+    except Exception as e:
+        traceback.print_exc()
+        raise ElaborationException(
+            f"Exception while processing slides splitting: {str(e)}")
     except OSError as e:
         raise ElaborationException(
             f"Could not process file due to OS path issue: {e.filename}")
@@ -326,8 +375,6 @@ def process_pptx_split(usermail, project, filename):
         raise UserParameterException(e)
     except ElaborationException as e:
         raise ElaborationException(e)
-    except Exception as e:
-        raise ElaborationException(
-            f"Exception while processing slides splitting: {str(e)}")
+
     finally:
         delete_folder(temp_folder)

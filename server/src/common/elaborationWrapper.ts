@@ -6,12 +6,12 @@ import config from "@config";
 import { Project } from "@prisma/client";
 import storageWrapper from "@storage-wrapper";
 import AwsS3Exception from "@/exceptions/AwsS3Exception";
-import axios from "axios";
+import axios, { AxiosInstance } from "axios";
 
 class ElaborationWrapper {
   private static elaborationWrapper?: ElaborationWrapper;
   //private lambdaClient: LambdaClient; LAMBDA DISMISSED IN FAVOR OF MICROSERVICE
-  private axiosInstance: any;
+  private axiosInstance: AxiosInstance;
 
   constructor() {
     /* LAMBDA DISMISSED IN FAVOR OF MICROSERVICE
@@ -27,13 +27,20 @@ class ElaborationWrapper {
     );
     this.axiosInstance = axios.create({
       baseURL:
-        "http://" + config.MICROSERVICE_CONFIG.MICROSERVICE_HOST + ":" + config.MICROSERVICE_CONFIG.MICROSERVICE_PORT,
+        "http://" +
+        config.MICROSERVICE_CONFIG.MICROSERVICE_HOST +
+        ":" +
+        config.MICROSERVICE_CONFIG.MICROSERVICE_PORT,
     });
   }
 
   public async elaborateFile(project: Project, email: string) {
     try {
-      const filename = await storageWrapper.getFileNameFromStorageByUserEmailAndProject(email, project.name);
+      const filename =
+        await storageWrapper.getFileNameFromStorageByUserEmailAndProject(
+          email,
+          project.name
+        );
 
       /* LAMBDA DISMISSED IN FAVOR OF MICROSERVICE
       const funcName = "lambda_handler";
@@ -64,13 +71,16 @@ class ElaborationWrapper {
       } else if (error instanceof AwsS3Exception) {
         throw new AwsS3Exception(error.message);
       }
-      throw new MicroserviceException("Unexpected error. Microservice could not elaborate file.");
+      throw new MicroserviceException(
+        "Unexpected error. Microservice could not elaborate file."
+      );
     }
   }
 
   public async elaborateAudioPreview(text: string) {
+    /*
     try {
-      /* LAMBDA DISMISSED IN FAVOR OF MICROSERVICE
+       LAMBDA DISMISSED IN FAVOR OF MICROSERVICE
       const funcName = "lambda_handler";
       const payload = {
         text: text,
@@ -85,9 +95,12 @@ class ElaborationWrapper {
       return parsedResult.body;
       */
 
-      const result = await this.axiosInstance.post("/process-text", {
-        text: text,
-      });
+    return this.axiosInstance.post(
+      "/process-text",
+      { text: text },
+      { responseType: "stream" }
+    );
+    /*
       if (result.status !== 200) {
         throw new MicroserviceException(result.data);
       }
@@ -96,47 +109,28 @@ class ElaborationWrapper {
       if (error instanceof MicroserviceException) {
         throw new MicroserviceException(error.message);
       }
-      throw new MicroserviceException("Unexpected error. Microservice could not elaborate text to preview.");
+      throw new MicroserviceException(
+        "Unexpected error. Microservice could not elaborate text to preview."
+      );
     }
+    */
   }
 
   public async elaborateSlidesPreview(email: string, projectName: string) {
-    try {
-      const filename = await storageWrapper.getFileNameFromStorageByUserEmailAndProject(email, projectName);
-
-      /* LAMBDA DISMISSED IN FAVOR OF MICROSERVICE
-      const funcName = "lambda_handler";
-      const payload = {
-        usermail: email,
-        project: projectName,
-        filename: filename,
-        function_to_invoke: "process_slides",
-      };
-      const { logs, result } = await this.invoke(funcName, payload);
-      const parsedResult = JSON.parse(result);
-      if (parsedResult.statusCode !== 200) {
-        throw new LambdaException(
-          "Microservice could not elaborate slides to preview."
-        );
-      }
-      return parsedResult.body;
-      */
-
-      const result = await this.axiosInstance.post("/process-slides", {
+    const filename =
+      await storageWrapper.getFileNameFromStorageByUserEmailAndProject(
+        email,
+        projectName
+      );
+    return this.axiosInstance.post(
+      "/process-slides",
+      {
         email: email,
         projectName: projectName,
         filename: filename,
-      });
-      if (result.status !== 200) {
-        throw new MicroserviceException(result.data);
-      }
-      return result.data;
-    } catch (error) {
-      if (error instanceof MicroserviceException) {
-        throw new MicroserviceException(error.message);
-      }
-      throw new MicroserviceException("Unexpected error. Microservice could not elaborate slides to preview.");
-    }
+      },
+      { responseType: "stream" }
+    );
   }
 
   /* Used to invoke Lambda functions -- DISMISSED IN FAVOR OF MICROSERVICE
@@ -159,7 +153,8 @@ class ElaborationWrapper {
   }*/
 
   static getInstance(): ElaborationWrapper {
-    if (!this.elaborationWrapper) this.elaborationWrapper = new ElaborationWrapper();
+    if (!this.elaborationWrapper)
+      this.elaborationWrapper = new ElaborationWrapper();
     return this.elaborationWrapper;
   }
 }

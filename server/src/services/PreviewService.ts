@@ -16,19 +16,15 @@ export const elaborateAudioPreview = async (text: string) => {
     if (error instanceof MicroserviceException) {
       throw new PreviewException(error.message);
     }
-    throw new PreviewException("Unexpected error. Could not elaborate preview.");
+    throw new PreviewException(
+      "Unexpected error. Could not elaborate preview."
+    );
   }
 };
 
-export const elaborateSlidesPreview = async (email: string, projectName: string) => {
-  try {
-    return await elaborationWrapper.elaborateSlidesPreview(email, projectName);
-  } catch (error) {
-    if (error instanceof MicroserviceException) {
-      throw new PreviewException(error.message);
-    } else if (error instanceof StorageException) {
-      throw new PreviewException(error.message);
-    }
-    throw new PreviewException("Unexpected error. Could not elaborate preview.");
-  }
+export const elaborateSlidesPreview = async (
+  email: string,
+  projectName: string
+) => {
+  return elaborationWrapper.elaborateSlidesPreview(email, projectName);
 };

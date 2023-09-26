@@ -11,6 +11,8 @@ import {
   faFloppyDisk,
   faPlay,
   faPause,
+  faBolt,
+  faTriangleExclamation,
 } from "@fortawesome/free-solid-svg-icons";
 
 library.add(
@@ -24,5 +26,7 @@ library.add(
   faChevronRight,
   faFloppyDisk,
   faPlay,
-  faPause
+  faPause,
+  faBolt,
+  faTriangleExclamation
 );

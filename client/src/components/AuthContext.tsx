@@ -80,7 +80,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 }) => {
   const [loading, setLoading] = useState(true);
   const [state, dispatch] = useReducer(authReducer, initialState);
-
   useEffect(() => {
     const persistedState = localStorage.getItem(LOCAL_STORAGE_KEY);
     if (persistedState) {

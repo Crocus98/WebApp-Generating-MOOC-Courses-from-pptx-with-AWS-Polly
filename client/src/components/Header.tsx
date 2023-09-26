@@ -15,7 +15,7 @@ type Props = {
   onSave?: () => void;
   loadingDownload?: boolean;
   loadingSave?: boolean;
-  disabeledSave?: boolean;
+  hasUnsavedChanges?: boolean;
 };
 
 export default function Header({
@@ -23,7 +23,7 @@ export default function Header({
   onDownload,
   loadingDownload,
   onSave,
-  disabeledSave,
+  hasUnsavedChanges,
   loadingSave,
 }: Props) {
   const { state: authState, dispatch } = useContext(AuthContext);
@@ -42,12 +42,12 @@ export default function Header({
           <ProjectActionsContainer>
             <IconButton
               style={{
-                backgroundColor: disabeledSave
-                  ? colors.darkGrey
-                  : colors.purple,
+                backgroundColor: hasUnsavedChanges
+                  ? colors.purple
+                  : colors.darkGrey,
               }}
               onClick={onSave}
-              disabled={disabeledSave}
+              disabled={!hasUnsavedChanges}
             >
               {loadingSave ? (
                 <FontAwesomeIcon
@@ -61,13 +61,13 @@ export default function Header({
             </IconButton>
             <IconButton
               style={{
-                backgroundColor:
-                  loadingDownload || !disabeledSave
-                    ? colors.darkGrey
-                    : colors.orange,
+                backgroundColor: loadingDownload
+                  ? colors.darkGrey
+                  : colors.orange,
+                width: 60,
               }}
               onClick={onDownload}
-              disabled={loadingDownload || !disabeledSave}
+              disabled={loadingDownload}
             >
               {loadingDownload ? (
                 <FontAwesomeIcon
@@ -76,7 +76,27 @@ export default function Header({
                   size="sm"
                 />
               ) : (
-                <FontAwesomeIcon icon={"download"} size="sm" />
+                <SaveDownload>
+                  <FontAwesomeIcon
+                    icon={"floppy-disk"}
+                    style={{
+                      fontSize: 13,
+                      right: 2,
+                      bottom: -1,
+                      position: "absolute",
+                    }}
+                  />
+                  <FontAwesomeIcon
+                    icon={"download"}
+                    size="sm"
+                    style={{
+                      fontSize: 18,
+                      top: -10,
+                      left: -3,
+                      position: "absolute",
+                    }}
+                  />
+                </SaveDownload>
               )}
             </IconButton>
           </ProjectActionsContainer>
@@ -102,6 +122,14 @@ export default function Header({
     </HeaderContainer>
   );
 }
+
+const SaveDownload = styled.div`
+  position: absolute;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+`;
 
 const ProjectContainer = styled.div`
   display: grid;

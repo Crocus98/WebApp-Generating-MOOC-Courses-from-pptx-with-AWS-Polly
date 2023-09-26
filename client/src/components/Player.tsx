@@ -2,11 +2,12 @@ import React, { Component, MouseEventHandler } from "react";
 import styled from "styled-components";
 import colors from "../style/colors";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import ReactHowler from "react-howler";
+import ReactHowler, { HowlErrorCallback } from "react-howler";
 import raf from "raf"; // requestAnimationFrame polyfill
+import { toInteger } from "lodash";
 
 type Props = {
-  audio: string | undefined;
+  audio: string | null;
   loading: boolean;
 };
 
@@ -56,10 +57,11 @@ class Player extends Component<Props, State> {
     });
   }
 
+  handleOnLoadError: HowlErrorCallback = (id, error) => {
+    console.log(error);
+  };
+
   handleOnPlay() {
-    this.setState({
-      playing: true,
-    });
     this.renderSeekPos();
   }
 
@@ -127,26 +129,38 @@ class Player extends Component<Props, State> {
             size="2x"
           />
         </IconButton>
-        <input
-          type="range"
-          min="0"
-          max={this.state.duration ? this.state.duration.toFixed(2) : 0}
-          step=".01"
-          value={this.state.seek}
-          onChange={this.handleSeekingChange}
-          onMouseDown={this.handleMouseDownSeek}
-          onMouseUp={this.handleMouseUpSeek}
-        />
-        {audio && (
-          <ReactHowler
-            src={audio}
-            playing={this.state.playing}
-            onLoad={this.handleOnLoad}
-            onPlay={this.handleOnPlay}
-            onEnd={this.handleOnEnd}
-            ref={(ref) => (this.player = ref)}
+        <SliderContainer>
+          <Slider
+            type="range"
+            min="0"
+            max={this.state.duration ? this.state.duration.toFixed(2) : 0}
+            step=".01"
+            value={this.state.seek}
+            onChange={this.handleSeekingChange}
+            onMouseDown={this.handleMouseDownSeek}
+            onMouseUp={this.handleMouseUpSeek}
           />
-        )}
+
+          {audio && (
+            <ReactHowler
+              src={audio}
+              playing={this.state.playing}
+              onLoad={this.handleOnLoad}
+              onLoadError={this.handleOnLoadError}
+              onPlay={this.handleOnPlay}
+              onEnd={this.handleOnEnd}
+              format={["mp3"]}
+              loop={false}
+              ref={(ref) => (this.player = ref)}
+            />
+          )}
+        </SliderContainer>
+        <TimerContainer>
+          <span>
+            {(toInteger(this.state.seek) / 100).toFixed(2)} /{" "}
+            {(toInteger(this.state.duration) / 100).toFixed(2)}
+          </span>
+        </TimerContainer>
       </PlayerContainer>
     );
   }
@@ -158,8 +172,19 @@ const PlayerContainer = styled.div`
   display: flex;
   flex-direction: row;
   align-items: center;
-  justify-content: center;
+  justify-content: space-between;
   gap: 20px;
+  width: 100%;
+`;
+
+const TimerContainer = styled.div`
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  width: 100px;
+  color: ${colors.white};
+  font-weight: bolder;
 `;
 
 const IconButton = styled.button`
@@ -173,4 +198,19 @@ const IconButton = styled.button`
   height: 28px;
   width: 28px;
   color: ${colors.purple};
+`;
+
+const SliderContainer = styled.div`
+  flex: 1;
+`;
+
+const Slider = styled.input`
+  width: 100%;
+  height: 5px;
+  border-radius: 5px;
+  background: ${colors.lightGrey};
+  outline: none;
+  opacity: 0.7;
+  -webkit-transition: 0.2s;
+  transition: opacity 0.2s;
 `;

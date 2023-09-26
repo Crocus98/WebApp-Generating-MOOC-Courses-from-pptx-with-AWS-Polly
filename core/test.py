@@ -9,7 +9,6 @@ filename5 = '5_slides_extreme_tags.pptx'
 filename6 = '50_slides_mixed.pptx'
 filename7 = '5_slides_no_notes.pptx'
 
-
 def test_process_pptx_split(usermail, project, filename):
     try:
         result = process_pptx_split(usermail, project, filename)

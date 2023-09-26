@@ -1,13 +1,26 @@
 import { decode, encode } from "html-entities";
 import JSZip, { file } from "jszip";
+import { toInteger } from "lodash";
 
 const parser = new DOMParser();
 const serializer = new XMLSerializer();
 
-export const getSlideNotes = async (zip: JSZip): Promise<string[]> => {
-  const fileNames = Object.keys(zip.files).filter((fn) =>
-    fn.includes("notesSlides/notesSlide")
+const getSlideNumberFromFilename = (str: string, ext: string) =>
+  toInteger(str.substring(str.lastIndexOf("lide") + 4, str.indexOf(ext)));
+
+export const sortFilenamesBySlideNumber = (fileNames: string[]) =>
+  fileNames.sort(
+    (a, b) =>
+      getSlideNumberFromFilename(a, ".xml") -
+      getSlideNumberFromFilename(b, ".xml")
   );
+
+export const getSlideNotes = async (zip: JSZip): Promise<string[]> => {
+  const fileNames = sortFilenamesBySlideNumber(
+    Object.keys(zip.files).filter((fn) => fn.includes("notesSlides/notesSlide"))
+  );
+  console.log(fileNames);
+
   let projectNotes: string[] = [];
 
   for (const fileName of fileNames) {
@@ -32,7 +45,7 @@ export const getSlideNotes = async (zip: JSZip): Promise<string[]> => {
             (textTag, currentValue) => decode(textTag) + currentValue,
             ""
           );
-        console.log(slideNotes);
+        //console.log(slideNotes);
         if (i < paragraphs.length - 1) slideNotes += "\n";
       }
 

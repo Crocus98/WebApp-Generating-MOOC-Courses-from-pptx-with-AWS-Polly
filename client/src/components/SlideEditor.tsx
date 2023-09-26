@@ -4,15 +4,26 @@ import colors from "../style/colors";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import EditorQuickActions from "./EditorQuickActions";
 import Player from "./Player";
+import {
+  AudioPreviewType,
+  EditorAction,
+  EditorActionType,
+  NotesType,
+} from "../views/Editor";
+import VoicePreviewBar from "./VoicePreviewBar";
+import { retrievePreview } from "../services/project";
 
 type Props = {
+  dispatch: React.Dispatch<EditorAction>;
+
   slideNumber: number;
   lastSlideNumber: number;
   goPreviousSlide: () => void;
   goNextSlide: () => void;
-  audioPreview: string | undefined;
+  audioPreview: AudioPreviewType;
+  slidePreview: string;
 
-  content: string;
+  notes: NotesType;
   onChange: (content: string) => void;
 };
 
@@ -24,8 +35,10 @@ export default function SlideEditor({
   goPreviousSlide,
   goNextSlide,
   audioPreview,
+  slidePreview,
+  dispatch,
 
-  content,
+  notes,
   onChange,
 }: Props) {
   const input = useRef<HTMLTextAreaElement>(null);
@@ -33,7 +46,7 @@ export default function SlideEditor({
   const selectQuickAction = (quickAction: string) => {
     let selectionStart = input.current?.selectionStart || 0;
     let selectionEnd = input.current?.selectionEnd || selectionStart;
-
+    const content = notes.data;
     selectionStart = Math.min(content.length, selectionStart);
     selectionEnd = Math.min(
       Math.max(selectionStart, selectionEnd),
@@ -48,6 +61,25 @@ export default function SlideEditor({
     );
   };
 
+  const onGeneratePreview = async () => {
+    try {
+      dispatch({
+        type: EditorActionType.GENERATE_PREVIEW_INIT,
+        payload: { slideIndex: slideNumber - 1 },
+      });
+      const preview = await retrievePreview(notes.data);
+      dispatch({
+        type: EditorActionType.GENERATE_PREVIEW_END,
+        payload: { slideIndex: slideNumber - 1, preview },
+      });
+    } catch (error) {
+      dispatch({
+        type: EditorActionType.GENERATE_PREVIEW_END,
+        payload: { slideIndex: slideNumber - 1, preview: null },
+      });
+    }
+  };
+
   return (
     <Container>
       <SlidePreviewContainer>
@@ -55,7 +87,7 @@ export default function SlideEditor({
           <FontAwesomeIcon icon={"chevron-left"} size="xl" />
         </IconButton>
         <SlidePreview>
-          <span>{slideNumber}</span>
+          <SlidePreviewImage src={slidePreview} alt="Can't load preview" />
         </SlidePreview>
         <IconButton
           onClick={goNextSlide}
@@ -64,9 +96,11 @@ export default function SlideEditor({
           <FontAwesomeIcon icon={"chevron-right"} size="xl" />
         </IconButton>
       </SlidePreviewContainer>
-      <VoicePreviewContainer>
-        <Player audio={audioPreview} loading={false} />
-      </VoicePreviewContainer>
+      <VoicePreviewBar
+        audio={audioPreview}
+        onGeneratePreview={onGeneratePreview}
+        isPreviewOutdated={audioPreview.timestamp < notes.timestamp}
+      />
       <NotesEditorContentContainer>
         <NotesEditorContainer>
           <ToolbarContainer>
@@ -106,7 +140,7 @@ export default function SlideEditor({
                 },
                 {
                   label: "Pausa Paragrafo",
-                  value: "<p>Testo Paragrafo</p ",
+                  value: "<p>Testo Paragrafo</p>",
                 },
                 {
                   label: "Pronuncia Fonetica",
@@ -119,7 +153,7 @@ export default function SlideEditor({
           </ToolbarContainer>
           <NotesEditor
             ref={input}
-            value={content}
+            value={notes.data}
             onChange={(e) => onChange(e.target.value)}
           />
           <DocsContainer
@@ -164,14 +198,18 @@ const SlidePreviewContainer = styled.div`
 `;
 
 const SlidePreview = styled.div`
+  position: relative;
+  overflow: hidden;
   background-color: ${colors.white};
   border-radius: 8px;
   border: solid 2px ${colors.darkGrey};
   display: flex;
   justify-content: center;
   align-items: center;
-  width: 480px;
-  height: 200px;
+`;
+
+const SlidePreviewImage = styled.img`
+  height: 250px;
 `;
 
 const VoicePreviewContainer = styled.div`
