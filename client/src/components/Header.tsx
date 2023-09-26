@@ -16,6 +16,7 @@ type Props = {
   loadingDownload?: boolean;
   loadingSave?: boolean;
   hasUnsavedChanges?: boolean;
+  loadingProject?: boolean;
 };
 
 export default function Header({
@@ -25,6 +26,7 @@ export default function Header({
   onSave,
   hasUnsavedChanges,
   loadingSave,
+  loadingProject,
 }: Props) {
   const { state: authState, dispatch } = useContext(AuthContext);
   const authenticated = isAuthenticated(authState);
@@ -39,67 +41,69 @@ export default function Header({
         <ProjectContainer>
           <div />
           <Text.P>{projectName}</Text.P>
-          <ProjectActionsContainer>
-            <IconButton
-              style={{
-                backgroundColor: hasUnsavedChanges
-                  ? colors.purple
-                  : colors.darkGrey,
-              }}
-              onClick={onSave}
-              disabled={!hasUnsavedChanges}
-            >
-              {loadingSave ? (
-                <FontAwesomeIcon
-                  className="rotate-spinner"
-                  icon={"spinner"}
-                  size="sm"
-                />
-              ) : (
-                <FontAwesomeIcon icon={"floppy-disk"} size="sm" />
-              )}
-            </IconButton>
-            <IconButton
-              style={{
-                backgroundColor: loadingDownload
-                  ? colors.darkGrey
-                  : colors.orange,
-                width: 60,
-              }}
-              onClick={onDownload}
-              disabled={loadingDownload}
-            >
-              {loadingDownload ? (
-                <FontAwesomeIcon
-                  className="rotate-spinner"
-                  icon={"spinner"}
-                  size="sm"
-                />
-              ) : (
-                <SaveDownload>
+          {!loadingProject && (
+            <ProjectActionsContainer>
+              <IconButton
+                style={{
+                  backgroundColor: hasUnsavedChanges
+                    ? colors.purple
+                    : colors.darkGrey,
+                }}
+                onClick={onSave}
+                disabled={!hasUnsavedChanges}
+              >
+                {loadingSave ? (
                   <FontAwesomeIcon
-                    icon={"floppy-disk"}
-                    style={{
-                      fontSize: 13,
-                      right: 2,
-                      bottom: -1,
-                      position: "absolute",
-                    }}
-                  />
-                  <FontAwesomeIcon
-                    icon={"download"}
+                    className="rotate-spinner"
+                    icon={"spinner"}
                     size="sm"
-                    style={{
-                      fontSize: 18,
-                      top: -10,
-                      left: -3,
-                      position: "absolute",
-                    }}
                   />
-                </SaveDownload>
-              )}
-            </IconButton>
-          </ProjectActionsContainer>
+                ) : (
+                  <FontAwesomeIcon icon={"floppy-disk"} size="sm" />
+                )}
+              </IconButton>
+              <IconButton
+                style={{
+                  backgroundColor: loadingDownload
+                    ? colors.darkGrey
+                    : colors.orange,
+                  width: 60,
+                }}
+                onClick={onDownload}
+                disabled={loadingDownload}
+              >
+                {loadingDownload ? (
+                  <FontAwesomeIcon
+                    className="rotate-spinner"
+                    icon={"spinner"}
+                    size="sm"
+                  />
+                ) : (
+                  <SaveDownload>
+                    <FontAwesomeIcon
+                      icon={"floppy-disk"}
+                      style={{
+                        fontSize: 13,
+                        right: 2,
+                        bottom: -1,
+                        position: "absolute",
+                      }}
+                    />
+                    <FontAwesomeIcon
+                      icon={"download"}
+                      size="sm"
+                      style={{
+                        fontSize: 18,
+                        top: -10,
+                        left: -3,
+                        position: "absolute",
+                      }}
+                    />
+                  </SaveDownload>
+                )}
+              </IconButton>
+            </ProjectActionsContainer>
+          )}
         </ProjectContainer>
       ) : (
         <div />
@@ -229,6 +233,7 @@ const DropdownContainer = styled.div`
   background-color: ${colors.white};
   border: solid 1px ${colors.purple};
   min-width: 150px;
+  z-index: 1111;
 `;
 
 const AvatarContainer = styled.div`

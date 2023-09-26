@@ -13,6 +13,8 @@ import {
   faPause,
   faBolt,
   faTriangleExclamation,
+  faCopyright,
+  faTimes,
 } from "@fortawesome/free-solid-svg-icons";
 
 library.add(
@@ -28,5 +30,7 @@ library.add(
   faPlay,
   faPause,
   faBolt,
-  faTriangleExclamation
+  faTriangleExclamation,
+  faCopyright,
+  faTimes
 );

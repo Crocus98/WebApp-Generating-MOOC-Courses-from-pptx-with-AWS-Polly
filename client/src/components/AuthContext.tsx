@@ -5,11 +5,14 @@ const initialState = {};
 
 const LOCAL_STORAGE_KEY = "AUTH";
 
+const EXPIRATION_TIME_MS = 60 * 60 * 6 * 1000; // 6 hours
+
 interface LoggedAuthState {
   firstName: string;
   lastName: string;
   email: string;
   token: string;
+  expiration?: number;
 }
 
 interface AnonymousAuthState {}
@@ -42,10 +45,6 @@ function authReducer(state: AuthState, action: AuthAction) {
       axios.defaults.headers.common[
         "Authorization"
       ] = `Bearer ${action.payload.token}`;
-      console.log(
-        "Setting authorization header: ",
-        axios.defaults.headers.common.Authorization
-      );
 
       const authState = {
         ...state,
@@ -53,6 +52,8 @@ function authReducer(state: AuthState, action: AuthAction) {
         lastName: action.payload.lastName,
         email: action.payload.email,
         token: action.payload.token,
+        expiration:
+          action.payload.expiration || Date.now() + EXPIRATION_TIME_MS,
       };
       try {
         localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(authState));
@@ -83,10 +84,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   useEffect(() => {
     const persistedState = localStorage.getItem(LOCAL_STORAGE_KEY);
     if (persistedState) {
-      dispatch({
-        type: AuthActionType.LOGIN,
-        payload: JSON.parse(persistedState),
-      });
+      const oldState: LoggedAuthState = JSON.parse(persistedState);
+      if (oldState.expiration && oldState.expiration > Date.now()) {
+        dispatch({
+          type: AuthActionType.LOGIN,
+          payload: JSON.parse(persistedState),
+        });
+      } else {
+        dispatch({ type: AuthActionType.LOGOUT });
+      }
     } else {
       dispatch({ type: AuthActionType.LOGOUT });
     }

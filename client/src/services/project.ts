@@ -17,7 +17,7 @@ export const retrieveProject = async (
 
   try {
     const downloadRes = await axios.get("/v1/public/download/" + projectName, {
-      responseType: "blob",
+      responseType: "arraybuffer",
       params: {
         original: true,
       },
@@ -28,7 +28,12 @@ export const retrieveProject = async (
       if (error.response?.status === 404) {
         throw new Error("Project not found");
       }
-      throw new Error(JSON.stringify(error.response?.data));
+      if (error.response?.data) {
+        const data = Buffer.from(error.response.data, "binary").toString(
+          "utf-8"
+        );
+        throw new Error(JSON.stringify(data));
+      }
     }
     if (error instanceof Error) {
       throw new Error(error.message);

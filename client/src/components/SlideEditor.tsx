@@ -3,7 +3,6 @@ import styled from "styled-components";
 import colors from "../style/colors";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import EditorQuickActions from "./EditorQuickActions";
-import Player from "./Player";
 import {
   AudioPreviewType,
   EditorAction,
@@ -12,6 +11,8 @@ import {
 } from "../views/Editor";
 import VoicePreviewBar from "./VoicePreviewBar";
 import { retrievePreview } from "../services/project";
+import ErrorAlert from "./ErrorAlert";
+import { AxiosError } from "axios";
 
 type Props = {
   dispatch: React.Dispatch<EditorAction>;
@@ -25,6 +26,11 @@ type Props = {
 
   notes: NotesType;
   onChange: (content: string) => void;
+
+  error: {
+    message?: string;
+    id: number;
+  };
 };
 
 const EDITOR_WIDTH = 600;
@@ -40,6 +46,8 @@ export default function SlideEditor({
 
   notes,
   onChange,
+
+  error,
 }: Props) {
   const input = useRef<HTMLTextAreaElement>(null);
 
@@ -73,6 +81,18 @@ export default function SlideEditor({
         payload: { slideIndex: slideNumber - 1, preview },
       });
     } catch (error) {
+      let message = "Unknown error occured while generating preview";
+      if (error instanceof AxiosError) {
+        message = error.response
+          ? JSON.stringify(error.response.data)
+          : message;
+      } else if (error instanceof Error) {
+        message = error.message;
+      }
+      dispatch({
+        type: EditorActionType.ERROR,
+        payload: { error: message },
+      });
       dispatch({
         type: EditorActionType.GENERATE_PREVIEW_END,
         payload: { slideIndex: slideNumber - 1, preview: null },
@@ -83,6 +103,7 @@ export default function SlideEditor({
   return (
     <Container>
       <SlidePreviewContainer>
+        <ErrorAlert error={error} />
         <IconButton onClick={goPreviousSlide} disabled={slideNumber === 1}>
           <FontAwesomeIcon icon={"chevron-left"} size="xl" />
         </IconButton>
@@ -111,12 +132,18 @@ export default function SlideEditor({
                   label: "Micheal",
                   value: "<speak voice_name='micheal'>\n\n</speak>",
                 },
-                { label: "Laura", value: "<speak voice_name='laura'>\n\n</speak>" },
+                {
+                  label: "Laura",
+                  value: "<speak voice_name='laura'>\n\n</speak>",
+                },
                 {
                   label: "Giuseppe",
                   value: "<speak voice_name='giuseppe'>\n\n</speak>",
                 },
-                { label: "Maria", value: "<speak voice_name='maria'>\n\n</speak>" },
+                {
+                  label: "Maria",
+                  value: "<speak voice_name='maria'>\n\n</speak>",
+                },
               ]}
               color={colors.orange}
               onClick={selectQuickAction}
@@ -195,6 +222,7 @@ const SlidePreviewContainer = styled.div`
   align-items: center;
   flex-direction: row;
   gap: 10px;
+  position: relative;
 `;
 
 const SlidePreview = styled.div`

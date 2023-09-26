@@ -13,6 +13,8 @@ import {
   retrieveProject,
 } from "../services/project";
 import { buildProject } from "../services/ppt";
+import LoadingWidget from "../components/LoadingWidget";
+import { H2, P } from "../components/Text";
 
 interface Props {}
 
@@ -28,6 +30,10 @@ export type NotesType = DataWithTimestamp<string>;
 
 interface EditorState {
   unrepairableError?: string;
+  error: {
+    message?: string;
+    id: number;
+  };
 
   isDownloading: boolean;
   isSaving: boolean;
@@ -46,6 +52,10 @@ const initialState: EditorState = {
   isDownloading: false,
   isSaving: false,
   hasUnsavedChanges: false,
+
+  error: {
+    id: 0,
+  },
 
   slideFocus: 0,
 
@@ -140,6 +150,12 @@ interface GeneratePreviewEndAction {
     preview: string | null;
   };
 }
+interface ErrorAction {
+  type: EditorActionType.ERROR;
+  payload: {
+    error: string;
+  };
+}
 
 export type EditorAction =
   | LoadCompleteAction
@@ -153,13 +169,16 @@ export type EditorAction =
   | SaveInitAction
   | SaveEndAction
   | GeneratePreviewInitAction
-  | GeneratePreviewEndAction;
+  | GeneratePreviewEndAction
+  | ErrorAction;
 
 export function editorReducer(
   state: EditorState,
   action: EditorAction
 ): EditorState {
   const timestamp = Date.now();
+  console.log(action);
+
   switch (action.type) {
     case EditorActionType.LOADING_COMPLETE:
       return {
@@ -223,6 +242,14 @@ export function editorReducer(
             : v
         ),
       };
+    case EditorActionType.ERROR:
+      return {
+        ...state,
+        error: {
+          message: action.payload.error,
+          id: state.error.id + 1,
+        },
+      };
     default:
       return state;
   }
@@ -255,9 +282,7 @@ export default function Editor({}: Props) {
         }
         dispatch({
           type: EditorActionType.LOADING_FAILURE,
-          payload: {
-            error: message,
-          },
+          payload: { error: message },
         });
       }
     }
@@ -275,11 +300,24 @@ export default function Editor({}: Props) {
     if (!projectName || state.isDownloading) return;
     try {
       dispatch({ type: EditorActionType.DOWNLOAD_INIT });
-      await saveProject();
-      await elaborateProject(projectName);
-      await downloadProject(projectName);
+      const success = await saveProject();
+      if (success) {
+        await elaborateProject(projectName);
+        await downloadProject(projectName);
+      }
     } catch (error) {
-      console.log(error);
+      let message = "Unknown error occured while processing project";
+      if (error instanceof AxiosError) {
+        message = error.response
+          ? JSON.stringify(error.response.data)
+          : message;
+      } else if (error instanceof Error) {
+        message = error.message;
+      }
+      dispatch({
+        type: EditorActionType.ERROR,
+        payload: { error: message },
+      });
     }
     dispatch({ type: EditorActionType.DOWNLOAD_END });
   };
@@ -303,12 +341,25 @@ export default function Editor({}: Props) {
       fd.append("projectName", projectName);
       await axios.post("/v1/public/upload", fd);
       dispatch({ type: EditorActionType.SAVE_END, payload: { success: true } });
+      return true;
     } catch (error) {
-      console.log(error);
+      let message = "Unknown error occured while saving project";
+      if (error instanceof AxiosError) {
+        message = error.response
+          ? JSON.stringify(error.response.data)
+          : message;
+      } else if (error instanceof Error) {
+        message = error.message;
+      }
+      dispatch({
+        type: EditorActionType.ERROR,
+        payload: { error: message },
+      });
       dispatch({
         type: EditorActionType.SAVE_END,
         payload: { success: false },
       });
+      return false;
     }
   };
 
@@ -323,9 +374,19 @@ export default function Editor({}: Props) {
         onSave={saveProject}
         loadingSave={state.isSaving}
         hasUnsavedChanges={state.hasUnsavedChanges}
+        loadingProject={isLoading}
       />
-      {isLoading ? (
-        "Loading"
+      {state.unrepairableError ? (
+        <WidgetConainer>
+          <FatalErrorContainer>
+            <H2>Something went wrong.</H2>
+            <P>{state.unrepairableError}</P>
+          </FatalErrorContainer>
+        </WidgetConainer>
+      ) : isLoading ? (
+        <WidgetConainer>
+          <LoadingWidget />
+        </WidgetConainer>
       ) : (
         <EditorContainer>
           <EditorSideBar
@@ -343,12 +404,28 @@ export default function Editor({}: Props) {
             onChange={onNotesChange}
             audioPreview={state.audios[state.slideFocus]}
             slidePreview={state.slides[state.slideFocus]}
+            error={state.error}
           />
         </EditorContainer>
       )}
     </Container>
   );
 }
+
+const FatalErrorContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+`;
+
+const WidgetConainer = styled.div`
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+`;
 
 const Container = styled.div`
   display: flex;

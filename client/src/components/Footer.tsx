@@ -17,7 +17,11 @@ export default function Footer() {
       </LinkList>
       <BWLogo src={bwLogo} alt="Polly" />
       <CopyrightText>
-        <FontAwesomeIcon icon={"copyright"} size="sm" />
+        <FontAwesomeIcon
+          icon={"copyright"}
+          size="sm"
+          style={{ paddingRight: 5 }}
+        />
         Polly AI 2023
       </CopyrightText>
     </FooterContainer>

@@ -14,60 +14,59 @@ export default function HomePage({}: Props) {
     <MainContentContainer>
       <FirstSectionContainer>
         <Text.H2>
-          Dai voce ai tuoi MOOC da semplici presentazioni PowerPoint
+          Give voice to your MOOCs from simple PowerPoint presentations.
         </Text.H2>
         <Text.P>
-          Con Polly puoi generare i contenuti multimediali dei tuoi Massive Open
-          Online Courses in una frazione del tempo che impiegavi prima.
+          With Polly, you can generate the multimedia content for your Massive
+          Open Online Courses in a fraction of the time it used to take.
         </Text.P>
         <img src={pollyVideo} alt="Prova polly!"></img>
-        <Text.H3>Crea i design dei tuoi video, Polly ci mette la voce!</Text.H3>
-        <Button to="/signup">Provalo Ora!</Button>
+        <Text.H3>Design your video, Polly adds the voice!</Text.H3>
+        <Button to="/signup">Try it Now!</Button>
       </FirstSectionContainer>
       <SecondSectionContainer>
         <Text.H2 style={{ marginBottom: 35 }}>Come Funziona?</Text.H2>
         <ParagraphContainer>
           <Text.H3>
-            1. Crea i contenuti del tuo video come slide PowerPoint
+            1. Create the content for your video as PowerPoint slides.
           </Text.H3>
           <SecondSectionContentContainer>
             <div>
               <Text.P style={{ marginBottom: 20 }}>
-                Crea una presentazione PowerPoint contente il supporto grafico
-                che vuoi avere nel contenuto multimediale finale del tuo
-                videocorso.
+                Create a PowerPoint presentation containing the visual support
+                you want in the final multimedia content of your video course.
               </Text.P>
               <Text.P>
-                Aggiungi testo, immagini, disegni ed animazione che vorrai
-                vedere nel video finito.
+                Add text, images, drawings, and animations that you want to see
+                in the finished video.
               </Text.P>
             </div>
             <img src={slideExample} alt="Prova polly!"></img>
           </SecondSectionContentContainer>
         </ParagraphContainer>
         <ParagraphContainer>
-          <Text.H3>2. Aggiungi il copione del tuo video</Text.H3>
+          <Text.H3>2. Add the script for your video</Text.H3>
           <Text.P>
-            Una volta creata la presentazione PowerPoint, aggiunti nelle note di
-            ciascuna slide quello che vuoi che venga spiegato nel video finale.
-            Il copione da te scritto sarà utilizzato da polly per generare
-            l’audio del tuo videocorso.
+            After creating the PowerPoint presentation, add in the notes of each
+            slide what you want to be explained in the final video. The script
+            you write will be used by Polly to generate the audio for your video
+            course.
           </Text.P>
           <img src={notesExample} alt="Prova polly!"></img>
         </ParagraphContainer>
         <ParagraphContainer>
-          <Text.H3>3. Utilizza Polly per generare la voce del tuo MOOC</Text.H3>
+          <Text.H3>3. Use Polly to generate the voice for your MOOC.</Text.H3>
           <Text.P>
-            Dopo aver creato il design e scritto il copione del tuo MOOC,
-            utilizza lo strumento di Polly per generare la voce del tuo
-            videocorso. Ti basterà caricare il file .pptx della presentazione
-            PowerPoint da te realizzata per generare una copia contente l’audio
-            della voce generato inserita in ciascuna slide.
+            After creating the design and writing the script for your MOOC, use
+            Polly's tool to generate the voice for your video course. Simply
+            upload the .pptx file of the PowerPoint presentation you created to
+            generate a copy containing the audio generated voice inserted in
+            each slide.
           </Text.P>
           <Text.P>
-            Per generare il contenuto multimediale del tuo corso ti basterà
-            esportare come video la presentazione generata, direttamente
-            dall’applicazione di PowerPoint.
+            To generate the multimedia content for your course, simply export
+            the generated presentation as a video directly from the PowerPoint
+            application.
           </Text.P>
         </ParagraphContainer>
       </SecondSectionContainer>
