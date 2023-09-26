@@ -1,4 +1,4 @@
-import { Request, Response, NextFunction } from "express";
+import { Request, Response } from "express";
 import * as ProjectService from "@services/ProjectService";
 import * as FileService from "@services/FileService";
 import utils from "@utils";

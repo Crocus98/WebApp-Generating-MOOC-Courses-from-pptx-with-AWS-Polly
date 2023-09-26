@@ -34,7 +34,7 @@ class ElaborationWrapper {
 
   public async elaborateFile(project: Project, email: string) {
     try {
-      const filename = await storageWrapper.getFileNameFromStorageByUserEmailAndProject(email, project.name);
+      const filename = storageWrapper.getFileNameFromStorageByUserEmailAndProject(email, project.name);
 
       /* LAMBDA DISMISSED IN FAVOR OF MICROSERVICE
       const funcName = "lambda_handler";
@@ -68,8 +68,9 @@ class ElaborationWrapper {
         throw new MicroserviceException(error.message);
       } else if (error instanceof AwsS3Exception) {
         throw new AwsS3Exception(error.message);
+      } else {
+        throw new MicroserviceException("Unexpected error. Microservice could not elaborate file.");
       }
-      throw new MicroserviceException("Unexpected error. Microservice could not elaborate file.");
     }
   }
 
@@ -90,7 +91,7 @@ class ElaborationWrapper {
       return parsedResult.body;
       */
 
-      return this.axiosInstance.post("/process-text", { text: text }, { responseType: "stream" });
+      return await this.axiosInstance.post("/process-text", { text: text }, { responseType: "stream" });
 
       /*if (result.status !== 200) {
         throw new MicroserviceException(result.data);
@@ -102,15 +103,16 @@ class ElaborationWrapper {
           throw new ParameterException(error.message);
         }
         throw new MicroserviceException(error.message);
+      } else {
+        throw new MicroserviceException("Unexpected error. Microservice could not elaborate text to preview.");
       }
-      throw new MicroserviceException("Unexpected error. Microservice could not elaborate text to preview.");
     }
   }
 
   public async elaborateSlidesPreview(email: string, projectName: string) {
     try {
-      const filename = await storageWrapper.getFileNameFromStorageByUserEmailAndProject(email, projectName);
-      return this.axiosInstance.post(
+      const filename = storageWrapper.getFileNameFromStorageByUserEmailAndProject(email, projectName);
+      return await this.axiosInstance.post(
         "/process-slides",
         {
           email: email,
@@ -127,8 +129,9 @@ class ElaborationWrapper {
         throw new MicroserviceException(error.message);
       } else if (error instanceof AwsS3Exception) {
         throw new AwsS3Exception(error.message);
+      } else {
+        throw new MicroserviceException("Unexpected error. Microservice could not elaborate file.");
       }
-      throw new MicroserviceException("Unexpected error. Microservice could not elaborate file.");
     }
   }
 

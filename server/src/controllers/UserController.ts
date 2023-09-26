@@ -1,6 +1,5 @@
 import { Request, Response, NextFunction } from "express";
 import * as UserService from "@services/UserService";
-import logger from "@logger";
 import config from "@config";
 import UserException from "@/exceptions/UserException";
 import jwt from "jsonwebtoken";

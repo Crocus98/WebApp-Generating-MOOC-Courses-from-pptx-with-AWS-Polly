@@ -1,4 +1,4 @@
-import { Request, Response, NextFunction } from "express";
+import { Request, Response } from "express";
 import utils from "@utils";
 import * as FileService from "@services/FileService";
 import { User } from "@prisma/client";

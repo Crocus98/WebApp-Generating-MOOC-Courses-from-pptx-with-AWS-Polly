@@ -1,18 +1,13 @@
 import AwsS3Exception from "@/exceptions/AwsS3Exception";
 import StorageException from "@/exceptions/StorageException";
-import LambdaException from "@/exceptions/LambdaException";
-import ElaborationException from "@/exceptions/ElaborationException";
-import storageWrapper from "@storage-wrapper";
 import elaborationWrapper from "@elaboration-wrapper";
-import { Project } from "@prisma/client";
-import { GetObjectCommandOutput } from "@aws-sdk/client-s3";
 import PreviewException from "@/exceptions/PreviewException";
 import MicroserviceException from "@/exceptions/MicroserviceException";
 import ParameterException from "@/exceptions/ParameterException";
 
-export const elaborateAudioPreview = async (text: string) => {
+export const elaborateAudioPreview = (text: string) => {
   try {
-    return await elaborationWrapper.elaborateAudioPreview(text);
+    return elaborationWrapper.elaborateAudioPreview(text);
   } catch (error) {
     if (error instanceof MicroserviceException) {
       throw new PreviewException(error.message);
@@ -23,7 +18,7 @@ export const elaborateAudioPreview = async (text: string) => {
   }
 };
 
-export const elaborateSlidesPreview = async (email: string, projectName: string) => {
+export const elaborateSlidesPreview = (email: string, projectName: string) => {
   try {
     return elaborationWrapper.elaborateSlidesPreview(email, projectName);
   } catch (error) {
