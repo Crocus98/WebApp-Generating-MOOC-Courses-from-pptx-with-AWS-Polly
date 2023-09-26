@@ -108,6 +108,8 @@ export const elaborateFile = async (req: Request, res: Response) => {
       return res.status(502).send(utils.getErrorMessage(error));
     } else if (error instanceof ElaborationException) {
       return res.status(502).send(utils.getErrorMessage(error));
+    } else if (error instanceof ParameterException) {
+      return res.status(400).send(utils.getErrorMessage(error));
     }
     return res.status(500).send(utils.getErrorMessage(error));
   }

@@ -12,7 +12,7 @@ export const findProjectByProjectName = async (projectName: string, user: User) 
     })) as Project;
     return project;
   } catch (error) {
-    throw new DatabaseException("Unexpected error. Could not find project.");
+    throw new DatabaseException("Unexpected error. Could not find project by project name.");
   }
 };
 
@@ -25,7 +25,7 @@ export const findProjectsByUser = async (user: User) => {
     });
     return projects;
   } catch (error) {
-    throw new DatabaseException("Unexpected error. Could not find projects.");
+    throw new DatabaseException("Unexpected error. Could not find projects by user.");
   }
 };
 
@@ -41,7 +41,7 @@ export const findProjectsNamesByUser = async (user: User) => {
     });
     return projects.map((project) => project.name);
   } catch (error) {
-    throw new DatabaseException("Unexpected error. Could not find project names.");
+    throw new DatabaseException("Unexpected error. Could not find project names by user.");
   }
 };
 

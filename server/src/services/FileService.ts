@@ -7,6 +7,7 @@ import elaborationWrapper from "@elaboration-wrapper";
 import { Project } from "@prisma/client";
 import { GetObjectCommandOutput } from "@aws-sdk/client-s3";
 import MicroserviceException from "@/exceptions/MicroserviceException";
+import ParameterException from "@/exceptions/ParameterException";
 
 export const uploadFileToStorage = async (file: any, projectName: string, email: string) => {
   try {
@@ -43,6 +44,8 @@ export const elaborateFile = async (project: Project, email: string) => {
       throw new StorageException(error.message);
     } else if (error instanceof MicroserviceException) {
       throw new ElaborationException(error.message);
+    } else if (error instanceof ParameterException) {
+      throw new ParameterException(error.message);
     }
     throw new ElaborationException("Unexpected error. Could not elaborate file.");
   }
@@ -55,6 +58,6 @@ export const deleteFilesByProjectName = async (email: string, projectName: strin
     if (error instanceof AwsS3Exception) {
       throw new StorageException(error.message);
     }
-    throw new StorageException("Unexpected error. Could not elaborate file.");
+    throw new StorageException("Unexpected error. Could not delete file.");
   }
 };

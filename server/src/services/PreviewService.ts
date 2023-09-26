@@ -8,6 +8,7 @@ import { Project } from "@prisma/client";
 import { GetObjectCommandOutput } from "@aws-sdk/client-s3";
 import PreviewException from "@/exceptions/PreviewException";
 import MicroserviceException from "@/exceptions/MicroserviceException";
+import ParameterException from "@/exceptions/ParameterException";
 
 export const elaborateAudioPreview = async (text: string) => {
   try {
@@ -15,16 +16,24 @@ export const elaborateAudioPreview = async (text: string) => {
   } catch (error) {
     if (error instanceof MicroserviceException) {
       throw new PreviewException(error.message);
+    } else if (error instanceof ParameterException) {
+      throw new ParameterException(error.message);
     }
-    throw new PreviewException(
-      "Unexpected error. Could not elaborate preview."
-    );
+    throw new PreviewException("Unexpected error. Could not elaborate preview.");
   }
 };
 
-export const elaborateSlidesPreview = async (
-  email: string,
-  projectName: string
-) => {
-  return elaborationWrapper.elaborateSlidesPreview(email, projectName);
+export const elaborateSlidesPreview = async (email: string, projectName: string) => {
+  try {
+    return elaborationWrapper.elaborateSlidesPreview(email, projectName);
+  } catch (error) {
+    if (error instanceof MicroserviceException) {
+      throw new PreviewException(error.message);
+    } else if (error instanceof ParameterException) {
+      throw new ParameterException(error.message);
+    } else if (error instanceof AwsS3Exception) {
+      throw new StorageException(error.message);
+    }
+    throw new PreviewException("Unexpected error. Could not elaborate slides preview.");
+  }
 };
