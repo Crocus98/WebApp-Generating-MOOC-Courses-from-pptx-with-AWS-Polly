@@ -63,9 +63,9 @@ class ElaborationWrapper {
     } catch (error) {
       if (error instanceof AxiosError) {
         if (error.response?.status == 400) {
-          throw new ParameterException(error.message);
+          throw new ParameterException(error.response?.data);
         }
-        throw new MicroserviceException(error.message);
+        throw new MicroserviceException(error.response?.data);
       } else if (error instanceof AwsS3Exception) {
         throw new AwsS3Exception(error.message);
       } else {
@@ -100,9 +100,9 @@ class ElaborationWrapper {
     } catch (error) {
       if (error instanceof AxiosError) {
         if (error.response?.status == 400) {
-          throw new ParameterException(error.message);
+          throw new ParameterException(error.response?.data);
         }
-        throw new MicroserviceException(error.message);
+        throw new MicroserviceException(error.response?.data);
       } else {
         throw new MicroserviceException("Unexpected error. Microservice could not elaborate text to preview.");
       }
@@ -124,9 +124,9 @@ class ElaborationWrapper {
     } catch (error) {
       if (error instanceof AxiosError) {
         if (error.response?.status == 400) {
-          throw new ParameterException(error.message);
+          throw new ParameterException(error.response?.data);
         }
-        throw new MicroserviceException(error.message);
+        throw new MicroserviceException(error.response?.data);
       } else if (error instanceof AwsS3Exception) {
         throw new AwsS3Exception(error.message);
       } else {
