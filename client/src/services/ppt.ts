@@ -61,8 +61,8 @@ export const buildProject = async (
   zip: JSZip,
   notes: string[]
 ): Promise<Blob> => {
-  const fileNames = Object.keys(zip.files).filter((fn) =>
-    fn.includes("notesSlides/notesSlide")
+  const fileNames = sortFilenamesBySlideNumber(
+    Object.keys(zip.files).filter((fn) => fn.includes("notesSlides/notesSlide"))
   );
 
   if (fileNames.length !== notes.length) throw new Error("Invalid notes array");
