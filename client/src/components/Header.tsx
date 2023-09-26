@@ -117,11 +117,29 @@ export default function Header({
           </DropdownContainer>
         </AvatarContainer>
       ) : (
-        <Button to="/signup">Registra Ora!</Button>
+        <ActionContainer>
+          <LoginButton to="/login">Login</LoginButton>
+          <Button to="/signup">Signup Now!</Button>
+        </ActionContainer>
       )}
     </HeaderContainer>
   );
 }
+
+const LoginButton = styled(Link)`
+  color: white;
+
+  &:hover {
+    color: ${colors.purple};
+  }
+`;
+
+const ActionContainer = styled.div`
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 30px;
+`;
 
 const SaveDownload = styled.div`
   position: absolute;

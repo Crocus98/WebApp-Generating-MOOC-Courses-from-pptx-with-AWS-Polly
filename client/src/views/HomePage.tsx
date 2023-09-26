@@ -22,7 +22,7 @@ export default function HomePage({}: Props) {
         </Text.P>
         <img src={pollyVideo} alt="Prova polly!"></img>
         <Text.H3>Crea i design dei tuoi video, Polly ci mette la voce!</Text.H3>
-        <Button>Provalo Ora!</Button>
+        <Button to="/signup">Provalo Ora!</Button>
       </FirstSectionContainer>
       <SecondSectionContainer>
         <Text.H2 style={{ marginBottom: 35 }}>Come Funziona?</Text.H2>

@@ -24,7 +24,11 @@ class StorageWrapper {
     }
   }
 
-  uploadFileToStorageAndDeleteOldOnes(file: any, projectName: string, email: string) {
+  uploadFileToStorageAndDeleteOldOnes(
+    file: any,
+    projectName: string,
+    email: string
+  ) {
     try {
       this.deleteFilesFromStorageByUserEmailAndProjectName(email, projectName);
       this.uploadFileToStorage(file, email, projectName);
@@ -55,7 +59,10 @@ class StorageWrapper {
     }
   }
 
-  async getFileNamesFromStorageByUserEmailAndProject(email: string, projectName?: string) {
+  async getFileNamesFromStorageByUserEmailAndProject(
+    email: string,
+    projectName?: string
+  ) {
     try {
       const prefix = projectName ? `${email}/${projectName}/` : `${email}/`;
       const listCommand = new ListObjectsCommand({
@@ -72,14 +79,25 @@ class StorageWrapper {
       if (error instanceof AwsS3Exception) {
         throw new AwsS3Exception(error.message);
       }
-      throw new AwsS3Exception("Unexpected error. Could not get file names from S3.");
+      throw new AwsS3Exception(
+        "Unexpected error. Could not get file names from S3."
+      );
     }
   }
 
-  async getFileNameFromStorageByUserEmailAndProject(email: string, projectName: string) {
+  async getFileNameFromStorageByUserEmailAndProject(
+    email: string,
+    projectName: string
+  ) {
     try {
-      const objectKeys = await this.getFileNamesFromStorageByUserEmailAndProject(email, projectName);
-      const fileName = objectKeys?.find((obj) => !obj.Key?.includes("/edited/"))?.Key;
+      const objectKeys =
+        await this.getFileNamesFromStorageByUserEmailAndProject(
+          email,
+          projectName
+        );
+      const fileName = objectKeys?.find(
+        (obj) => !obj.Key?.includes("/edited/")
+      )?.Key;
 
       if (!fileName) {
         throw new AwsS3Exception("Could not get file name from S3.");
@@ -90,13 +108,22 @@ class StorageWrapper {
       if (error instanceof AwsS3Exception) {
         throw new AwsS3Exception(error.message);
       }
-      throw new AwsS3Exception("Unexpected error. Could not get file name from S3.");
+      throw new AwsS3Exception(
+        "Unexpected error. Could not get file name from S3."
+      );
     }
   }
 
-  async deleteFilesFromStorageByUserEmailAndProjectName(email: string, projectName: string) {
+  async deleteFilesFromStorageByUserEmailAndProjectName(
+    email: string,
+    projectName: string
+  ) {
     try {
-      const objectKeys = await this.getFileNamesFromStorageByUserEmailAndProject(email, projectName);
+      const objectKeys =
+        await this.getFileNamesFromStorageByUserEmailAndProject(
+          email,
+          projectName
+        );
       if (!objectKeys || objectKeys.length === 0) {
         return;
       }
@@ -113,16 +140,31 @@ class StorageWrapper {
       if (error instanceof AwsS3Exception) {
         throw new AwsS3Exception(error.message);
       }
-      throw new AwsS3Exception("Unexpected error. Could not delete files from storage");
+      throw new AwsS3Exception(
+        "Unexpected error. Could not delete files from storage"
+      );
     }
   }
 
-  async getFileFromStorage(email: string, projectName: string, original = false): Promise<any> {
+  async getFileFromStorage(
+    email: string,
+    projectName: string,
+    original = false
+  ): Promise<any> {
     try {
-      const objectKeys = await this.getFileNamesFromStorageByUserEmailAndProject(email, projectName);
+      const objectKeys =
+        await this.getFileNamesFromStorageByUserEmailAndProject(
+          email,
+          projectName
+        );
       const fileName = original
-        ? objectKeys?.find((obj) => !obj.Key?.includes("/edited/") && obj.Key?.includes(".pptx"))?.Key
-        : objectKeys?.find((obj) => obj.Key?.includes("/edited/") && obj.Key?.includes(".pptx"))?.Key;
+        ? objectKeys?.find(
+            (obj) =>
+              !obj.Key?.includes("/edited/") && obj.Key?.includes(".pptx")
+          )?.Key
+        : objectKeys?.find(
+            (obj) => obj.Key?.includes("/edited/") && obj.Key?.includes(".pptx")
+          )?.Key;
       if (!fileName) {
         throw new AwsS3Exception("The file is not present in S3.");
       }
@@ -132,7 +174,9 @@ class StorageWrapper {
       });
       const result = await this.s3client?.send(getCommand);
       if (result?.$metadata.httpStatusCode !== 200 || !result.Body) {
-        throw new AwsS3Exception("Could not get the specified file from S3. No file found.");
+        throw new AwsS3Exception(
+          "Could not get the specified file from S3. No file found."
+        );
       }
       return result.Body;
     } catch (error) {

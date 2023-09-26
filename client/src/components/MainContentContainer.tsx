@@ -1,6 +1,7 @@
 import React from "react";
 import colors from "../style/colors";
 import styled from "styled-components";
+import Footer from "./Footer";
 
 interface Props extends React.HTMLAttributes<HTMLDivElement> {}
 
