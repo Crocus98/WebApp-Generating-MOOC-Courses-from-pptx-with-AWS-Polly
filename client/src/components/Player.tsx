@@ -4,7 +4,7 @@ import colors from "../style/colors";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import ReactHowler, { HowlErrorCallback } from "react-howler";
 import raf from "raf"; // requestAnimationFrame polyfill
-import { toInteger } from "lodash";
+import { ceil } from "lodash";
 
 type Props = {
   audio: string | null;
@@ -133,7 +133,7 @@ class Player extends Component<Props, State> {
           <Slider
             type="range"
             min="0"
-            max={this.state.duration ? this.state.duration.toFixed(2) : 0}
+            max={this.state.duration ? this.state.duration : 0}
             step=".01"
             value={this.state.seek}
             onChange={this.handleSeekingChange}
@@ -157,8 +157,8 @@ class Player extends Component<Props, State> {
         </SliderContainer>
         <TimerContainer>
           <span>
-            {(toInteger(this.state.seek) / 100).toFixed(2)} /{" "}
-            {(toInteger(this.state.duration) / 100).toFixed(2)}
+            {(ceil(this.state.seek) / 100).toFixed(2)} /{" "}
+            {(ceil(this.state.duration) / 100).toFixed(2)}
           </span>
         </TimerContainer>
       </PlayerContainer>

@@ -20,6 +20,10 @@ export default function VoicePreviewBar({
     <VoicePreviewContainer>
       <GeneratePreviewButton
         onClick={onGeneratePreview}
+        style={{
+          cursor: audio.isProcessing ? "not-allowed" : "pointer",
+          backgroundColor: audio.isProcessing ? colors.darkGrey : colors.orange,
+        }}
         disabled={audio.isProcessing}
       >
         <FontAwesomeIcon icon={"bolt"} size="1x" />

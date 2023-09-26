@@ -109,14 +109,14 @@ export default function SlideEditor({
               options={[
                 {
                   label: "Micheal",
-                  value: "<speak voice_name='micheal'></speak>",
+                  value: "<speak voice_name='micheal'>\n\n</speak>",
                 },
-                { label: "Laura", value: "<speak voice_name='laura'></speak>" },
+                { label: "Laura", value: "<speak voice_name='laura'>\n\n</speak>" },
                 {
                   label: "Giuseppe",
-                  value: "<speak voice_name='giuseppe'></speak>",
+                  value: "<speak voice_name='giuseppe'>\n\n</speak>",
                 },
-                { label: "Maria", value: "<speak voice_name='maria'></speak>" },
+                { label: "Maria", value: "<speak voice_name='maria'>\n\n</speak>" },
               ]}
               color={colors.orange}
               onClick={selectQuickAction}
