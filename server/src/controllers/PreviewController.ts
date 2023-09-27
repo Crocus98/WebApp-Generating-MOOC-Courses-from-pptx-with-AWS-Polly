@@ -8,6 +8,7 @@ import DatabaseException from "@/exceptions/DatabaseException";
 import * as ProjectService from "@services/ProjectService";
 import PreviewException from "@/exceptions/PreviewException";
 import { Readable } from "stream";
+import { AxiosResponse } from "axios";
 
 export const getAudioPreview = async (req: Request, res: Response) => {
   try {

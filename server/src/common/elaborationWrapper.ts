@@ -7,7 +7,8 @@ import { Project } from "@prisma/client";
 import storageWrapper from "@storage-wrapper";
 import AwsS3Exception from "@/exceptions/AwsS3Exception";
 import ParameterException from "@/exceptions/ParameterException";
-import axios, { AxiosError, AxiosInstance } from "axios";
+import axios, { Axios, AxiosError, AxiosInstance } from "axios";
+import { error } from "console";
 
 class ElaborationWrapper {
   private static elaborationWrapper?: ElaborationWrapper;
@@ -28,10 +29,7 @@ class ElaborationWrapper {
     );
     this.axiosInstance = axios.create({
       baseURL:
-        "http://" +
-        config.MICROSERVICE_CONFIG.MICROSERVICE_HOST +
-        ":" +
-        config.MICROSERVICE_CONFIG.MICROSERVICE_PORT,
+        "http://" + config.MICROSERVICE_CONFIG.MICROSERVICE_HOST + ":" + config.MICROSERVICE_CONFIG.MICROSERVICE_PORT,
     });
   }
 
@@ -53,34 +51,27 @@ class ElaborationWrapper {
         throw new LambdaException("Lambda could not elaborate file.");
       }
       */
-      await this.axiosInstance
-        .post("/process-pptx", {
-          email: email,
-          projectName: project.name,
-          filename: filename,
-        })
-        .catch((error) => {
-          if (error.response?.status == 400) {
-            throw new ParameterException(error.response?.data.message);
-          }
-          throw new MicroserviceException(error.response?.data.message);
-        });
+      await this.axiosInstance.post("/process-pptx", {
+        email: email,
+        projectName: project.name,
+        filename: filename,
+      });
+      //.catch((error) => {});
       /* 
       if (result.status !== 200) {
         throw new MicroserviceException(result.data);
       }
       */
     } catch (error) {
-      if (error instanceof ParameterException) {
-        throw new ParameterException(error.message);
-      } else if (error instanceof MicroserviceException) {
-        throw new MicroserviceException(error.message);
+      if (error instanceof AxiosError) {
+        if (error.response?.status == 400) {
+          throw new ParameterException(error.response?.data.message);
+        }
+        throw new MicroserviceException(error.response?.data.message);
       } else if (error instanceof AwsS3Exception) {
         throw new AwsS3Exception(error.message);
       } else {
-        throw new MicroserviceException(
-          "Unexpected error. Microservice could not elaborate file."
-        );
+        throw new MicroserviceException("Unexpected error. Microservice could not elaborate file.");
       }
     }
   }
@@ -102,31 +93,45 @@ class ElaborationWrapper {
       return parsedResult.body;
       */
 
-      return await this.axiosInstance
-        .post("/process-text", { text: text }, { responseType: "stream" })
-        .catch((error) => {
-          console.log(error.response?.data);
-          if (error.response?.status == 400) {
-            throw new ParameterException(error.response?.data.message);
-          }
-          throw new MicroserviceException(error.response?.data.message);
-        });
+      return await this.axiosInstance.post("/process-text", { text: text }, { responseType: "stream" });
+      /*.catch((error) => {
+          
+        });*/
 
       /*if (result.status !== 200) {
         throw new MicroserviceException(result.data);
       }
       return result.data;*/
     } catch (error) {
-      if (error instanceof ParameterException) {
-        throw new ParameterException(error.message);
-      } else if (error instanceof MicroserviceException) {
-        throw new MicroserviceException(error.message);
+      if (error instanceof AxiosError) {
+        let message = await this.decodeBuffer(error.response?.data);
+        let errorMessage = JSON.parse(message);
+        if (error.response?.status == 400) {
+          throw new ParameterException(errorMessage.message);
+        }
+        throw new MicroserviceException(errorMessage.message);
       } else {
-        throw new MicroserviceException(
-          "Unexpected error. Microservice could not elaborate text to preview."
-        );
+        throw new MicroserviceException("Unexpected error. Microservice could not elaborate text to preview.");
       }
     }
+  }
+
+  public async decodeBuffer(data: any) {
+    return new Promise<string>((resolve, reject) => {
+      let streamString = "";
+      data.setEncoding("utf8");
+      data.on("data", (utf8Chunk: string) => {
+        streamString += utf8Chunk;
+      });
+      let errorMessage;
+      data.on("end", () => {
+        errorMessage = streamString;
+        resolve(errorMessage);
+      });
+      data.on("error", () => {
+        reject("Impossible parse stream containing error message from python server.");
+      });
+    });
   }
 
   public async elaborateSlidesPreview(email: string, projectName: string) {
@@ -156,9 +161,7 @@ class ElaborationWrapper {
       } else if (error instanceof AwsS3Exception) {
         throw new AwsS3Exception(error.message);
       } else {
-        throw new MicroserviceException(
-          "Unexpected error. Microservice could not elaborate file."
-        );
+        throw new MicroserviceException("Unexpected error. Microservice could not elaborate file.");
       }
     }
   }
@@ -183,8 +186,7 @@ class ElaborationWrapper {
   }*/
 
   static getInstance(): ElaborationWrapper {
-    if (!this.elaborationWrapper)
-      this.elaborationWrapper = new ElaborationWrapper();
+    if (!this.elaborationWrapper) this.elaborationWrapper = new ElaborationWrapper();
     return this.elaborationWrapper;
   }
 }
