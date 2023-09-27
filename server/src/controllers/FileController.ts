@@ -15,8 +15,6 @@ export const uploadFile = async (req: Request, res: Response) => {
   try {
     const file = req.file;
 
-    console.log(file);
-
     const projectName = req.body.projectName;
     const user = res.locals.user as User;
     if (!projectName) {
@@ -25,8 +23,8 @@ export const uploadFile = async (req: Request, res: Response) => {
     if (!file) {
       throw new FileException("No file uploaded.");
     }
-    if (!file.originalname.endsWith(".pptx")) {
-      throw new FileException("File must be a PowerPoint (.pptx) file.");
+    if (!file.originalname.endsWith(".zip")) {
+      throw new FileException("File must be a PowerPoint zipped (.zip) file.");
     }
     if (!(await ProjectService.findProjectByProjectName(projectName, user))) {
       throw new ParameterException("Project name not valid.");
@@ -64,11 +62,7 @@ export const downloadFile = async (req: Request, res: Response) => {
     if (parameter && parameter === "true") {
       original = true;
     }
-    const file = await FileService.downloadFileFromStorage(
-      user.email,
-      projectName,
-      original
-    );
+    const file = await FileService.downloadFileFromStorage(user.email, projectName, original);
 
     if (file instanceof Readable) {
       file.once("error", () => {
@@ -100,10 +94,7 @@ export const elaborateFile = async (req: Request, res: Response) => {
     if (!projectName) {
       throw new ParameterException("No project name provided.");
     }
-    const project = await ProjectService.findProjectByProjectName(
-      projectName,
-      user
-    );
+    const project = await ProjectService.findProjectByProjectName(projectName, user);
     if (!project) {
       throw new ParameterException("Project name not valid.");
     }
