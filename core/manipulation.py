@@ -363,10 +363,6 @@ def process_pptx_split(usermail, project, filename):
                 #    zf.writestr(f"audio_{i}.mp3", audio_buffer.read())
         stream.seek(0)
         return stream
-    except Exception as e:
-        traceback.print_exc()
-        raise ElaborationException(
-            f"Exception while processing slides splitting: {str(e)}")
     except OSError as e:
         raise ElaborationException(
             f"Could not process file due to OS path issue: {e.filename}")
@@ -376,6 +372,9 @@ def process_pptx_split(usermail, project, filename):
         raise UserParameterException(e)
     except ElaborationException as e:
         raise ElaborationException(e)
-
+    except Exception as e:
+        traceback.print_exc()
+        raise ElaborationException(
+            f"Exception while processing slides splitted: {str(e)}")
     finally:
         delete_folder(temp_folder)
