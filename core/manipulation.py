@@ -210,9 +210,12 @@ def process_slide(slide, temp_folder):
         if not modified:
             return modified
         parsed_ssml = check_correct_validate_parse_text(notes_text)
+    except UserParameterException as e:
+        raise UserParameterException(e)
     except Exception as e:
-        raise UserParameterException(
+        raise ElaborationException(
             f"Presentation Elaboration: Exception during SSML correction/validation/parsing: {str(e)}")
+
     try:
         if len(parsed_ssml) == 1:
             unique_id = uuid.uuid4()
@@ -251,7 +254,7 @@ def process_preview(text):
     except UserParameterException as e:
         raise UserParameterException(e)
     except Exception as e:
-        raise UserParameterException(
+        raise ElaborationException(
             f"Audio Preview: Exception during SSML correction/validation/parsing: {str(e)}")
     try:
         if len(parsed_ssml) == 1:

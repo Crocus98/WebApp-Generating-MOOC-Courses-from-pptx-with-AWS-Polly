@@ -56,7 +56,7 @@ def validate_ssml(ssml_text, schema_path):
             schema_root = etree.parse(schema_file)
             schema = etree.XMLSchema(schema_root)
     except Exception:
-        raise Exception(
+        raise ElaborationException(
             f"Schema file for validation not found at path: {schema_path}")
 
     # Correct and parse SSML document

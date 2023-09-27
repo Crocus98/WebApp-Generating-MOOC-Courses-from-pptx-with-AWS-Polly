@@ -137,27 +137,23 @@ class ElaborationWrapper {
   public async elaborateSlidesPreview(email: string, projectName: string) {
     try {
       const filename = await storageWrapper.getFileNameFromStorageByUserEmailAndProject(email, projectName);
-      return await this.axiosInstance
-        .post(
-          "/process-slides",
-          {
-            email: email,
-            projectName: projectName,
-            filename: filename,
-          },
-          { responseType: "stream" }
-        )
-        .catch((error) => {
-          if (error.response?.status == 400) {
-            throw new ParameterException(error.response?.data.message);
-          }
-          throw new MicroserviceException(error.response?.data.message);
-        });
+      return await this.axiosInstance.post(
+        "/process-slides",
+        {
+          email: email,
+          projectName: projectName,
+          filename: filename,
+        },
+        { responseType: "stream" }
+      );
     } catch (error) {
-      if (error instanceof ParameterException) {
-        throw new ParameterException(error.message);
-      } else if (error instanceof MicroserviceException) {
-        throw new MicroserviceException(error.message);
+      if (error instanceof AxiosError) {
+        let message = await this.decodeBuffer(error.response?.data);
+        let errorMessage = JSON.parse(message);
+        if (error.response?.status == 400) {
+          throw new ParameterException(errorMessage.message);
+        }
+        throw new MicroserviceException(errorMessage.message);
       } else if (error instanceof AwsS3Exception) {
         throw new AwsS3Exception(error.message);
       } else {

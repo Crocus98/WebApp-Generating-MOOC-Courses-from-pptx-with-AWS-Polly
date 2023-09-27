@@ -102,6 +102,8 @@ def check_correct_validate_parse_text(notes_text):
     validate_ssml(corrected_ssml, schema_path)
     return parse_ssml(corrected_ssml)
 
+        
+
 
 def slide_split_data(index, image_base64, audio_base64):
     return {
