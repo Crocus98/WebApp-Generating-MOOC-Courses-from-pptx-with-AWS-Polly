@@ -80,7 +80,7 @@ def process_slides_request():
     if not all(key in data for key in ('email', 'projectName', 'filename')):
         return jsonify({"message": "Missing parameters"}), 400
 
-    print(data["filename"])
+    #print(data["filename"])
 
     try:
         usermail = data['email']

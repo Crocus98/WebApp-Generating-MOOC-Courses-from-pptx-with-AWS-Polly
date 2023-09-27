@@ -248,7 +248,6 @@ def process_slide(slide, temp_folder):
 
 def process_preview(text):
     unique_id = uuid.uuid4()
-    temp_folder = create_folder(f"{unique_id}_temp")
     try:
         parsed_ssml = check_correct_validate_parse_text(text)
     except UserParameterException as e:
@@ -257,6 +256,7 @@ def process_preview(text):
         raise ElaborationException(
             f"Audio Preview: Exception during SSML correction/validation/parsing: {str(e)}")
     try:
+        temp_folder = create_folder(f"{unique_id}_temp")
         if len(parsed_ssml) == 1:
             for voice_name, text in parsed_ssml:
                 audio, _ = generate_audio(voice_name, temp_folder, "slide", text, voice_name, False)
