@@ -32,16 +32,12 @@ def process_pptx_request():
         result = process_pptx(usermail, project, filename)
         return jsonify({"message": result}), 200
     except UserParameterException as e:
-        # print(f"An error occurred: {str(e)}")
         return jsonify({"message": f"Error: {str(e)}"}), 400
     except ElaborationException as e:
-        # print(f"An error occurred: {str(e)}")
         return jsonify({"message": f"Error: {str(e)}"}), 500
     except AmazonException as e:
-        # print(f"An error occurred: {str(e)}")
         return jsonify({"message": f"Error: {str(e)}"}), 502
     except Exception as e:
-        # print(f"An error occurred: {str(e)}")
         return jsonify({"message": f"Error: {str(e)}"}), 500
 
 
@@ -57,17 +53,12 @@ def process_text_request():
         result = process_preview(text)
         return send_file(result, download_name="preview.mp3", as_attachment=True), 200
     except UserParameterException as e:
-        # print(f"An error occurred: {str(e)}")
         return jsonify({"message": f"Error: {str(e)}"}), 400
     except ElaborationException as e:
-        # print(f"An error occurred: {str(e)}")
         return jsonify({"message": f"Error: {str(e)}"}), 500
     except AmazonException as e:
-        # print(f"An error occurred: {str(e)}")
         return jsonify({"message": f"Error: {str(e)}"}), 502
     except Exception as e:
-        # print(f"An error occurred: {str(e)}")
-        #traceback.print_exc()
         return jsonify({"message": f"Error: {str(e)}"}), 500
 
 
@@ -78,7 +69,6 @@ def process_slides_request():
     if not all(key in data for key in ('email', 'projectName', 'filename')):
         return jsonify({"message": "Missing parameters"}), 400
 
-    #print(data["filename"])
 
     try:
         usermail = data['email']
@@ -96,17 +86,12 @@ def process_slides_request():
         result = process_pptx_split(usermail, project, filename)
         return send_file(result, download_name="archive.zip", as_attachment=True), 200
     except UserParameterException as e:
-        # print(f"An error occurred: {str(e)}")
         return jsonify({"message": f"Error: {str(e)}"}), 400
     except ElaborationException as e:
-        # print(f"An error occurred: {str(e)}")
         return jsonify({"message": f"Error: {str(e)}"}), 500
     except AmazonException as e:
-        # print(f"An error occurred: {str(e)}")
         return jsonify({"message": f"Error: {str(e)}"}), 502
     except Exception as e:
-        #traceback.print_exc()
-        # print(f"An error occurred: {str(e)}")
         return jsonify({"message": f"Error: {str(e)}"}), 500
 
 

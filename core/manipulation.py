@@ -61,8 +61,10 @@ def download_file_from_s3(usermail, project, filename):
     try:
         obj = s3_singleton.s3.Object(
             bucket_name, f'{usermail}/{project}/{filename}')
-        if not obj.get():
-            raise UserParameterException("File not found: check parameters")
+        try: 
+            obj.get()
+        except Exception as e:
+            raise UserParameterException(f"File not found: check parameters. Error: {str(e)}")
         file = io.BytesIO()
         obj.download_fileobj(file)
         if file is None:
