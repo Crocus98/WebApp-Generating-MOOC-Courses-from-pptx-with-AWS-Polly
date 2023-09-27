@@ -79,8 +79,10 @@ export const register = async (req: Request, res: Response) => {
       throw new UserException(message as string);
     }
 
+    /*
     if (typeof user === "object")
       await ProjectService.createProject("default", user);
+    */
 
     res.status(200).send("Inserted successfully");
   } catch (error) {
