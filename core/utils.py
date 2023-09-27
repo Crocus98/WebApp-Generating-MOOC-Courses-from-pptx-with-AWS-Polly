@@ -97,10 +97,15 @@ def check_slide_have_notes(notes_slide):
 
 
 def check_correct_validate_parse_text(notes_text):
-    checked_missing_tags = find_missing_tags(notes_text)
-    corrected_ssml = correct_special_characters(checked_missing_tags)
-    validate_ssml(corrected_ssml, schema_path)
-    return parse_ssml(corrected_ssml)
+    try:
+        checked_missing_tags = find_missing_tags(notes_text)
+        corrected_ssml = correct_special_characters(checked_missing_tags)
+        validate_ssml(corrected_ssml, schema_path)
+        return parse_ssml(corrected_ssml)
+    except ElaborationException as e:
+        raise ElaborationException(e)
+    except Exception as e:
+        raise UserParameterException(e)
 
         
 
