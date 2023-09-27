@@ -124,7 +124,7 @@ def pptx_to_pdf(pptx_file_path):
 
     
     try:
-        process.communicate(timeout=20)
+        process.communicate(timeout=60)
     except subprocess.TimeoutExpired:
         raise ElaborationException(
             f"Process for pptx conversion timed out. Killing it.")
@@ -285,36 +285,6 @@ def process_preview(text):
         delete_folder(temp_folder)
 
 # PPTX SPLIT BLOCK
-
-#OUTDATED
-def process_slide_split(index, slide, image, folder):
-    notes_text, have_notes = check_slide_have_notes(slide.notes_slide)
-    image_base64 = extract_image_from_slide(index, folder, image)
-    if not have_notes:
-        return slide_split_data(index, image_base64, None)
-    parsed_ssml = check_correct_validate_parse_text(notes_text)
-    try:
-        audio_base64 = None
-        if len(parsed_ssml) == 1:
-            for voice_name, text in parsed_ssml:
-                audio_base64 = generate_audio(
-                    index, folder, "slide", text, voice_name, True)
-        else:
-            audios = []
-            for j, (voice_name, text) in enumerate(parsed_ssml):
-                audio, _ = generate_audio(
-                    j, folder, "multi_voice", text, voice_name, False)
-                audios.append(audio)
-                audios.append(half_sec_silence)
-            audio_base64 = combine_audios_and_generate_file(
-                index, folder, audios, True)
-        return slide_split_data(index, image_base64, audio_base64)
-    except AmazonException as e:
-        raise AmazonException(e)
-    except Exception as e:
-        raise ElaborationException(
-            f"Exception while saving audio to file: {str(e)}")
-    
 def get_slide_audio_preview(index, slide, folder):
     notes_text, have_notes = check_slide_have_notes(slide.notes_slide)
     if not have_notes:
@@ -351,14 +321,14 @@ def process_pptx_split(usermail, project, filename):
         stream = io.BytesIO()
         with ZipFile(stream, "w") as zf:
             for i, (slide, image) in enumerate(zip(prs.slides, images)):
-                #audio_segment = get_slide_audio_preview(i, slide, temp_folder)
+                audio_segment = get_slide_audio_preview(i, slide, temp_folder)
                 img_buffer = io.BytesIO()
                 image.save(img_buffer, 'PNG')
                 img_buffer.seek(0)
                 zf.writestr(f"slide_{i}.png", img_buffer.read())
-                #if(audio_segment):
-                #    audio_buffer = audiosegment_to_stream(audio_segment)
-                #    zf.writestr(f"audio_{i}.mp3", audio_buffer.read())
+                if(audio_segment):
+                   audio_buffer = audiosegment_to_stream(audio_segment)
+                   zf.writestr(f"audio_{i}.mp3", audio_buffer.read())
         stream.seek(0)
         return stream
     except OSError as e:
