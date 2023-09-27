@@ -37,11 +37,7 @@ class ElaborationWrapper {
 
   public async elaborateFile(project: Project, email: string) {
     try {
-      const filename =
-        storageWrapper.getFileNameFromStorageByUserEmailAndProject(
-          email,
-          project.name
-        );
+      const filename = await storageWrapper.getFileNameFromStorageByUserEmailAndProject(email, project.name);
 
       /* LAMBDA DISMISSED IN FAVOR OF MICROSERVICE
       const funcName = "lambda_handler";
@@ -57,22 +53,28 @@ class ElaborationWrapper {
         throw new LambdaException("Lambda could not elaborate file.");
       }
       */
-      await this.axiosInstance.post("/process-pptx", {
-        email: email,
-        projectName: project.name,
-        filename: filename,
-      });
+      await this.axiosInstance
+        .post("/process-pptx", {
+          email: email,
+          projectName: project.name,
+          filename: filename,
+        })
+        .catch((error) => {
+          if (error.response?.status == 400) {
+            throw new ParameterException(error.response?.data.message);
+          }
+          throw new MicroserviceException(error.response?.data.message);
+        });
       /* 
       if (result.status !== 200) {
         throw new MicroserviceException(result.data);
       }
       */
     } catch (error) {
-      if (error instanceof AxiosError) {
-        if (error.response?.status == 400) {
-          throw new ParameterException(error.response?.data);
-        }
-        throw new MicroserviceException(error.response?.data);
+      if (error instanceof ParameterException) {
+        throw new ParameterException(error.message);
+      } else if (error instanceof MicroserviceException) {
+        throw new MicroserviceException(error.message);
       } else if (error instanceof AwsS3Exception) {
         throw new AwsS3Exception(error.message);
       } else {
@@ -100,22 +102,25 @@ class ElaborationWrapper {
       return parsedResult.body;
       */
 
-      return await this.axiosInstance.post(
-        "/process-text",
-        { text: text },
-        { responseType: "stream" }
-      );
+      return await this.axiosInstance
+        .post("/process-text", { text: text }, { responseType: "stream" })
+        .catch((error) => {
+          console.log(error.response?.data);
+          if (error.response?.status == 400) {
+            throw new ParameterException(error.response?.data.message);
+          }
+          throw new MicroserviceException(error.response?.data.message);
+        });
 
       /*if (result.status !== 200) {
         throw new MicroserviceException(result.data);
       }
       return result.data;*/
     } catch (error) {
-      if (error instanceof AxiosError) {
-        if (error.response?.status == 400) {
-          throw new ParameterException(error.response?.data);
-        }
-        throw new MicroserviceException(error.response?.data);
+      if (error instanceof ParameterException) {
+        throw new ParameterException(error.message);
+      } else if (error instanceof MicroserviceException) {
+        throw new MicroserviceException(error.message);
       } else {
         throw new MicroserviceException(
           "Unexpected error. Microservice could not elaborate text to preview."
@@ -126,27 +131,28 @@ class ElaborationWrapper {
 
   public async elaborateSlidesPreview(email: string, projectName: string) {
     try {
-      const filename =
-        await storageWrapper.getFileNameFromStorageByUserEmailAndProject(
-          email,
-          projectName
-        );
-
-      return await this.axiosInstance.post(
-        "/process-slides",
-        {
-          email: email,
-          projectName: projectName,
-          filename: filename,
-        },
-        { responseType: "stream" }
-      );
+      const filename = await storageWrapper.getFileNameFromStorageByUserEmailAndProject(email, projectName);
+      return await this.axiosInstance
+        .post(
+          "/process-slides",
+          {
+            email: email,
+            projectName: projectName,
+            filename: filename,
+          },
+          { responseType: "stream" }
+        )
+        .catch((error) => {
+          if (error.response?.status == 400) {
+            throw new ParameterException(error.response?.data.message);
+          }
+          throw new MicroserviceException(error.response?.data.message);
+        });
     } catch (error) {
-      if (error instanceof AxiosError) {
-        if (error.response?.status == 400) {
-          throw new ParameterException(error.response?.data);
-        }
-        throw new MicroserviceException(error.response?.data);
+      if (error instanceof ParameterException) {
+        throw new ParameterException(error.message);
+      } else if (error instanceof MicroserviceException) {
+        throw new MicroserviceException(error.message);
       } else if (error instanceof AwsS3Exception) {
         throw new AwsS3Exception(error.message);
       } else {

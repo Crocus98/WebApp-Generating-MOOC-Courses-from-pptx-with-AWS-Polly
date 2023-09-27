@@ -70,7 +70,6 @@ def process_text_request():
     except Exception as e:
         # print(f"An error occurred: {str(e)}")
         traceback.print_exc()
-
         return jsonify({"message": f"Error: {str(e)}"}), 500
 
 

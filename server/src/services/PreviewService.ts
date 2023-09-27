@@ -5,9 +5,9 @@ import PreviewException from "@/exceptions/PreviewException";
 import MicroserviceException from "@/exceptions/MicroserviceException";
 import ParameterException from "@/exceptions/ParameterException";
 
-export const elaborateAudioPreview = (text: string) => {
+export const elaborateAudioPreview = async (text: string) => {
   try {
-    return elaborationWrapper.elaborateAudioPreview(text);
+    return await elaborationWrapper.elaborateAudioPreview(text);
   } catch (error) {
     if (error instanceof MicroserviceException) {
       throw new PreviewException(error.message);
@@ -18,9 +18,9 @@ export const elaborateAudioPreview = (text: string) => {
   }
 };
 
-export const elaborateSlidesPreview = (email: string, projectName: string) => {
+export const elaborateSlidesPreview = async (email: string, projectName: string) => {
   try {
-    return elaborationWrapper.elaborateSlidesPreview(email, projectName);
+    return await elaborationWrapper.elaborateSlidesPreview(email, projectName);
   } catch (error) {
     if (error instanceof MicroserviceException) {
       throw new PreviewException(error.message);
