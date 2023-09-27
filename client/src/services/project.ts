@@ -124,7 +124,10 @@ export const retrievePreview = async (text: string) => {
     return previewBase64;
   } catch (error) {
     if (error instanceof AxiosError) {
-      throw new Error(JSON.stringify(error.response?.data));
+      const message = Buffer.from(error.response?.data, "binary").toString(
+        "utf-8"
+      );
+      throw new Error(message);
     }
     if (error instanceof Error) {
       throw new Error(error.message);
