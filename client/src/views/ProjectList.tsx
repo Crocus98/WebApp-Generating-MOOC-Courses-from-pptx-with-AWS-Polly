@@ -13,6 +13,7 @@ import { SubmitHandler, useForm } from "react-hook-form";
 import { set } from "lodash";
 import Button from "../components/Button";
 import ProjectItem from "../components/ProjectItem";
+import JSZip from "jszip";
 
 type ProjectForm = {
   projectName: string;
@@ -55,7 +56,19 @@ export default function ProjectList({}: Props) {
     setLoading(true);
     try {
       const fd = new FormData();
-      fd.append("file", file);
+
+      const fileNameWithoutExtension = file.name.substring(
+        0,
+        file.name.lastIndexOf(".")
+      );
+
+      const zip = new JSZip();
+
+      await zip.file(file.name, file);
+
+      const zipBlob = await zip.generateAsync({ type: "blob" });
+
+      fd.append("file", zipBlob);
       fd.append("projectName", projectName);
 
       await axios.post("/v1/public/project", {
