@@ -1,5 +1,6 @@
+<?xml version="1.0" encoding="UTF-8" ?>
 <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified">
-<xs:import namespace="http://www.w3.org/XML/1998/namespace" schemaLocation="http://www.w3.org/2001/03/xml.xsd"/>
+  <xs:import namespace="http://www.w3.org/XML/1998/namespace" schemaLocation="http://www.w3.org/2001/03/xml.xsd"/>
   <xs:element name="speak">
       <xs:complexType>
         <xs:sequence>
@@ -23,7 +24,7 @@
     </xs:restriction>
   </xs:simpleType>
 
-    <!-- Define the voice element -->
+  <!-- Define the voice element -->
   <xs:element name="voice">
     <xs:complexType mixed="true">
       <xs:sequence>
@@ -103,7 +104,6 @@
     </xs:complexType>
   </xs:element>
 
-
   <xs:element name="phoneme">
     <xs:complexType mixed="true">
       <xs:sequence>
@@ -150,7 +150,6 @@
     </xs:complexType>
   </xs:element>
 
-
   <xs:element name="prosody">
       <xs:complexType mixed="true">
           <xs:choice minOccurs="0" maxOccurs="unbounded">
@@ -180,7 +179,6 @@
           </xs:simpleType>
       </xs:attribute>
   </xs:attributeGroup>
-
 
   <xs:simpleType name="ratePercentageType">
       <xs:restriction base="xs:string">
