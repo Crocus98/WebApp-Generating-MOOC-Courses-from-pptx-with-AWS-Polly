@@ -51,7 +51,6 @@ export function exitLog(error: string | Error): never {
   exit(1);
 }
 
-// function fastifyLoggerConnect(...args)
 /* ------------------------------------------------------------------
     MODULE EXPORTS
 -------------------------------------------------------------------*/
