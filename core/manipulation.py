@@ -39,8 +39,7 @@ class Polly:
                                   region_name=region_name)
 
     def __del__(self):
-        self.polly = None  # called with -> del obj
-
+        self.polly = None
 
 aws_access_key_id = os.getenv('aws_access_key_id')
 aws_secret_access_key = os.getenv('aws_secret_access_key')
@@ -61,7 +60,7 @@ def download_file_from_s3(usermail, project, filename):
     try:
         obj = s3_singleton.s3.Object(
             bucket_name, f'{usermail}/{project}/{filename}')
-        try: 
+        try:
             obj.get()
         except Exception as e:
             raise UserParameterException(f"File not found: check parameters. Error: {str(e)}")
@@ -182,16 +181,16 @@ def process_pptx(usermail, project, filename):
 def add_tts_to_pptx(pptx_file, usermail, project):
     try:
         temp_folder = create_folder(f"{usermail}_{project}_temp")
-        pptx_file.seek(0)
+        #pptx_file.seek(0)
         prs = Presentation(pptx_file)
         modified = False
         for slide in prs.slides:
             if process_slide(slide, temp_folder):
                 modified = True
-        pptx_file.seek(0)
+        #pptx_file.seek(0)
         if modified:
             prs.save(pptx_file)
-        pptx_file.seek(0)
+        #pptx_file.seek(0)
         return modified
     except AmazonException as e:
         raise AmazonException(e)
@@ -222,8 +221,7 @@ def process_slide(slide, temp_folder):
         if len(parsed_ssml) == 1:
             unique_id = uuid.uuid4()
             for voice_name, text in parsed_ssml:
-                audio, filename = generate_audio(
-                    unique_id, temp_folder, "slide", text, voice_name, False)
+                audio, filename = generate_audio(unique_id, temp_folder, "slide", text, voice_name, False)
                 add_audio_to_slide(slide, filename)
         else:
             audios = []
