@@ -181,6 +181,7 @@ export function editorReducer(
 
   switch (action.type) {
     case EditorActionType.LOADING_COMPLETE:
+      if (state.projectZip) return state;
       return {
         ...state,
         audios: addTimestampToDataList(action.payload.audios, timestamp).map(

@@ -8,13 +8,13 @@ import { GetObjectCommandOutput } from "@aws-sdk/client-s3";
 import MicroserviceException from "@/exceptions/MicroserviceException";
 import ParameterException from "@/exceptions/ParameterException";
 
-export const uploadFileToStorage = (
+export const uploadFileToStorage = async (
   file: any,
   projectName: string,
   email: string
 ) => {
   try {
-    storageWrapper.uploadFileToStorageAndDeleteOldOnes(
+    await storageWrapper.uploadFileToStorageAndDeleteOldOnes(
       file,
       projectName,
       email

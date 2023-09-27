@@ -24,14 +24,17 @@ class StorageWrapper {
     }
   }
 
-  uploadFileToStorageAndDeleteOldOnes(
+  async uploadFileToStorageAndDeleteOldOnes(
     file: any,
     projectName: string,
     email: string
   ) {
     try {
-      this.deleteFilesFromStorageByUserEmailAndProjectName(email, projectName);
-      this.uploadFileToStorage(file, email, projectName);
+      await this.deleteFilesFromStorageByUserEmailAndProjectName(
+        email,
+        projectName
+      );
+      await this.uploadFileToStorage(file, email, projectName);
     } catch (error) {
       if (error instanceof AwsS3Exception) {
         throw new AwsS3Exception(error.message);
