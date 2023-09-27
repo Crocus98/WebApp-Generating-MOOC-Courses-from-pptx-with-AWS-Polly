@@ -7,9 +7,7 @@ import os
 from dotenv import load_dotenv
 
 load_dotenv()
-
 schema_path = os.getenv('schema_path')
-
 
 def correct_special_characters(ssml_text):
     escape_chars = {
@@ -48,16 +46,16 @@ def has_non_whitespace_text(element):
     return False
 
 
-def validate_ssml(ssml_text, schema_path):
+def validate_ssml(ssml_text):
     ssml_text = ssml_text.lstrip()
     ssml_text = re.sub(r'\s+', ' ', ssml_text).strip()
     try:
         with open(schema_path, 'r') as schema_file:
             schema_root = etree.parse(schema_file)
             schema = etree.XMLSchema(schema_root)
-    except Exception:
+    except Exception as e:
         raise ElaborationException(
-            f"Schema file for validation not found at path: {schema_path}")
+            f"Schema File Exception: {e}")
 
     # Correct and parse SSML document
     ssml_text = correct_special_characters(ssml_text)

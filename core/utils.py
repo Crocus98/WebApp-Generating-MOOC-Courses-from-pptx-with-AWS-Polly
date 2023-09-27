@@ -100,7 +100,7 @@ def check_correct_validate_parse_text(notes_text):
     try:
         checked_missing_tags = find_missing_tags(notes_text)
         corrected_ssml = correct_special_characters(checked_missing_tags)
-        validate_ssml(corrected_ssml, schema_path)
+        validate_ssml(corrected_ssml)
         return parse_ssml(corrected_ssml)
     except ElaborationException as e:
         raise ElaborationException(e)
