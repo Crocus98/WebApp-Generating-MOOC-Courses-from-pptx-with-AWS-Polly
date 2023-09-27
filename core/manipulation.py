@@ -181,16 +181,14 @@ def process_pptx(usermail, project, filename):
 def add_tts_to_pptx(pptx_file, usermail, project):
     try:
         temp_folder = create_folder(f"{usermail}_{project}_temp")
-        #pptx_file.seek(0)
+        pptx_file.seek(0)
         prs = Presentation(pptx_file)
         modified = False
         for slide in prs.slides:
             if process_slide(slide, temp_folder):
                 modified = True
-        #pptx_file.seek(0)
         if modified:
             prs.save(pptx_file)
-        #pptx_file.seek(0)
         return modified
     except AmazonException as e:
         raise AmazonException(e)
