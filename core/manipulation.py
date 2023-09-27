@@ -373,7 +373,7 @@ def process_pptx_split(usermail, project, filename):
     except ElaborationException as e:
         raise ElaborationException(e)
     except Exception as e:
-        traceback.print_exc()
+        #traceback.print_exc()
         raise ElaborationException(
             f"Exception while processing slides splitted: {str(e)}")
     finally:

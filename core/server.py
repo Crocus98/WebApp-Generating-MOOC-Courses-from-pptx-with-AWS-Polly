@@ -35,14 +35,12 @@ def process_pptx_request():
         # print(f"An error occurred: {str(e)}")
         return jsonify({"message": f"Error: {str(e)}"}), 400
     except ElaborationException as e:
-        print(e)
         # print(f"An error occurred: {str(e)}")
         return jsonify({"message": f"Error: {str(e)}"}), 500
     except AmazonException as e:
         # print(f"An error occurred: {str(e)}")
         return jsonify({"message": f"Error: {str(e)}"}), 502
     except Exception as e:
-        print(e)
         # print(f"An error occurred: {str(e)}")
         return jsonify({"message": f"Error: {str(e)}"}), 500
 
@@ -69,7 +67,7 @@ def process_text_request():
         return jsonify({"message": f"Error: {str(e)}"}), 502
     except Exception as e:
         # print(f"An error occurred: {str(e)}")
-        traceback.print_exc()
+        #traceback.print_exc()
         return jsonify({"message": f"Error: {str(e)}"}), 500
 
 
@@ -107,7 +105,7 @@ def process_slides_request():
         # print(f"An error occurred: {str(e)}")
         return jsonify({"message": f"Error: {str(e)}"}), 502
     except Exception as e:
-        traceback.print_exc()
+        #traceback.print_exc()
         # print(f"An error occurred: {str(e)}")
         return jsonify({"message": f"Error: {str(e)}"}), 500
 

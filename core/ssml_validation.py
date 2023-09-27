@@ -58,7 +58,6 @@ def validate_ssml(ssml_text):
     ssml_text = ssml_text.lstrip()
     ssml_text = re.sub(r'\s+', ' ', ssml_text).strip()
     try:
-        print(os.getcwd() + "\\" +  schema_filename)
         with open(os.getcwd() + "\\" + schema_filename, 'r') as schema_file:
             schema_root = etree.parse(schema_file)
             schema = etree.XMLSchema(schema_root)
