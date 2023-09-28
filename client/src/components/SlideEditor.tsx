@@ -299,7 +299,7 @@ const VOICE_NAMES = [
 const createVoiceOptions = () =>
   VOICE_NAMES.map((name) => ({
     label: name + (name === DEFAULT_NAME ? " (default)" : ""),
-    value: `<speak voice_name='${name}'>\n\n</speak>`,
+    value: `<voice voice_name='${name}'>\n\n</voice>`,
   }));
 
 const VOICE_OPTIONS = createVoiceOptions();
