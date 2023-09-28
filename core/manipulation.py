@@ -118,8 +118,8 @@ def upload_file_to_s3(usermail, project, filename, file):
     try:
         obj = s3_singleton.s3.Object(
             bucket_name, f'{usermail}/{project}/edited/{filename}')
-        if (is_pptx_file(filename)):
-            file.seek(0)
+        #if (is_pptx_file(filename)):
+        file.seek(0)
         obj.upload_fileobj(file)
         response = obj.get()
         if not (response and response['ResponseMetadata']['HTTPStatusCode'] == 200):
@@ -229,16 +229,15 @@ def combine_audios_and_generate_file(index, folder, audios, base64):
     return combined_audio, combined_filename
 
 # PROCESS PPTX BLOCK
-
-
 def process_pptx(usermail, project, filename):
     zip_byte_data = download_file_from_s3(usermail, project, filename)
     pptx_file, temp_folder = unzip_file_to_temp(
         zip_byte_data, usermail, project)
-
+    
     if add_tts_to_pptx(pptx_file, temp_folder):
         edited_filename = f"{os.path.splitext(filename)[0]}_edited.zip"
         edited_filepath = zip_pptx(pptx_file, temp_folder, edited_filename)
+        print(edited_filepath)
         with open(edited_filepath, 'rb') as file_to_upload:
             upload_file_to_s3(usermail, project,
                               edited_filename, file_to_upload)
@@ -425,5 +424,5 @@ def process_pptx_split(usermail, project, filename):
         # traceback.print_exc()
         raise ElaborationException(
             f"Exception while processing slides splitted: {str(e)}")
-    # finally:
-    #     delete_folder(temp_folder)
+    finally:
+        delete_folder(temp_folder)

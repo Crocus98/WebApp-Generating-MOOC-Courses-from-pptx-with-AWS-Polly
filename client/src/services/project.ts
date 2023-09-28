@@ -62,7 +62,9 @@ export const downloadProject = async (projectName: string) => {
     responseType: "blob",
   });
   // create file link in browser's memory
-  const href = URL.createObjectURL(downloadRes.data);
+  const unzippedPPTX = await unzipPowerpoint(downloadRes.data);
+
+  const href = URL.createObjectURL(unzippedPPTX);
 
   // create "a" HTML element with href to file & click
   const link = document.createElement("a");
