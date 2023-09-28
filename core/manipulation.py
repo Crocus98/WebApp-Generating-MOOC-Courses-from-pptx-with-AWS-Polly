@@ -11,8 +11,7 @@ import uuid
 import io
 import os
 import traceback
-
-
+import zipfile
 
 load_dotenv()
 
@@ -41,6 +40,7 @@ class Polly:
     def __del__(self):
         self.polly = None
 
+
 aws_access_key_id = os.getenv('aws_access_key_id')
 aws_secret_access_key = os.getenv('aws_secret_access_key')
 bucket_name = os.getenv('bucket_name')
@@ -56,6 +56,44 @@ polly_object = Polly(aws_access_key_id, aws_secret_access_key, region)
 half_sec_silence = AudioSegment.silent(duration=500)
 
 
+def zip_pptx(pptx_file, temp_folder, edited_filename):
+    # edited_filename = f"{os.path.splitext(os.path.basename(pptx_file))[0]}_edited.zip"
+    edited_filepath = os.path.join(temp_folder, edited_filename)
+
+    with zipfile.ZipFile(edited_filepath, 'w') as zip_ref:
+        zip_ref.write(pptx_file, os.path.basename(pptx_file))
+
+    print(f"Uploading edited pptx: {edited_filename}")
+    print(f"Creating zip at: {edited_filename}")
+
+    return edited_filepath
+
+
+def unzip_file_to_temp(zip_byte_data_io, usermail, project):
+    # Determine the directory of the current script
+    script_directory = os.path.dirname(os.path.abspath(__file__))
+
+    # Create a temporary folder in the script directory
+    temp_folder = os.path.join(script_directory, f"{usermail}_{project}_temp")
+    if not os.path.exists(temp_folder):
+        os.makedirs(temp_folder)
+
+    # Save byte data to a temporary file
+    temp_zip_file = os.path.join(temp_folder, "temp.zip")
+    with open(temp_zip_file, 'wb') as f:
+        f.write(zip_byte_data_io.getvalue())  # Use getvalue() to extract bytes
+
+    # Unzip the saved temp file into the temp folder
+    with zipfile.ZipFile(temp_zip_file, 'r') as zip_ref:
+        zip_ref.extractall(temp_folder)
+
+    # Assuming there's only one PPTX file inside the zip
+    pptx_file = [os.path.join(temp_folder, f) for f in os.listdir(
+        temp_folder) if f.endswith('.pptx')][0]
+
+    return pptx_file, temp_folder
+
+
 def download_file_from_s3(usermail, project, filename):
     try:
         obj = s3_singleton.s3.Object(
@@ -63,7 +101,8 @@ def download_file_from_s3(usermail, project, filename):
         try:
             obj.get()
         except Exception as e:
-            raise UserParameterException(f"File not found: check parameters. Error: {str(e)}")
+            raise UserParameterException(
+                f"File not found: check parameters. Error: {str(e)}")
         file = io.BytesIO()
         obj.download_fileobj(file)
         if file is None:
@@ -113,37 +152,57 @@ def pptx_to_pdf(pptx_file_path):
         raise ElaborationException(
             f"Temporary copy of file is either not found, not a pptx or not readable due to permissions: {pptx_file_path}")
 
+    print(f"Converting pptx to pdf: {pptx_file_path}")
     output_folder = os.path.dirname(pptx_file_path)
     output_pdf_path = os.path.join(
         output_folder, f"{os.path.splitext(os.path.basename(pptx_file_path))[0]}.pdf")
+    print(f"Output pdf path: {output_pdf_path}")
 
-    command = f"{path_to_libreoffice} --headless --convert-to pdf --outdir \"{output_folder}\" \"{pptx_file_path}\""
+    # Check if PDF already exists
+    if os.path.exists(output_pdf_path):
+        print(f"PDF already exists at {output_pdf_path}. Overwriting.")
+        os.remove(output_pdf_path)
+
+    command = f"\"{path_to_libreoffice}\" --headless --convert-to pdf --outdir \"{output_folder}\" \"{pptx_file_path}\""
 
     process = subprocess.Popen(
-       command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+        command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
 
-    
-    try:
-        process.communicate(timeout=60)
-    except subprocess.TimeoutExpired:
+    print(f"Process: {process}")
+
+    stdout, stderr = process.communicate(timeout=60)
+    if process.returncode != 0:
+        print(f"STDOUT from LibreOffice: {stdout.decode()}")
+        print(f"STDERR from LibreOffice: {stderr.decode()}")
         raise ElaborationException(
-            f"Process for pptx conversion timed out. Killing it.")
-    finally:
-        process.terminate()
-    
+            f"Error converting PPTX to PDF using LibreOffice.")
+
+    # Check if the output PDF exists
+    if not os.path.exists(output_pdf_path):
+        raise ElaborationException(
+            f"Expected PDF {output_pdf_path} not found.")
+
     return output_pdf_path
 
 
-def get_folder_prs_images_from_pptx(usermail, project, filename, folder):
-    pptx_file = download_file_from_s3(usermail, project, filename)
-    pptx_file_path = os.path.join(folder, filename)
-    with open(pptx_file_path, 'wb') as f:
-        f.write(pptx_file.getbuffer())
-    pptx_file.seek(0)
-    prs = Presentation(pptx_file)
+def get_folder_prs_images_from_pptx(usermail, project, filename, temp_folder):
+    zip_byte_data_io = download_file_from_s3(
+        usermail, project, filename)  # Assuming this downloads a zip file
+
+    # Unzip to get the pptx file
+    pptx_file_path, temp_folder = unzip_file_to_temp(
+        zip_byte_data_io, usermail, project)
+
+    # You've unzipped the file, so there's no need to save the buffer again
+    prs = Presentation(pptx_file_path)  # Load the presentation from the path
+    print(f"pptx_file_path: {pptx_file_path}")
+
+    # Convert the PPTX to PDF and then to images
     pdf_path = pptx_to_pdf(pptx_file_path).replace('.pptx.pdf', '.pdf')
+    print(f"pdf_path: {pdf_path}")
     images = pdf_to_images(pdf_path)
-    images[0]
+    print(f"images: {images}")
+
     return prs, images
 
 
@@ -154,6 +213,7 @@ def generate_audio(index, folder, prefix, text, voice_name, base64):
     if (base64):
         return audiosegment_to_base64(audio)
     return audio, filename
+
 
 def combine_audios_and_generate_file(index, folder, audios, base64):
     audios.pop()
@@ -170,18 +230,27 @@ def combine_audios_and_generate_file(index, folder, audios, base64):
 
 
 def process_pptx(usermail, project, filename):
-    pptx_file = download_file_from_s3(usermail, project, filename)
-    if add_tts_to_pptx(pptx_file, usermail, project):
-        edited_filename = f"{os.path.splitext(filename)[0]}_edited{os.path.splitext(filename)[1]}"
-        upload_file_to_s3(usermail, project, edited_filename, pptx_file)
+    zip_byte_data = download_file_from_s3(usermail, project, filename)
+    pptx_file, temp_folder = unzip_file_to_temp(
+        zip_byte_data, usermail, project)
+
+    if add_tts_to_pptx(pptx_file, temp_folder):
+        edited_filename = f"{os.path.splitext(filename)[0]}_edited.zip"
+        edited_filepath = zip_pptx(pptx_file, temp_folder, edited_filename)
+        with open(edited_filepath, 'rb') as file_to_upload:
+            upload_file_to_s3(usermail, project,
+                              edited_filename, file_to_upload)
+        try:
+            delete_folder(temp_folder)
+        except Exception as e:
+            raise ElaborationException(
+                f"Exception while deleting temp folder: {str(e)}")
     else:
         raise ElaborationException("PPTX has no notes to elaborate")
 
 
-def add_tts_to_pptx(pptx_file, usermail, project):
+def add_tts_to_pptx(pptx_file, temp_folder):
     try:
-        temp_folder = create_folder(f"{usermail}_{project}_temp")
-        pptx_file.seek(0)
         prs = Presentation(pptx_file)
         modified = False
         for slide in prs.slides:
@@ -197,10 +266,7 @@ def add_tts_to_pptx(pptx_file, usermail, project):
     except ElaborationException as e:
         raise ElaborationException(e)
     except Exception as e:
-        raise ElaborationException(
-            f"Exception adding tts to pptx: {str(e)}")
-    finally:
-        delete_folder(temp_folder)
+        raise ElaborationException(f"Exception adding tts to pptx: {str(e)}")
 
 
 def process_slide(slide, temp_folder):
@@ -219,8 +285,11 @@ def process_slide(slide, temp_folder):
         if len(parsed_ssml) == 1:
             unique_id = uuid.uuid4()
             for voice_name, text in parsed_ssml:
-                audio, filename = generate_audio(unique_id, temp_folder, "slide", text, voice_name, False)
+                audio, filename = generate_audio(
+                    unique_id, temp_folder, "slide", text, voice_name, False)
+                slide.shapes.turbo_add_enabled = True
                 add_audio_to_slide(slide, filename)
+                slide.shapes.turbo_add_enabled = False
         else:
             audios = []
             for voice_name, text in parsed_ssml:
@@ -231,7 +300,9 @@ def process_slide(slide, temp_folder):
                 audios.append(half_sec_silence)
             combined_audio, combined_filename = combine_audios_and_generate_file(
                 "combined", temp_folder, audios, False)
+            slide.shapes.turbo_add_enabled = True
             add_audio_to_slide(slide, combined_filename)
+            slide.shapes.turbo_add_enabled = False
         return modified
     except AmazonException as e:
         raise AmazonException(e)
@@ -257,7 +328,8 @@ def process_preview(text):
         temp_folder = create_folder(f"{unique_id}_temp")
         if len(parsed_ssml) == 1:
             for voice_name, text in parsed_ssml:
-                audio, _ = generate_audio(voice_name, temp_folder, "slide", text, voice_name, False)
+                audio, _ = generate_audio(
+                    voice_name, temp_folder, "slide", text, voice_name, False)
                 audio_buffer = audiosegment_to_stream(audio)
                 return audio_buffer
         else:
@@ -285,6 +357,8 @@ def process_preview(text):
         delete_folder(temp_folder)
 
 # PPTX SPLIT BLOCK
+
+
 def get_slide_audio_preview(index, slide, folder):
     notes_text, have_notes = check_slide_have_notes(slide.notes_slide)
     if not have_notes:
@@ -312,23 +386,28 @@ def get_slide_audio_preview(index, slide, folder):
         raise ElaborationException(
             f"Exception while saving audio to file: {str(e)}")
 
+
 def process_pptx_split(usermail, project, filename):
     try:
         temp_folder = create_folder(f"{usermail}_{project}_temp")
         prs, images = get_folder_prs_images_from_pptx(
             usermail, project, filename, temp_folder)
-        
+
         stream = io.BytesIO()
         with ZipFile(stream, "w") as zf:
             for i, (slide, image) in enumerate(zip(prs.slides, images)):
+                print(f"Processing slide {i}")
                 audio_segment = get_slide_audio_preview(i, slide, temp_folder)
                 img_buffer = io.BytesIO()
+                print(img_buffer)
                 image.save(img_buffer, 'PNG')
+                print(f"Saving slide {i} to zip")
                 img_buffer.seek(0)
                 zf.writestr(f"slide_{i}.png", img_buffer.read())
-                if(audio_segment):
-                   audio_buffer = audiosegment_to_stream(audio_segment)
-                   zf.writestr(f"audio_{i}.mp3", audio_buffer.read())
+                print(f"Saving audio {i} to zip")
+                if (audio_segment):
+                    audio_buffer = audiosegment_to_stream(audio_segment)
+                    zf.writestr(f"audio_{i}.mp3", audio_buffer.read())
         stream.seek(0)
         return stream
     except OSError as e:
@@ -341,8 +420,8 @@ def process_pptx_split(usermail, project, filename):
     except ElaborationException as e:
         raise ElaborationException(e)
     except Exception as e:
-        #traceback.print_exc()
+        # traceback.print_exc()
         raise ElaborationException(
             f"Exception while processing slides splitted: {str(e)}")
-    finally:
-        delete_folder(temp_folder)
+    # finally:
+    #     delete_folder(temp_folder)
