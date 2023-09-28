@@ -14,7 +14,7 @@ export const listProjects = async (req: Request, res: Response) => {
     return res.status(200).send(projectsNames);
   } catch (error) {
     if (error instanceof DatabaseException) {
-      res.status(500).send(utils.getErrorMessage(error));
+      return res.status(500).send(utils.getErrorMessage(error));
     }
     return res.status(500).send(utils.getErrorMessage(error));
   }
@@ -31,9 +31,9 @@ export const createProject = async (req: Request, res: Response) => {
     return res.status(200).send(project);
   } catch (error) {
     if (error instanceof DatabaseException) {
-      res.status(500).send(utils.getErrorMessage(error));
+      return res.status(500).send(utils.getErrorMessage(error));
     } else if (error instanceof ParameterException) {
-      res.status(400).send(utils.getErrorMessage(error));
+      return res.status(400).send(utils.getErrorMessage(error));
     }
     return res.status(500).send(utils.getErrorMessage(error));
   }
@@ -55,11 +55,11 @@ export const deleteProject = async (req: Request, res: Response) => {
     return res.status(200).send("Project deleted successfully.");
   } catch (error) {
     if (error instanceof DatabaseException) {
-      res.status(500).send(utils.getErrorMessage(error));
+      return res.status(500).send(utils.getErrorMessage(error));
     } else if (error instanceof ParameterException) {
-      res.status(400).send(utils.getErrorMessage(error));
+      return res.status(400).send(utils.getErrorMessage(error));
     } else if (error instanceof StorageException) {
-      res.status(500).send(utils.getErrorMessage(error));
+      return res.status(500).send(utils.getErrorMessage(error));
     }
     return res.status(500).send(utils.getErrorMessage(error));
   }
