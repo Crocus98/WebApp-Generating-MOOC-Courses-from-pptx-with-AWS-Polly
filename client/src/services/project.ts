@@ -1,6 +1,10 @@
 import axios, { AxiosError } from "axios";
-import JSZip from "jszip";
-import { getSlideNotes, sortFilenamesBySlideNumber } from "./ppt";
+import JSZip, { file } from "jszip";
+import {
+  getSlideNotes,
+  sortFilenamesBySlideNumber,
+  unzipPowerpoint,
+} from "./ppt";
 import { Buffer } from "buffer";
 
 export const retrieveProject = async (
@@ -22,7 +26,8 @@ export const retrieveProject = async (
         original: true,
       },
     });
-    zip = await JSZip().loadAsync(downloadRes.data);
+    const pptxBlob = await unzipPowerpoint(downloadRes.data);
+    zip = await new JSZip().loadAsync(pptxBlob);
   } catch (error) {
     if (error instanceof AxiosError) {
       if (error.response?.status === 404) {

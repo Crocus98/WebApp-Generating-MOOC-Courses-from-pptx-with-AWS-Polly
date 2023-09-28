@@ -126,3 +126,28 @@ const createParagraph = (text: string) =>
         </a:r>
      </a:p>
   </p:notes>`;
+
+export const zipPowerpoint = async (file: File) => {
+  const fileNameWithoutExtension = file.name.substring(
+    0,
+    file.name.lastIndexOf(".")
+  );
+  const zip = new JSZip();
+  await zip.file(file.name, file);
+  const zipBlob = await zip.generateAsync({ type: "blob" });
+  const zipFile = new File([zipBlob], `${fileNameWithoutExtension}.zip`, {
+    type: "application/zip",
+  });
+  return zipFile;
+};
+
+export const unzipPowerpoint = async (data: ArrayBuffer) => {
+  const containerZip = await JSZip().loadAsync(data);
+  console.log(Object.keys(containerZip.files));
+  const fileName = Object.keys(containerZip.files)[0];
+  console.log(fileName);
+  if (!fileName) throw new Error("No zip file found inside zip");
+  const blob = await containerZip.file(fileName)?.async("blob");
+  if (!blob) throw new Error("Can't read zip file inside zip");
+  return blob;
+};

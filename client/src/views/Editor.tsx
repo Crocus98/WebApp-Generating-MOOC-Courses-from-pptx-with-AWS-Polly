@@ -12,7 +12,7 @@ import {
   elaborateProject,
   retrieveProject,
 } from "../services/project";
-import { buildProject } from "../services/ppt";
+import { buildProject, zipPowerpoint } from "../services/ppt";
 import LoadingWidget from "../components/LoadingWidget";
 import { H2, P } from "../components/Text";
 
@@ -338,7 +338,10 @@ export default function Editor({}: Props) {
       );
 
       const fd = new FormData();
-      fd.append("file", file);
+
+      const zipFile = await zipPowerpoint(file);
+
+      fd.append("file", zipFile);
       fd.append("projectName", projectName);
       await axios.post("/v1/public/upload", fd);
       dispatch({ type: EditorActionType.SAVE_END, payload: { success: true } });

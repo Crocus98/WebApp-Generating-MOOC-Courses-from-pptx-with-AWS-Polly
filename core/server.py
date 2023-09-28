@@ -75,23 +75,18 @@ def process_slides_request():
         project = data['projectName']
         filename = data['filename']
         
-        '''
-        stream = io.BytesIO()
-        with ZipFile(stream, 'w') as zip:
-            result = process_pptx_split(usermail, project, filename)
-            zip.writestr('preview.json', json.dumps(result))
-        stream.seek(0)
-        return send_file(stream, download_name="preview.zip", as_attachment=True), 200
-        '''
         result = process_pptx_split(usermail, project, filename)
         return send_file(result, download_name="archive.zip", as_attachment=True), 200
     except UserParameterException as e:
         return jsonify({"message": f"Error: {str(e)}"}), 400
     except ElaborationException as e:
+        traceback.print_exc()
         return jsonify({"message": f"Error: {str(e)}"}), 500
     except AmazonException as e:
+        traceback.print_exc()
         return jsonify({"message": f"Error: {str(e)}"}), 502
     except Exception as e:
+        traceback.print_exc()
         return jsonify({"message": f"Error: {str(e)}"}), 500
 
 
@@ -100,6 +95,6 @@ if __name__ == "__main__":
         from waitress import serve
         serve(app, host=HOST, port=PORT)
     elif ENVIRONMENT == "DEV":
-        app.run(debug=True, host=HOST, port=PORT)
+        app.run(debug=False, host=HOST, port=PORT)
     else:
         raise Exception("Invalid Enviroment")

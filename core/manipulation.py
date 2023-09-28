@@ -163,12 +163,12 @@ def pptx_to_pdf(pptx_file_path):
         print(f"PDF already exists at {output_pdf_path}. Overwriting.")
         os.remove(output_pdf_path)
 
-    command = f"\"{path_to_libreoffice}\" --headless --convert-to pdf --outdir \"{output_folder}\" \"{pptx_file_path}\""
+    command = f"{path_to_libreoffice} --headless --convert-to pdf --outdir \"{output_folder}\" \"{pptx_file_path}\""
+
+    print(command)
 
     process = subprocess.Popen(
         command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
-
-    print(f"Process: {process}")
 
     stdout, stderr = process.communicate(timeout=60)
     if process.returncode != 0:
@@ -179,8 +179,11 @@ def pptx_to_pdf(pptx_file_path):
 
     # Check if the output PDF exists
     if not os.path.exists(output_pdf_path):
+        print("NOT OS!")
         raise ElaborationException(
             f"Expected PDF {output_pdf_path} not found.")
+
+    print(f"PDF successfully created at {output_pdf_path}")
 
     return output_pdf_path
 
@@ -195,7 +198,6 @@ def get_folder_prs_images_from_pptx(usermail, project, filename, temp_folder):
 
     # You've unzipped the file, so there's no need to save the buffer again
     prs = Presentation(pptx_file_path)  # Load the presentation from the path
-    print(f"pptx_file_path: {pptx_file_path}")
 
     # Convert the PPTX to PDF and then to images
     pdf_path = pptx_to_pdf(pptx_file_path).replace('.pptx.pdf', '.pdf')
@@ -404,7 +406,7 @@ def process_pptx_split(usermail, project, filename):
                 print(f"Saving slide {i} to zip")
                 img_buffer.seek(0)
                 zf.writestr(f"slide_{i}.png", img_buffer.read())
-                print(f"Saving audio {i} to zip")
+                print(f"Saving audio {i} tow zip")
                 if (audio_segment):
                     audio_buffer = audiosegment_to_stream(audio_segment)
                     zf.writestr(f"audio_{i}.mp3", audio_buffer.read())

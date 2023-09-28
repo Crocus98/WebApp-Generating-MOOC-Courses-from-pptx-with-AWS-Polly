@@ -14,6 +14,7 @@ import { set } from "lodash";
 import Button from "../components/Button";
 import ProjectItem from "../components/ProjectItem";
 import JSZip from "jszip";
+import { zipPowerpoint } from "../services/ppt";
 
 type ProjectForm = {
   projectName: string;
@@ -57,18 +58,9 @@ export default function ProjectList({}: Props) {
     try {
       const fd = new FormData();
 
-      const fileNameWithoutExtension = file.name.substring(
-        0,
-        file.name.lastIndexOf(".")
-      );
+      const zipFile = await zipPowerpoint(file);
 
-      const zip = new JSZip();
-
-      await zip.file(file.name, file);
-
-      const zipBlob = await zip.generateAsync({ type: "blob" });
-
-      fd.append("file", zipBlob);
+      fd.append("file", zipFile);
       fd.append("projectName", projectName);
 
       await axios.post("/v1/public/project", {
