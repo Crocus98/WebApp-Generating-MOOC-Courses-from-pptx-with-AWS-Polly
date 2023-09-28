@@ -1,6 +1,7 @@
 import DatabaseException from "@/exceptions/DatabaseException";
+import ParameterException from "@/exceptions/ParameterException";
 import prisma from "@prisma";
-import { User, Project } from "@prisma/client";
+import { Prisma, User, Project } from "@prisma/client";
 
 export const findProjectByProjectName = async (projectName: string, user: User) => {
   try {
@@ -55,7 +56,12 @@ export const createProject = async (projectName: string, user: User) => {
     });
     return project;
   } catch (error) {
-    throw new DatabaseException("Unexpected error. Could not create project.");
+    if (error instanceof Prisma.PrismaClientKnownRequestError) {
+      if (error.code === "P2002") {
+        throw new ParameterException("Could not create project. Project already exists: " + error);
+      }
+    }
+    throw new DatabaseException("Unexpected error. Could not create project: " + error);
   }
 };
 
