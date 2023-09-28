@@ -32,7 +32,6 @@ export default function ProjectList({}: Props) {
   const {
     register,
     handleSubmit,
-    setError,
     formState: { errors },
   } = useForm<ProjectForm>({
     mode: "onSubmit",
@@ -48,6 +47,8 @@ export default function ProjectList({}: Props) {
   }, []);
 
   const onSubmit: SubmitHandler<ProjectForm> = async (data) => {
+    if (loading) return;
+
     setGenericError(null);
     const projectName = data.projectName.trim();
     if (!file) {
@@ -117,7 +118,14 @@ export default function ProjectList({}: Props) {
             style={{ alignSelf: "center" }}
           />
           {genericError && <ErrorText>{genericError}</ErrorText>}
-          <Button>Crea nuovo progetto</Button>
+          <Button
+            disabled={loading}
+            style={{
+              backgroundColor: loading ? colors.darkGrey : colors.purple,
+            }}
+          >
+            Crea nuovo progetto
+          </Button>
         </form>
       </ProjectCreationModal>
       <Text.H2>Project List</Text.H2>

@@ -127,24 +127,7 @@ export default function SlideEditor({
           <ToolbarContainer>
             <EditorQuickActions
               name="Voci"
-              options={[
-                {
-                  label: "Micheal",
-                  value: "<speak voice_name='micheal'>\n\n</speak>",
-                },
-                {
-                  label: "Laura",
-                  value: "<speak voice_name='laura'>\n\n</speak>",
-                },
-                {
-                  label: "Giuseppe",
-                  value: "<speak voice_name='giuseppe'>\n\n</speak>",
-                },
-                {
-                  label: "Maria",
-                  value: "<speak voice_name='maria'>\n\n</speak>",
-                },
-              ]}
+              options={VOICE_OPTIONS}
               color={colors.orange}
               onClick={selectQuickAction}
             />
@@ -299,3 +282,24 @@ const DocsContainer = styled.a`
     color: ${colors.darkPurple};
   }
 `;
+
+const DEFAULT_NAME = "Brian";
+const VOICE_NAMES = [
+  "Brian",
+  "Amy",
+  "Arthur",
+  "Joanna",
+  "Ruth",
+  "Matthew",
+  "Stephen",
+  "Bianca",
+  "Adriano",
+];
+
+const createVoiceOptions = () =>
+  VOICE_NAMES.map((name) => ({
+    label: name + (name === DEFAULT_NAME ? " (default)" : ""),
+    value: `<speak voice_name='${name}'>\n\n</speak>`,
+  }));
+
+const VOICE_OPTIONS = createVoiceOptions();

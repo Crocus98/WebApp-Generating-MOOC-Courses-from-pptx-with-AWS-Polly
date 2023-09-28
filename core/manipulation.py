@@ -165,8 +165,6 @@ def pptx_to_pdf(pptx_file_path):
 
     command = f"{path_to_libreoffice} --headless --convert-to pdf --outdir \"{output_folder}\" \"{pptx_file_path}\""
 
-    print(command)
-
     process = subprocess.Popen(
         command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
 
@@ -358,14 +356,12 @@ def process_preview(text):
         delete_folder(temp_folder)
 
 # PPTX SPLIT BLOCK
-
-
 def get_slide_audio_preview(index, slide, folder):
     notes_text, have_notes = check_slide_have_notes(slide.notes_slide)
     if not have_notes:
         return None
-    parsed_ssml = check_correct_validate_parse_text(notes_text)
     try:
+        parsed_ssml = check_correct_validate_parse_text(notes_text)
         audio_mp3 = None
         if len(parsed_ssml) == 1:
             for voice_name, text in parsed_ssml:
@@ -382,10 +378,11 @@ def get_slide_audio_preview(index, slide, folder):
                 index, folder, audios, False)
         return audio_mp3
     except AmazonException as e:
-        raise AmazonException(e)
+        print(f"Amazon Exception")
+        return None
     except Exception as e:
-        raise ElaborationException(
-            f"Exception while saving audio to file: {str(e)}")
+        print(f"Exception while saving audio to file: {str(e)}")
+        return None
 
 
 def process_pptx_split(usermail, project, filename):
