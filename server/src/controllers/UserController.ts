@@ -5,7 +5,6 @@ import UserException from "@/exceptions/UserException";
 import jwt from "jsonwebtoken";
 import utils from "@utils";
 import { User } from "@prisma/client";
-import * as ProjectService from "@services/ProjectService";
 
 export const login = async (req: Request, res: Response) => {
   try {
@@ -30,9 +29,7 @@ export const login = async (req: Request, res: Response) => {
     });
 
     //successful login
-    res
-      .status(200)
-      .send({ email, name: user.name, surname: user.surname, token });
+    res.status(200).send({ email, name: user.name, surname: user.surname, token });
   } catch (error) {
     if (error instanceof UserException) {
       return res.status(400).send(utils.getErrorMessage(error));
@@ -67,13 +64,7 @@ export const register = async (req: Request, res: Response) => {
       throw new UserException("Token is required");
     }
     //create user
-    const [user, message] = await UserService.register(
-      name,
-      surname,
-      email,
-      password,
-      token
-    );
+    const [user, message] = await UserService.register(name, surname, email, password, token);
 
     if (!user) {
       throw new UserException(message as string);
@@ -93,10 +84,7 @@ export const register = async (req: Request, res: Response) => {
   }
 };
 
-export const generateRegistrationToken = async (
-  req: Request,
-  res: Response
-) => {
+export const generateRegistrationToken = async (req: Request, res: Response) => {
   try {
     const user = res.locals.user as User;
     if (!user.admin) {
@@ -125,11 +113,7 @@ export const grantAdminPermissions = async (req: Request, res: Response) => {
       throw new UserException("You are not authorized to perform this action");
     }
 
-    const [result, message] = await UserService.handleAdminPermissions(
-      user,
-      handledUserMail,
-      true
-    );
+    const [result, message] = await UserService.handleAdminPermissions(user, handledUserMail, true);
     if (!result) {
       throw new UserException(message as string);
     }
@@ -152,11 +136,7 @@ export const revokeAdminPermissions = async (req: Request, res: Response) => {
       throw new UserException("You are not authorized to perform this action");
     }
 
-    const [result, message] = await UserService.handleAdminPermissions(
-      user,
-      handledUserMail,
-      false
-    );
+    const [result, message] = await UserService.handleAdminPermissions(user, handledUserMail, false);
     if (!result) {
       throw new UserException(message as string);
     }
