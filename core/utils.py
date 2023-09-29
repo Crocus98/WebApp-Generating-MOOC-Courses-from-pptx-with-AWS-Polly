@@ -101,8 +101,8 @@ def check_slide_have_notes(notes_slide):
     if notes_slide and notes_slide.notes_text_frame:
         notes_text = notes_slide.notes_text_frame.text
         if notes_text and notes_text.strip():
-            return notes_text, True
-    return None, False
+            return notes_text
+    return None
 
 
 def check_correct_validate_parse_text(notes_text):

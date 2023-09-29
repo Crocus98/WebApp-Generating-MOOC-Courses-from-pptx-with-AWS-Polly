@@ -1,14 +1,12 @@
 from copy import deepcopy
-from pptx.oxml import parse_xml
-from pptx.oxml.ns import nsdecls
 from threading import Lock, Thread, Event
 import botocore.exceptions
-from queue import Queue
+from queue import Queue, Empty
 import shutil
 import tempfile
 from io import BytesIO
 from concurrent.futures import ThreadPoolExecutor
-from pptx import Presentation
+from pptx import Presentation, oxml
 from pydub import AudioSegment
 from dotenv import load_dotenv
 from zipfile import ZipFile
@@ -47,9 +45,6 @@ class Polly:
                                   aws_secret_access_key=aws_secret_access_key,
                                   region_name=region_name)
 
-    def __del__(self):
-        self.polly = None
-
 
 def init_polly():
     return Polly(aws_access_key_id, aws_secret_access_key, region)
@@ -68,7 +63,7 @@ s3_singleton = S3Singleton(
 
 half_sec_silence = AudioSegment.silent(duration=500)
 
-max_workers = 20
+max_workers = 8 #Do not surpass 8 because amazon polly neural has a limit of 8 concurrent requests
 executor = ThreadPoolExecutor(max_workers=max_workers)
 
 
@@ -130,12 +125,16 @@ def upload_file_to_s3(usermail, project, filename, file):
 
 def generate_tts(polly, text, voice_id):
     try:
-        response = polly.synthesize_speech(
+        response = polly.polly.synthesize_speech(
             VoiceId=voice_id, OutputFormat='mp3', Text=text, TextType='ssml', Engine='neural')
+        
         if not response['ResponseMetadata']['HTTPStatusCode'] == 200:
             raise AmazonException(
                 f"Polly failed to elaborate tts. Response is not 200.")
-        return BytesIO(response['AudioStream'].read())
+        audio_data = response['AudioStream'].read()
+        return AudioSegment.from_mp3(io.BytesIO(audio_data))
+    except botocore.exceptions.ReadTimeoutError as e:
+        raise AmazonException("Timeout error generating tts.")
     except AmazonException as e:
         raise AmazonException(e)
 
@@ -183,130 +182,84 @@ def get_folder_prs_images_from_pptx(usermail, project, filename):
     return prs, images, temp_dir
 
 
-def generate_audio(polly, index, prefix, text, voice_name, base64):
-    # generate_tts now returns the audio_buffer directly
-    audio_buffer = generate_tts(polly, text, voice_name)
-
-    audio_buffer.seek(0)
-    audio = AudioSegment.from_file(audio_buffer, format="mp3")
-
-    if base64:
-        return audiosegment_to_base64(audio)
-
-    return audio, audio_buffer
-
-
-# TODO: remove index
-def combine_audios_and_generate_file(index, audios, base64):
+def combine_audios(audios):
+    if(len(audios)<2):
+        return audios[0]
     audios.pop()
     combined_audio = audios[0]
-
     for audio in audios[1:]:
         combined_audio += audio
-
     combined_buffer = io.BytesIO()
     combined_audio.export(combined_buffer, format="mp3", bitrate="320k")
-    combined_buffer.seek(0)  # TODO: check if seek(0) is needed
-
-    if base64:
-        return audiosegment_to_base64(combined_audio)
-
-    # TODO: remove 1 param and let only combined buffer
-    return combined_audio, combined_buffer
+    combined_buffer.seek(0)
+    return combined_buffer
 
 
 # PROCESS PPTX BLOCK
 
 def process_pptx(usermail, project, filename):
     pptx_buffer = download_file_from_s3(usermail, project, filename)
-
-    if add_tts_to_pptx(pptx_buffer):
-        edited_filename = f"{os.path.splitext(filename)[0]}_edited.zip"
-        upload_file_to_s3(usermail, project, edited_filename, pptx_buffer)
-    else:
-        raise ElaborationException("PPTX has no notes to elaborate")
+    add_tts_to_pptx(pptx_buffer)
+    edited_filename = f"{os.path.splitext(filename)[0]}_edited.zip"
+    upload_file_to_s3(usermail, project, edited_filename, pptx_buffer)
 
 
 def add_tts_to_pptx(pptx_buffer):
     prs = Presentation(pptx_buffer)
-
     queue = Queue()
-    lock = Lock()
-    event = Event()
-
-    def process_queue(slides_number):
-        count = 0
-        while count < slides_number:
-            try:
-                print("ciao")
-                with lock:
-                    data = queue.get()
-                if (data[2] == False):
-                    raise (globals()[data[4]])(data[5])
-                elif (data[1] is not None):
-                    update_slide_with_processed_data(
-                        data[0], data[1], data[3])
-                count += 1
-            except queue.Empty:
-                pass
-            except Exception as e:
-                event.set()
-                return False, type(e).__name__, e
-        return True
-    results = []
-    final_result_future = executor.submit(process_queue, len(prs.slides))
+    stop_event = Event()
     for slide_index, slide in enumerate(prs.slides):
-        result = executor.submit(process_slide, Polly(
-            aws_access_key_id, aws_secret_access_key, region), slide, slide_index, queue, lock, event)
-        results.append(result)
-    final_result = final_result_future.result()
-    if not final_result[0]:
-        raise (globals()[final_result[4]])(final_result[5])
-
+        parsed_ssml = obtain_notes_from_slide_and_parse_ssml(slide, slide_index, queue)
+        if(parsed_ssml is not None):
+            executor.submit(process_slide, parsed_ssml, slide_index, queue,stop_event)
+    process_queue(len(prs.slides), queue, prs, stop_event)
     pptx_buffer.seek(0)
     prs.save(pptx_buffer)
     return True
 
+def process_queue(slides_number,queue, prs, stop_event):
+    count = 0
+    while count < slides_number:
+        try:
+            data = queue.get(timeout=20) #[AudioBuffer, ElaborationSuccessful, SlideIndex, ExceptionType, ErrorMessage]
+            if (data[1] == False):
+                raise (globals()[data[3]])(data[4])
+            elif (data[0] is not None):
+                add_audio_to_slide_turbo(prs.slides[data[2]], data[0])
+            count += 1
+        except Empty:
+            stop_event.set()
+            raise ElaborationException("Slides Processing Threads are not filling the queue correctly. Timeout reached.")
+        except Exception as e:
+            stop_event.set()
+            raise e
 
-def process_slide(polly, slide, slide_index, queue, lock, event):
-    if event.is_set():
-        return
+def obtain_notes_from_slide_and_parse_ssml (slide, slide_index, queue):
+    notes_text = check_slide_have_notes(slide.notes_slide)
+    if notes_text is None:
+        queue.put([None, True, slide_index])
+        return None
+    parsed_ssml = check_correct_validate_parse_text(notes_text)
+    return parsed_ssml
+        
+
+def process_slide(parsed_ssml, slide_index, queue, stop_event):
     try:
-        notes_text, modified = check_slide_have_notes(slide.notes_slide)
-        if not modified:
-            with lock:
-                queue.put([slide, None, True, slide_index])
+        if stop_event.is_set():
             return
-
-        parsed_ssml = check_correct_validate_parse_text(notes_text)
-
-        audio_buffer = None
-        if len(parsed_ssml) == 1:
-            unique_id = uuid.uuid4()
-            voice_name, text = parsed_ssml[0]
-            _, audio_buffer = generate_audio(
-                polly, unique_id, "slide", text, voice_name, False)  # TODO: remove unnecessary params and returns
-        else:
-            audios = []
-            for voice_name, text in parsed_ssml:
-                unique_id = uuid.uuid4()
-                # TODO: remove unnecessary params and returns
-                audio, _ = generate_audio(
-                    polly, unique_id, "multi_voice", text, voice_name, False)
-                audios.append(audio)
-                audios.append(half_sec_silence)
-
-            # TODO: remove first returned result _ which is not used
-            _, audio_buffer = combine_audios_and_generate_file(
-                "combined", audios, False)
-        with lock:
-            queue.put([slide, audio_buffer, True, slide_index])
+        audios = []
+        polly = init_polly()
+        for voice_name, text in parsed_ssml:
+            audios.append(generate_tts(polly, text, voice_name))
+            audios.append(half_sec_silence)
+        audio_buffer = combine_audios(audios)
+        queue.put([audio_buffer, True, slide_index])
     except Exception as e:
-        with lock:
-            queue.put([slide, None, False, slide_index, type(e).__name__, e])
+        queue.put([None, False, slide_index, type(e).__name__, "Audio Processing Error: "+e])
+        
 
 
-def update_slide_with_processed_data(slide, audio, slide_index):
+def add_audio_to_slide_turbo(slide, audio):
     try:
         slide.shapes.turbo_add_enabled = True
         add_audio_to_slide(slide, audio)
