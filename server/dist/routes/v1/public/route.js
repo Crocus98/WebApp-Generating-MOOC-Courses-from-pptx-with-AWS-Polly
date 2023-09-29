@@ -13,17 +13,15 @@ const upload = (0, multer_1.default)({ storage: multer_1.default.memoryStorage()
 path.get("/me", _authentication_1.auth, UserController.userData);
 path.get("/download/:projectName", _authentication_1.auth, FileController.downloadFile);
 path.get("/list", _authentication_1.auth, ProjectController.listProjects);
-path.get("/project/:projectName", _authentication_1.auth, ProjectController.getSettings);
 path.get("/slides/:projectName", _authentication_1.auth, PreviewController.getSlidesPreview);
 path.post("/login", UserController.login);
 path.post("/register", UserController.register);
 path.post("/token", _authentication_1.auth, UserController.generateRegistrationToken);
-path.post("/upload", _authentication_1.auth, upload.single('file'), FileController.uploadFile);
+path.post("/upload", _authentication_1.auth, upload.single("file"), FileController.uploadFile);
 path.post("/project", _authentication_1.auth, ProjectController.createProject);
 path.post("/preview", _authentication_1.auth, PreviewController.getAudioPreview);
 path.post("/elaborate", _authentication_1.auth, FileController.elaborateFile);
 path.delete("/delete/:projectName", _authentication_1.auth, ProjectController.deleteProject);
-path.put("/settings/:projectName", _authentication_1.auth, ProjectController.updateSettings);
 path.patch("/grant", _authentication_1.auth, UserController.grantAdminPermissions);
 path.patch("/revoke", _authentication_1.auth, UserController.revokeAdminPermissions);
 exports.default = path;

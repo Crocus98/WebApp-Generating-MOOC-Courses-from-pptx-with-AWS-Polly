@@ -11,30 +11,30 @@ const fileConfig = {
     compress: true,
     keepFileExt: true,
     layout: {
-        type: 'pattern',
-        pattern: '%d %p %c %m \t(@%f{1}:%l) '
-    }
+        type: "pattern",
+        pattern: "%d %p %c %m \t(@%f{1}:%l) ",
+    },
 };
 const conf = {
     appenders: {
         console: {
             type: "stdout",
             layout: {
-                type: 'pattern',
-                pattern: '%d %[[%c][%p] %m%]\t(@%f{1}:%l)'
-            }
+                type: "pattern",
+                pattern: "%d %[[%c][%p] %m%]\t(@%f{1}:%l)",
+            },
         },
         file: Object.assign({ filename: "./logs/default.log" }, fileConfig),
-        express: Object.assign({ filename: "./logs/express.log" }, fileConfig)
+        express: Object.assign({ filename: "./logs/express.log" }, fileConfig),
     },
     categories: {
         default: { appenders: ["console", "file"], level: "all", enableCallStack: true },
         express: { appenders: ["console", "express"], level: "all", enableCallStack: true },
-    }
+    },
 };
 log4js_1.default.configure(conf);
-const logger = log4js_1.default.getLogger('default');
-exports.express = log4js_1.default.getLogger('express');
+const logger = log4js_1.default.getLogger("default");
+exports.express = log4js_1.default.getLogger("express");
 function setAllLoggerLevel(level) {
     logger.level = level;
     exports.express.level = level;

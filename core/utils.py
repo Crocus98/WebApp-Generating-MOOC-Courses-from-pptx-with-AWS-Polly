@@ -1,3 +1,4 @@
+from pdf2image import convert_from_bytes
 from pdf2image import convert_from_path
 from pydub import AudioSegment
 from pptx.util import Inches
@@ -25,6 +26,7 @@ def audiosegment_to_base64(audio_segment):
     except Exception as e:
         raise ElaborationException(
             f"Exception while converting audio to base64: {str(e)}")
+
 
 def audiosegment_to_stream(audio_segment):
     try:
@@ -71,12 +73,19 @@ def create_folder(folder_path):
     return os.path.abspath(folder_path)
 
 
-def pdf_to_images(pdf_path):
-    try:
-        return convert_from_path(pdf_path)
-    except Exception as e:
-        raise ElaborationException(
-            f"Exception while converting PDF to images: {str(e)}")
+def pdf_to_images(pdf_buffer):
+    # Convert the PDF bytes to Pillow images
+    images = convert_from_bytes(pdf_buffer.getvalue())
+
+    # Convert each Pillow image to a BytesIO buffer containing the JPEG data
+    buffers = []
+    for image in images:
+        buffer = io.BytesIO()
+        image.save(buffer, format='JPEG')
+        buffer.seek(0)  # Important! Reset the buffer's position to the start
+        buffers.append(buffer)
+
+    return buffers
 
 
 def is_pptx_file(file_path):
@@ -107,8 +116,6 @@ def check_correct_validate_parse_text(notes_text):
     except Exception as e:
         raise UserParameterException(e)
 
-        
-
 
 def slide_split_data(index, image_base64, audio_base64):
     return {
@@ -130,6 +137,7 @@ def extract_image_from_slide(index, folder, image):
     return image_to_base64(image)
 
 
-def add_audio_to_slide(slide, filename):
+def add_audio_to_slide(slide, audio_file):
     left, top, width, height = Inches(1), Inches(2.5), Inches(1), Inches(1)
-    slide.shapes.add_movie(filename, left, top, width, height, mime_type="audio/mp3", poster_frame_image=None)
+    slide.shapes.add_movie(audio_file, left, top, width, height,
+                           mime_type="audio/mp3", poster_frame_image=None)

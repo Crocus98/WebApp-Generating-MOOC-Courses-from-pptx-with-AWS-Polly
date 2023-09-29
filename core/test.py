@@ -10,7 +10,7 @@ filename6 = '50_slides_mixed.zip'
 filename7 = '5_slides_no_notes.zip'
 filename8 = '12Twe.zip'
 filename9 = '1234v2_original.zip'
-filename10 = 'provona.zip'
+filename10 = '50_slides_mixedk.zip'
 
 
 def test_process_pptx_split(usermail, project, filename):
@@ -49,12 +49,12 @@ project = 'GigaChad2'
 # test_process_pptx(usermail, project, filename5)
 # test_process_pptx(usermail, project, filename6)
 # test_process_pptx(usermail, project, filename7)
-# test_process_pptx(usermail, project, filename8)
+test_process_pptx(usermail, project, filename8)
 # test_process_pptx(usermail, project, filename9)
 # test_process_pptx(usermail, project, filename10)
 
 
-test_process_pptx_split(usermail, project, filename1)
+# test_process_pptx_split(usermail, project, filename1)
 # test_process_pptx_split(usermail, project, filename2)
 # test_process_pptx_split(usermail, project, filename3)
 # test_process_pptx_split(usermail, project, filename4)
@@ -63,6 +63,7 @@ test_process_pptx_split(usermail, project, filename1)
 # test_process_pptx_split(usermail, project, filename7)
 # test_process_pptx_split(usermail, project, filename8)
 # test_process_pptx_split(usermail, project, filename9)
+# test_process_pptx_split(usermail, project, filename10)
 
 
 # test_process_preview(testoporva1)

@@ -31,7 +31,7 @@ class Config {
         };
         this.MICROSERVICE_CONFIG = {
             MICROSERVICE_HOST: "",
-            MICROSERVICE_PORT: 5001
+            MICROSERVICE_PORT: 5001,
         };
         const env = dotenv_1.default.config();
         if (env.error)
@@ -136,8 +136,8 @@ class Config {
             MICROSERVICE_PORT = port;
         }
         return {
-            MICROSERVICE_HOST: process.env.MICROSERVICE_URL,
-            MICROSERVICE_PORT: MICROSERVICE_PORT
+            MICROSERVICE_HOST: MICROSERVICE_HOST,
+            MICROSERVICE_PORT: MICROSERVICE_PORT,
         };
     }
     parseLogLevel() {

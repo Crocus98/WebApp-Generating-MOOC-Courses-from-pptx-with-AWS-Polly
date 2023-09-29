@@ -76,7 +76,7 @@ class StorageWrapper {
             }
         });
     }
-    getFileNameFromStorageByUserEmailAndProjectForLambda(email, projectName) {
+    getFileNameFromStorageByUserEmailAndProject(email, projectName) {
         var _a;
         return tslib_1.__awaiter(this, void 0, void 0, function* () {
             try {
@@ -126,8 +126,8 @@ class StorageWrapper {
             try {
                 const objectKeys = yield this.getFileNamesFromStorageByUserEmailAndProject(email, projectName);
                 const fileName = original
-                    ? (_a = objectKeys === null || objectKeys === void 0 ? void 0 : objectKeys.find((obj) => { var _a, _b; return !((_a = obj.Key) === null || _a === void 0 ? void 0 : _a.includes("/edited/")) && ((_b = obj.Key) === null || _b === void 0 ? void 0 : _b.includes(".pptx")); })) === null || _a === void 0 ? void 0 : _a.Key
-                    : (_b = objectKeys === null || objectKeys === void 0 ? void 0 : objectKeys.find((obj) => { var _a, _b; return ((_a = obj.Key) === null || _a === void 0 ? void 0 : _a.includes("/edited/")) && ((_b = obj.Key) === null || _b === void 0 ? void 0 : _b.includes(".pptx")); })) === null || _b === void 0 ? void 0 : _b.Key;
+                    ? (_a = objectKeys === null || objectKeys === void 0 ? void 0 : objectKeys.find((obj) => { var _a, _b; return !((_a = obj.Key) === null || _a === void 0 ? void 0 : _a.includes("/edited/")) && ((_b = obj.Key) === null || _b === void 0 ? void 0 : _b.includes(".zip")); })) === null || _a === void 0 ? void 0 : _a.Key
+                    : (_b = objectKeys === null || objectKeys === void 0 ? void 0 : objectKeys.find((obj) => { var _a, _b; return ((_a = obj.Key) === null || _a === void 0 ? void 0 : _a.includes("/edited/")) && ((_b = obj.Key) === null || _b === void 0 ? void 0 : _b.includes(".zip")); })) === null || _b === void 0 ? void 0 : _b.Key;
                 if (!fileName) {
                     throw new AwsS3Exception_1.default("The file is not present in S3.");
                 }
