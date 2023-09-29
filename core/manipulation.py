@@ -190,7 +190,7 @@ def combine_audios(audios):
     for audio in audios[1:]:
         combined_audio += audio
     combined_buffer = io.BytesIO()
-    combined_audio.export(combined_buffer, format="mp3", bitrate="320k")
+    combined_audio.export(combined_buffer, format="wav")
     combined_buffer.seek(0)
     return combined_buffer
 
@@ -198,10 +198,9 @@ def combine_audios(audios):
 # PROCESS PPTX BLOCK
 
 def process_pptx(usermail, project, filename):
-    pptx_buffer = download_file_from_s3(usermail, project, filename)
-    add_tts_to_pptx(pptx_buffer)
+    edited_pptx_buffer = add_tts_to_pptx(download_file_from_s3(usermail, project, filename))
     edited_filename = f"{os.path.splitext(filename)[0]}_edited.zip"
-    upload_file_to_s3(usermail, project, edited_filename, pptx_buffer)
+    upload_file_to_s3(usermail, project, edited_filename, edited_pptx_buffer)
 
 
 def add_tts_to_pptx(pptx_buffer):
@@ -213,9 +212,10 @@ def add_tts_to_pptx(pptx_buffer):
         if(parsed_ssml is not None):
             executor.submit(process_slide, parsed_ssml, slide_index, queue,stop_event)
     process_queue(len(prs.slides), queue, prs, stop_event)
-    pptx_buffer.seek(0)
-    prs.save(pptx_buffer)
-    return True
+    output_buffer = io.BytesIO()
+    prs.save(output_buffer)
+    output_buffer.seek(0)
+    return output_buffer
 
 def process_queue(slides_number,queue, prs, stop_event):
     count = 0
@@ -225,7 +225,7 @@ def process_queue(slides_number,queue, prs, stop_event):
             if (data[1] == False):
                 raise (globals()[data[3]])(data[4])
             elif (data[0] is not None):
-                add_audio_to_slide_turbo(prs.slides[data[2]], data[0])
+                add_audio_to_slide_turbo(prs.slides[data[2]], data[2], data[0])
             count += 1
         except Empty:
             stop_event.set()
@@ -239,8 +239,7 @@ def obtain_notes_from_slide_and_parse_ssml (slide, slide_index, queue):
     if notes_text is None:
         queue.put([None, True, slide_index])
         return None
-    parsed_ssml = check_correct_validate_parse_text(notes_text)
-    return parsed_ssml
+    return check_correct_validate_parse_text(notes_text)
         
 
 def process_slide(parsed_ssml, slide_index, queue, stop_event):
@@ -259,69 +258,16 @@ def process_slide(parsed_ssml, slide_index, queue, stop_event):
         
 
 
-def add_audio_to_slide_turbo(slide, audio):
+def add_audio_to_slide_turbo(slide, slide_index, audio):
     try:
         slide.shapes.turbo_add_enabled = True
         add_audio_to_slide(slide, audio)
     except Exception as e:
         raise ElaborationException(
-            f"Error while adding audio to slide{str(slide_index)}: {str(e)}")
+            f"Error while adding audio to slide {slide_index}: {str(e)}")
     finally:
         slide.shapes.turbo_add_enabled = False
 
-
-def process_slide_at_index(slide_index, cloned_pptx_buffer):
-    cloned_prs = Presentation(cloned_pptx_buffer)
-    slide = cloned_prs.slides[slide_index]
-
-    # Call your original process_slide function
-    process_slide(slide)
-
-    return slide._element.xml
-
-
-# def process_slide(slide):
-#     try:
-#         notes_text, modified = check_slide_have_notes(slide.notes_slide)
-#         if not modified:
-#             return modified
-#         parsed_ssml = check_correct_validate_parse_text(notes_text)
-#     except UserParameterException as e:
-#         raise UserParameterException(e)
-#     except Exception as e:
-#         raise ElaborationException(
-#             f"Presentation Elaboration: Exception during SSML correction/validation/parsing: {str(e)}")
-
-#     try:
-#         if len(parsed_ssml) == 1:
-#             unique_id = uuid.uuid4()
-#             for voice_name, text in parsed_ssml:
-#                 audio, audio_buffer = generate_audio(
-#                     unique_id, "slide", text, voice_name, False)
-#                 slide.shapes.turbo_add_enabled = True
-#                 add_audio_to_slide(slide, audio_buffer)
-#                 slide.shapes.turbo_add_enabled = False
-#         else:
-#             audios = []
-#             for voice_name, text in parsed_ssml:
-#                 unique_id = uuid.uuid4()
-#                 audio, _ = generate_audio(
-#                     unique_id, "multi_voice", text, voice_name, False)
-#                 audios.append(audio)
-#                 audios.append(half_sec_silence)
-#             combined_audio, combined_buffer = combine_audios_and_generate_file(
-#                 "combined", audios, False)
-#             slide.shapes.turbo_add_enabled = True
-#             add_audio_to_slide(slide, combined_buffer)
-#             slide.shapes.turbo_add_enabled = False
-#         return modified
-#     except AmazonException as e:
-#         raise AmazonException(e)
-#     except UserParameterException as e:
-#         raise UserParameterException(e)
-#     except Exception as e:
-#         raise ElaborationException(
-#             f"Exception while processing a slide: {str(e)}")
 
 # TTS TEXT PREVIEW BLOCK
 

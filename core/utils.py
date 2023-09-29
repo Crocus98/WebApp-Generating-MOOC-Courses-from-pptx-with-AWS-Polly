@@ -1,7 +1,16 @@
 from pdf2image import convert_from_bytes
 from pdf2image import convert_from_path
 from pydub import AudioSegment
+
 from pptx.util import Inches
+from pptx.enum.shapes import MSO_SHAPE
+from pptx.oxml.ns import nsdecls
+from pptx.oxml import parse_xml
+from pptx import Presentation
+from pptx.util import Inches
+from pptx.enum.shapes import MSO_SHAPE
+
+
 from ssml_validation import *
 from exceptions import *
 import shutil
@@ -138,6 +147,6 @@ def extract_image_from_slide(index, folder, image):
 
 
 def add_audio_to_slide(slide, audio_file):
-    left, top, width, height = Inches(1), Inches(2.5), Inches(1), Inches(1)
-    slide.shapes.add_movie(audio_file, left, top, width, height,
-                           mime_type="audio/mp3", poster_frame_image=None)
+    left, top, width, height = Inches(1), Inches(1.5), Inches(1), Inches(1)
+    slide.shapes.add_movie(audio_file, left, top, width, height,mime_type="audio/wav")
+    
