@@ -190,7 +190,7 @@ def combine_audios(audios):
     for audio in audios[1:]:
         combined_audio += audio
     combined_buffer = io.BytesIO()
-    combined_audio.export(combined_buffer, format="wav")
+    combined_audio.export(combined_buffer, format="mp3")
     combined_buffer.seek(0)
     return combined_buffer
 

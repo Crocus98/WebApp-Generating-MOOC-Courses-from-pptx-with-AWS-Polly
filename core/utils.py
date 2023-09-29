@@ -148,5 +148,4 @@ def extract_image_from_slide(index, folder, image):
 
 def add_audio_to_slide(slide, audio_file):
     left, top, width, height = Inches(1), Inches(1.5), Inches(1), Inches(1)
-    slide.shapes.add_movie(audio_file, left, top, width, height,mime_type="audio/wav")
-    
+    slide.shapes.add_movie(audio_file, left, top, width, height, mime_type="audio/mp3")

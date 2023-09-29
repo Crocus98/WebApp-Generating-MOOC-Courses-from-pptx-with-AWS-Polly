@@ -49,9 +49,9 @@ project = 'GigaChad2'
 # test_process_pptx(usermail, project, filename5)
 # test_process_pptx(usermail, project, filename6)
 # test_process_pptx(usermail, project, filename7)
-test_process_pptx(usermail, project, filename8)
+# test_process_pptx(usermail, project, filename8)
 # test_process_pptx(usermail, project, filename9)
-# test_process_pptx(usermail, project, filename10)
+test_process_pptx(usermail, project, filename10)
 
 
 # test_process_pptx_split(usermail, project, filename1)
