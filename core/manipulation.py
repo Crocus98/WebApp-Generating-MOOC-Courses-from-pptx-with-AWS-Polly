@@ -184,14 +184,12 @@ def get_folder_prs_images_from_pptx(usermail, project, filename):
 
 def combine_audios(audios):
     if(len(audios)<2):
-        return audios[0]
+        return audiosegment_to_stream(audios[0])
     audios.pop()
     combined_audio = audios[0]
     for audio in audios[1:]:
         combined_audio += audio
-    combined_buffer = io.BytesIO()
-    combined_audio.export(combined_buffer, format="mp3")
-    combined_buffer.seek(0)
+    combined_buffer = audiosegment_to_stream(combined_audio)
     return combined_buffer
 
 
@@ -210,7 +208,7 @@ def add_tts_to_pptx(pptx_buffer):
     for slide_index, slide in enumerate(prs.slides):
         parsed_ssml = obtain_notes_from_slide_and_parse_ssml(slide, slide_index, queue)
         if(parsed_ssml is not None):
-            executor.submit(process_slide, parsed_ssml, slide_index, queue,stop_event)
+            executor.submit(process_ssml_thread, parsed_ssml, slide_index, queue,stop_event)
     process_queue(len(prs.slides), queue, prs, stop_event)
     output_buffer = io.BytesIO()
     prs.save(output_buffer)
@@ -242,20 +240,21 @@ def obtain_notes_from_slide_and_parse_ssml (slide, slide_index, queue):
     return check_correct_validate_parse_text(notes_text)
         
 
-def process_slide(parsed_ssml, slide_index, queue, stop_event):
+def process_ssml_thread(parsed_ssml, slide_index, queue, stop_event):
     try:
         if stop_event.is_set():
             return
-        audios = []
-        polly = init_polly()
-        for voice_name, text in parsed_ssml:
-            audios.append(generate_tts(polly, text, voice_name))
-            audios.append(half_sec_silence)
-        audio_buffer = combine_audios(audios)
-        queue.put([audio_buffer, True, slide_index])
+        queue.put([process_parsed_ssml(parsed_ssml), True, slide_index])
     except Exception as e:
         queue.put([None, False, slide_index, type(e).__name__, "Audio Processing Error: "+e])
         
+def process_parsed_ssml(parsed_ssml):
+    audios = []
+    polly = init_polly()
+    for voice_name, text in parsed_ssml:
+        audios.append(generate_tts(polly, text, voice_name))
+        audios.append(half_sec_silence)
+    return combine_audios(audios)
 
 
 def add_audio_to_slide_turbo(slide, slide_index, audio):
@@ -271,9 +270,7 @@ def add_audio_to_slide_turbo(slide, slide_index, audio):
 
 # TTS TEXT PREVIEW BLOCK
 
-
 def process_preview(text):
-    unique_id = uuid.uuid4()
     try:
         parsed_ssml = check_correct_validate_parse_text(text)
     except UserParameterException as e:
@@ -281,37 +278,8 @@ def process_preview(text):
     except Exception as e:
         raise ElaborationException(
             f"Audio Preview: Exception during SSML correction/validation/parsing: {str(e)}")
-
-    audios = []
-
-    def generate_for_voice(voice_name, text):
-        try:
-            audio, _ = generate_audio(voice_name, temp_folder,
-                                      "multi_voice", text, voice_name, False)
-            audios.append(audio)
-            audios.append(half_sec_silence)
-        except Exception as e:
-            # Handle or log exceptions during audio generation
-            pass
-
     try:
-        temp_folder = create_folder(f"{unique_id}_temp")
-        if len(parsed_ssml) == 1:
-            for voice_name, text in parsed_ssml:
-                audio, _ = generate_audio(
-                    voice_name, temp_folder, "slide", text, voice_name, False)
-                audio_buffer = audiosegment_to_stream(audio)
-                return audio_buffer
-        else:
-            with ThreadPoolExecutor() as executor:
-                executor.map(generate_for_voice, [voice_name for voice_name, _ in parsed_ssml], [
-                             text for _, text in parsed_ssml])
-
-            combined_audio, _ = combine_audios_and_generate_file(
-                "combined", temp_folder, audios, False)
-            audio_buffer = audiosegment_to_stream(combined_audio)
-
-            return audio_buffer
+        return process_parsed_ssml(parsed_ssml)
     except AmazonException as e:
         raise AmazonException(e)
     except ElaborationException as e:
@@ -321,11 +289,8 @@ def process_preview(text):
     except Exception as e:
         raise ElaborationException(
             f"Exception while processing text: {str(e)}")
-    finally:
-        delete_folder(temp_folder)
 
 # PPTX SPLIT BLOCK
-
 
 def process_slide_for_zip(i, slide, image):
     result = {}
