@@ -181,8 +181,6 @@ def get_folder_prs_images_from_pptx(usermail, project, filename):
 
 
 def combine_audios(audios):
-    if(len(audios)<2):
-        return audiosegment_to_stream(audios[0])
     audios.pop()
     combined_audio = audios[0]
     for audio in audios[1:]:
