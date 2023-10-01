@@ -74,7 +74,7 @@ def zip_pptx(pptx_buffer):
     return edited_buffer
 
 
-def unzip_file_to_temp(zip_byte_data_io):
+def unzip_file(zip_byte_data_io):
     with zipfile.ZipFile(zip_byte_data_io, 'r') as zip_ref:
         for name in zip_ref.namelist():
             if name.endswith('.pptx'):
@@ -91,7 +91,7 @@ def download_file_from_s3(usermail, project, filename):
         obj.download_fileobj(file)
         if file is None:
             raise AmazonException("file is None")
-        return unzip_file_to_temp(file)
+        return unzip_file(file)
     except UserParameterException as e:
         raise UserParameterException(e)
     except Exception as e:
@@ -143,7 +143,6 @@ def pptx_to_pdf(pptx_buffer):
     temp_dir = None
     with tempfile.NamedTemporaryFile(delete=False, suffix=".pptx") as temp_file:
         temp_file_path = temp_file.name
-        # Get the directory containing the temp file
         temp_dir = os.path.dirname(temp_file_path)
         temp_file.write(pptx_buffer.getvalue())
 
@@ -170,8 +169,7 @@ def pptx_to_pdf(pptx_buffer):
 
 
 def get_folder_prs_images_from_pptx(usermail, project, filename):
-    zip_byte_data_io = download_file_from_s3(usermail, project, filename)
-    pptx_buffer = unzip_file_to_temp(zip_byte_data_io)
+    pptx_buffer = download_file_from_s3(usermail, project, filename)
 
     prs = Presentation(pptx_buffer)
     pdf_buffer, temp_dir = pptx_to_pdf(pptx_buffer)
