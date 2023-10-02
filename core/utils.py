@@ -1,22 +1,18 @@
-from pdf2image import convert_from_bytes
-from pdf2image import convert_from_path
-from pydub import AudioSegment
-
-from pptx.util import Inches
-from pptx.enum.shapes import MSO_SHAPE
-from pptx.oxml.ns import nsdecls
-from pptx.oxml import parse_xml
-from pptx import Presentation
-from pptx.util import Inches
-from pptx.enum.shapes import MSO_SHAPE
-
-
-from ssml_validation import *
-from exceptions import *
 import shutil
 import base64
 import os
 import io
+from pdf2image import convert_from_bytes, convert_from_path
+from pydub import AudioSegment
+
+from pptx.util import Inches
+from pptx.oxml.ns import nsdecls
+from pptx.oxml import parse_xml
+from pptx import Presentation
+
+# import tempfile
+from ssml_validation import *
+from exceptions import *
 
 
 def delete_folder(folder):
@@ -120,10 +116,11 @@ def check_correct_validate_parse_text(notes_text):
         corrected_ssml = correct_special_characters(checked_missing_tags)
         validate_ssml(corrected_ssml)
         return parse_ssml(corrected_ssml)
-    except ElaborationException as e:
-        raise ElaborationException(e)
-    except Exception as e:
+    except UserParameterException as e:
         raise UserParameterException(e)
+    except Exception as e:
+        raise ElaborationException(
+            f"Exception during SSML correction/validation/parsing: {str(e)}")
 
 
 def slide_split_data(index, image_base64, audio_base64):
@@ -148,4 +145,5 @@ def extract_image_from_slide(index, folder, image):
 
 def add_audio_to_slide(slide, audio_file):
     left, top, width, height = Inches(1), Inches(1.5), Inches(1), Inches(1)
-    slide.shapes.add_movie(audio_file, left, top, width, height, mime_type="audio/mp3")
+    slide.shapes.add_movie(audio_file, left, top, width,
+                           height, mime_type="audio/mp3")

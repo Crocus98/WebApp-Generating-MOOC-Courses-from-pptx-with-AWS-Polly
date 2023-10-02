@@ -65,17 +65,14 @@ def validate_ssml(ssml_text):
         raise ElaborationException(
             f"Schema File Exception: {e}")
 
-
     # Correct and parse SSML document
     ssml_text = correct_special_characters(ssml_text)
     ssml = etree.fromstring(ssml_text)
-
 
     # Validate SSML document against schema
     if not schema.validate(ssml):
         raise UserParameterException(
             f"SSML validation failed, check slide: {schema.error_log}")
-
 
     # Additional validationSSML validation failed, check slide
     text_tags = ['p', 's']
@@ -83,7 +80,7 @@ def validate_ssml(ssml_text):
         for element in ssml.iter(tag):
             if not has_non_whitespace_text(element):
                 raise UserParameterException(
-                    f"SSML validation failed, check slide")
+                    f"SSML validation failed: Tag <{tag}> at position {element.sourceline} contains only whitespace or is empty.")
 
 
 
