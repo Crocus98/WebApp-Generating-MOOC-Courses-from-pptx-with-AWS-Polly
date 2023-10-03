@@ -1,5 +1,6 @@
 from manipulation import *
 from ssml_validation import *
+import uuid
 
 filename1 = 'RandomPresentation-NotesAndTags.zip'
 filename2 = 'empty_pptx.zip'
@@ -15,26 +16,29 @@ filename10 = '50_slides_mixedk.zip'
 
 def test_process_pptx_split(usermail, project, filename):
     try:
-        result = process_pptx_split(usermail, project, filename)
-        print(f"process_pptx_split result:\n{result}")
+        process_pptx_split(usermail, project, filename)
+        print(f"process_pptx_split result: ok")
     except Exception as e:
         print(f"Error during process_pptx_split: {str(e)}")
 
 
 def test_process_preview(text):
     try:
-        result = process_preview(text)
-        print(f"process_preview result:\n{result}")
+        process_preview(text)
+        print(f"process_preview result: ok")
     except Exception as e:
         print(f"Error during process_preview: {str(e)}")
 
 
 def test_process_pptx(usermail, project, filename):
     try:
-        result = process_pptx(usermail, project, filename)
-        print(f"process_pptx result:\n{result}")
+        folder = create_folder(str(uuid.uuid4()))
+        process_pptx(usermail, project, filename, folder)
+        print(f"process_pptx result: ok")
     except Exception as e:
         print(f"Error during process_pptx: {str(e)}")
+    finally:
+        delete_folder(folder)
 
 
 usermail = 'giacomo.vinati@mail.polimi.it'

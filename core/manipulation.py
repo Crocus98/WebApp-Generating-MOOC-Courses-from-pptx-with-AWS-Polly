@@ -11,15 +11,21 @@ from zipfile import ZipFile
 from ssml_validation import *
 from exceptions import *
 from utils import *
+import tempfile
 import subprocess
 import boto3
-import uuid
 import io
 import os
 import traceback
 import zipfile
 
 load_dotenv()
+aws_access_key_id = os.getenv('aws_access_key_id')
+aws_secret_access_key = os.getenv('aws_secret_access_key')
+bucket_name = os.getenv('bucket_name')
+region = os.getenv('region')
+schema_path = os.getenv('schema_path')
+path_to_libreoffice = os.getenv("path_to_libreoffice")
 
 
 class S3Singleton:
@@ -52,20 +58,10 @@ def init_polly():
             f"Failed to create polly instance for your request: {str(e)}")
 
 
-aws_access_key_id = os.getenv('aws_access_key_id')
-aws_secret_access_key = os.getenv('aws_secret_access_key')
-bucket_name = os.getenv('bucket_name')
-region = os.getenv('region')
-schema_path = os.getenv('schema_path')
-path_to_libreoffice = os.getenv("path_to_libreoffice")
-
 s3_singleton = S3Singleton(
     aws_access_key_id, aws_secret_access_key, region, bucket_name)
-
-
 half_sec_silence = AudioSegment.silent(duration=500)
-
-max_workers = 8  # Do not surpass 8 because amazon polly neural has a limit of 8 concurrent requests
+max_workers = 12
 executor = ThreadPoolExecutor(max_workers=max_workers)
 
 
@@ -176,25 +172,16 @@ def get_folder_prs_images_from_pptx(usermail, project, filename):
     return prs, images, temp_dir
 
 
-def combine_audios(audios):
-    audios.pop()
-    combined_audio = audios[0]
-    for audio in audios[1:]:
-        combined_audio += audio
-    combined_buffer = audiosegment_to_stream(combined_audio)
-    return combined_buffer
-
-
 # PROCESS PPTX BLOCK
 
-def process_pptx(usermail, project, filename):
+def process_pptx(usermail, project, filename, folder):
     edited_pptx_buffer = add_tts_to_pptx(
-        download_file_from_s3(usermail, project, filename))
+        download_file_from_s3(usermail, project, filename), folder)
     edited_filename = f"{os.path.splitext(filename)[0]}_edited.zip"
     upload_file_to_s3(usermail, project, edited_filename, edited_pptx_buffer)
 
 
-def add_tts_to_pptx(pptx_buffer):
+def add_tts_to_pptx(pptx_buffer, folder):
     prs = Presentation(pptx_buffer)
     queue = Queue()
     stop_event = Event()
@@ -202,7 +189,7 @@ def add_tts_to_pptx(pptx_buffer):
         notes_text = get_notes_from_slide(slide, slide_index, queue)
         if (notes_text is not None):
             executor.submit(convert_text_to_audio_thread,
-                            notes_text, slide_index, queue, stop_event)
+                            notes_text, slide_index, queue, stop_event, folder)
     process_queue(len(prs.slides), queue, prs, stop_event)
     output_buffer = io.BytesIO()
     prs.save(output_buffer)
@@ -214,7 +201,7 @@ def process_queue(slides_number, queue, prs, stop_event):
     count = 0
     while count < slides_number:
         try:
-            # [AudioBuffer, ElaborationSuccessful, SlideIndex, ExceptionType, ErrorMessage]
+            # [AudioPath, ElaborationSuccessful, SlideIndex, ExceptionType, ErrorMessage]
             data = queue.get(timeout=20)
             if (data[1] == False):
                 raise (globals()[data[3]])(data[4])
@@ -238,18 +225,28 @@ def get_notes_from_slide(slide, slide_index, queue):
     return notes_text
 
 
-def convert_text_to_audio_thread(notes_text, slide_index, queue, stop_event):
+def convert_text_to_audio_thread(notes_text, slide_index, queue, stop_event, folder):
     try:
         if stop_event.is_set():
             return
         parsed_ssml = check_correct_validate_parse_text(notes_text)
         if stop_event.is_set():
             return
-        queue.put([process_parsed_ssml(parsed_ssml), True, slide_index])
+        audio = process_parsed_ssml(parsed_ssml)
+        if stop_event.is_set():
+            return
+        audiofile = tempfile.NamedTemporaryFile(
+            suffix=".mp3", delete=False, dir=folder)
+        audiofile.write(audio.read())
+        queue.put([audiofile.name, True, slide_index])
     except Exception as e:
+        print(e)
         stop_event.set()
         queue.put([None, False, slide_index, type(e).__name__,
                   "Audio Processing Error: " + str(e)])
+    finally:
+        if (audiofile is not None):
+            audiofile.close()
 
 
 def process_parsed_ssml(parsed_ssml):
@@ -259,7 +256,7 @@ def process_parsed_ssml(parsed_ssml):
         for voice_name, text in parsed_ssml:
             audios.append(generate_tts(polly, text, voice_name))
             audios.append(half_sec_silence)
-        return combine_audios(audios)
+        return audiosegment_to_stream(combine_audios(audios))
     except botocore.exceptions.ReadTimeoutError as e:
         raise AmazonException("Timeout error generating tts.")
     except AmazonException as e:
@@ -269,10 +266,10 @@ def process_parsed_ssml(parsed_ssml):
             f"Unexpected error during processing parsed ssml: {str(e)}")
 
 
-def add_audio_to_slide_turbo(slide, slide_index, audio):
+def add_audio_to_slide_turbo(slide, slide_index, audio_path):
     try:
         slide.shapes.turbo_add_enabled = True
-        add_audio_to_slide(slide, audio)
+        add_audio_to_slide(slide, audio_path)
     except Exception as e:
         raise ElaborationException(
             f"Error while adding audio to slide {slide_index}: {str(e)}")
@@ -281,114 +278,111 @@ def add_audio_to_slide_turbo(slide, slide_index, audio):
 
 
 # TTS TEXT PREVIEW BLOCK
+def process_preview(text):
+    try:
+        parsed_ssml = check_correct_validate_parse_text(text)
+        return process_parsed_ssml(parsed_ssml)
+    except AmazonException as e:
+        raise AmazonException(e)
+    except ElaborationException as e:
+        raise ElaborationException(e)
+    except UserParameterException as e:
+        raise UserParameterException(e)
+    except Exception as e:
+        raise ElaborationException(
+            f"Exception while processing text: {str(e)}")
 
-# def process_preview(text):
-#     try:
-#         parsed_ssml = check_correct_validate_parse_text(text)
-#         return process_parsed_ssml(parsed_ssml)
-#     except AmazonException as e:
-#         raise AmazonException(e)
-#     except ElaborationException as e:
-#         raise ElaborationException(e)
-#     except UserParameterException as e:
-#         raise UserParameterException(e)
-#     except Exception as e:
-#         raise ElaborationException(
-#             f"Exception while processing text: {str(e)}")
-
-# # PPTX SPLIT BLOCK
-
-
-# def process_slide_for_zip(i, slide, image):
-#     result = {}
-#     try:
-#         audio_segment = get_slide_audio_preview(i, slide)
-
-#         img_buffer = io.BytesIO()
-
-#         # Check if image is already a BytesIO object
-#         if isinstance(image, io.BytesIO):
-#             img_bytes = image.getvalue()
-#         else:  # Otherwise, assume it's a Pillow Image object
-#             image.save(img_buffer, 'PNG')
-#             img_bytes = img_buffer.getvalue()
-
-#         result['img_buffer'] = img_bytes
-
-#         if audio_segment:
-#             audio_buffer = audiosegment_to_stream(audio_segment)
-#             result['audio_buffer'] = audio_buffer.getvalue()
-
-#         return i, result
-#     except Exception as e:
-#         raise ElaborationException(
-#             f"Exception while processing slide {i}: {str(e)}")
+# PPTX SPLIT BLOCK
 
 
-# def get_slide_audio_preview(index, slide):
-#     notes_text, have_notes = check_slide_have_notes(slide.notes_slide)
-#     if not have_notes:
-#         return None
-#     parsed_ssml = check_correct_validate_parse_text(notes_text)
-#     try:
-#         audio_mp3 = None
-#         if len(parsed_ssml) == 1:
-#             for voice_name, text in parsed_ssml:
-#                 audio_mp3, _ = generate_audio(
-#                     index, "slide", text, voice_name, False)
-#         else:
-#             audios = []
-#             for j, (voice_name, text) in enumerate(parsed_ssml):
-#                 audio, _ = generate_audio(
-#                     j, "multi_voice", text, voice_name, False)
-#                 audios.append(audio)
-#                 audios.append(half_sec_silence)
-#             audio_mp3, _ = combine_audios_and_generate_file(
-#                 index, audios, False)
-#         return audio_mp3
-#     except AmazonException as e:
-#         raise AmazonException(e)
-#     except Exception as e:
-#         raise ElaborationException(
-#             f"Exception while saving audio to file: {str(e)}")
+def process_pptx_split(usermail, project, filename):
+    try:
+        prs, images, temp_dir = get_folder_prs_images_from_pptx(
+            usermail, project, filename)
+
+        stream = io.BytesIO()
+        with ZipFile(stream, "w") as zf:
+            with ThreadPoolExecutor(max_workers=20) as executor:
+                slide_process_results = list(executor.map(
+                    lambda slide_data: process_slide_for_zip(
+                        slide_data[0], slide_data[1][0], slide_data[1][1]),
+                    enumerate(zip(prs.slides, images), 1)
+                ))
+
+            for i, result in slide_process_results:
+                zf.writestr(f"slide_{i}.png", result.get('img_buffer', b''))
+                audio_buffer = result.get('audio_buffer')
+                if audio_buffer:
+                    zf.writestr(f"audio_{i}.mp3", audio_buffer)
+
+        stream.seek(0)
+        return stream
+
+    except OSError as e:
+        raise ElaborationException(
+            f"Could not process file due to OS path issue: {e.filename}")
+    except AmazonException as e:
+        raise AmazonException(e)
+    except UserParameterException as e:
+        raise UserParameterException(e)
+    except ElaborationException as e:
+        raise ElaborationException(e)
+    except Exception as e:
+        raise ElaborationException(
+            f"Exception while processing pptx: {str(e)}")
+    finally:
+        delete_folder(temp_dir)
 
 
-# def process_pptx_split(usermail, project, filename):
-#     # This will store the path to the temp directory (if you have one)
+def process_slide_for_zip(i, slide, image):
+    result = {}
+    try:
+        audio_segment = get_slide_audio_preview(i, slide)
 
-#     try:
-#         prs, images, temp_dir = get_folder_prs_images_from_pptx(
-#             usermail, project, filename)
+        img_buffer = io.BytesIO()
 
-#         stream = io.BytesIO()
-#         with ZipFile(stream, "w") as zf:
-#             with ThreadPoolExecutor(max_workers=20) as executor:
-#                 slide_process_results = list(executor.map(
-#                     lambda slide_data: process_slide_for_zip(
-#                         slide_data[0], slide_data[1][0], slide_data[1][1]),
-#                     enumerate(zip(prs.slides, images), 1)
-#                 ))
+        # Check if image is already a BytesIO object
+        if isinstance(image, io.BytesIO):
+            img_bytes = image.getvalue()
+        else:  # Otherwise, assume it's a Pillow Image object
+            image.save(img_buffer, 'PNG')
+            img_bytes = img_buffer.getvalue()
 
-#             for i, result in slide_process_results:
-#                 zf.writestr(f"slide_{i}.png", result.get('img_buffer', b''))
-#                 audio_buffer = result.get('audio_buffer')
-#                 if audio_buffer:
-#                     zf.writestr(f"audio_{i}.mp3", audio_buffer)
+        result['img_buffer'] = img_bytes
 
-#         stream.seek(0)
-#         return stream
+        if audio_segment:
+            audio_buffer = audiosegment_to_stream(audio_segment)
+            result['audio_buffer'] = audio_buffer.getvalue()
 
-#     except OSError as e:
-#         raise ElaborationException(
-#             f"Could not process file due to OS path issue: {e.filename}")
-#     except AmazonException as e:
-#         raise AmazonException(e)
-#     except UserParameterException as e:
-#         raise UserParameterException(e)
-#     except ElaborationException as e:
-#         raise ElaborationException(e)
-#     except Exception as e:
-#         raise ElaborationException(
-#             f"Exception while processing pptx: {str(e)}")
-#     finally:
-#         delete_folder(temp_dir)
+        return i, result
+    except Exception as e:
+        raise ElaborationException(
+            f"Exception while processing slide {i}: {str(e)}")
+
+
+def get_slide_audio_preview(index, slide):
+    notes_text, have_notes = check_slide_have_notes(slide.notes_slide)
+    if not have_notes:
+        return None
+    parsed_ssml = check_correct_validate_parse_text(notes_text)
+    try:
+        audio_mp3 = None
+        if len(parsed_ssml) == 1:
+            for voice_name, text in parsed_ssml:
+                audio_mp3, _ = generate_audio(
+                    index, "slide", text, voice_name, False)
+        else:
+            audios = []
+            for j, (voice_name, text) in enumerate(parsed_ssml):
+                audio, _ = generate_audio(
+                    j, "multi_voice", text, voice_name, False)
+                audios.append(audio)
+                audios.append(half_sec_silence)
+            audio_mp3, _ = combine_audios_and_generate_file(
+                index, audios, False)
+        return audio_mp3
+    except AmazonException as e:
+        raise AmazonException(e)
+    except Exception as e:
+        raise ElaborationException(
+            f"Exception while saving audio to file: {str(e)}")

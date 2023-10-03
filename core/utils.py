@@ -4,15 +4,33 @@ import os
 import io
 from pdf2image import convert_from_bytes, convert_from_path
 from pydub import AudioSegment
-
+import tempfile
 from pptx.util import Inches
 from pptx.oxml.ns import nsdecls
 from pptx.oxml import parse_xml
 from pptx import Presentation
-
-# import tempfile
 from ssml_validation import *
 from exceptions import *
+
+
+def zip_pptx(pptx_buffer):
+    edited_buffer = BytesIO()
+    with zipfile.ZipFile(edited_buffer, 'w') as zip_ref:
+        zip_ref.writestr("file.pptx", pptx_buffer.getvalue())
+    return edited_buffer
+
+
+def unzip_file(zip_byte_data_io):
+    with zipfile.ZipFile(zip_byte_data_io, 'r') as zip_ref:
+        for name in zip_ref.namelist():
+            if name.endswith('.pptx'):
+                return BytesIO(zip_ref.read(name))
+    return None
+
+
+def create_folder(folder_path):
+    os.makedirs(folder_path, exist_ok=True)
+    return os.path.abspath(folder_path)
 
 
 def delete_folder(folder):
@@ -23,25 +41,52 @@ def delete_folder(folder):
             f"Critical: Exception while deleting temp folder: {str(e)}")
 
 
-def audiosegment_to_base64(audio_segment):
+def combine_audios(audios):
+    audios.pop()
+    combined_audio = audios[0]
+    for audio in audios[1:]:
+        combined_audio += audio
+    return combined_audio
+
+
+def add_audio_to_slide(slide, audio_path):
+    left, top, width, height = Inches(1), Inches(1.5), Inches(1), Inches(1)
+    slide.shapes.add_movie(audio_path, left, top, width,
+                           height, mime_type="audio/mp3")
+
+
+def check_correct_validate_parse_text(notes_text):
     try:
-        buffer = io.BytesIO()
-        audio_segment.export(buffer, format="mp3")
-        return base64.b64encode(buffer.getvalue()).decode('utf-8')
+        checked_missing_tags = find_missing_tags(notes_text)
+        corrected_ssml = correct_special_characters(checked_missing_tags)
+        validate_ssml(corrected_ssml)
+        return parse_ssml(corrected_ssml)
+    except UserParameterException as e:
+        raise UserParameterException(e)
     except Exception as e:
         raise ElaborationException(
-            f"Exception while converting audio to base64: {str(e)}")
+            f"Exception during SSML correction/validation/parsing: {str(e)}")
+
+
+def check_slide_have_notes(notes_slide):
+    if notes_slide and notes_slide.notes_text_frame:
+        notes_text = notes_slide.notes_text_frame.text
+        if notes_text and notes_text.strip():
+            return notes_text
+    return None
 
 
 def audiosegment_to_stream(audio_segment):
     try:
-        buffer = io.BytesIO()
-        audio_segment.export(buffer, format="mp3")
-        buffer.seek(0)
-        return buffer
+        stream = io.BytesIO()
+        audio_segment.export(stream, format="mp3")
+        stream.seek(0)
+        return stream
     except Exception as e:
         raise ElaborationException(
             f"Exception while converting audio to stream: {str(e)}")
+
+# END
 
 
 def image_to_base64(image):
@@ -57,25 +102,6 @@ def image_to_base64(image):
 def split_input_path(input_path):
     usermail, filename = input_path.split('/', 1)
     return usermail, filename
-
-
-def combine_audio_files(audio_files):
-    try:
-        combined = AudioSegment.empty()
-        for audio_file in audio_files:
-            audio = AudioSegment.from_mp3(audio_file)
-            combined += audio
-        combined_filename = f"/tmp/combined_{hash(''.join(audio_files))}.mp3"
-        combined.export(combined_filename, format="mp3")
-        return combined_filename
-    except Exception as e:
-        raise Exception(
-            f"Error during audio combining/exporting: {str(e)}")
-
-
-def create_folder(folder_path):
-    os.makedirs(folder_path, exist_ok=True)
-    return os.path.abspath(folder_path)
 
 
 def pdf_to_images(pdf_buffer):
@@ -102,27 +128,6 @@ def file_ispptx_exists_readpermission(file_path):
     return is_pptx_file and os.path.exists(file_path) and os.access(file_path, os.R_OK)
 
 
-def check_slide_have_notes(notes_slide):
-    if notes_slide and notes_slide.notes_text_frame:
-        notes_text = notes_slide.notes_text_frame.text
-        if notes_text and notes_text.strip():
-            return notes_text
-    return None
-
-
-def check_correct_validate_parse_text(notes_text):
-    try:
-        checked_missing_tags = find_missing_tags(notes_text)
-        corrected_ssml = correct_special_characters(checked_missing_tags)
-        validate_ssml(corrected_ssml)
-        return parse_ssml(corrected_ssml)
-    except UserParameterException as e:
-        raise UserParameterException(e)
-    except Exception as e:
-        raise ElaborationException(
-            f"Exception during SSML correction/validation/parsing: {str(e)}")
-
-
 def slide_split_data(index, image_base64, audio_base64):
     return {
         "slide_id": index,
@@ -141,9 +146,3 @@ def extract_image_from_slide(index, folder, image):
     image_path = os.path.join(folder, f'slide_{index}.jpg')
     image.save(image_path)
     return image_to_base64(image)
-
-
-def add_audio_to_slide(slide, audio_file):
-    left, top, width, height = Inches(1), Inches(1.5), Inches(1), Inches(1)
-    slide.shapes.add_movie(audio_file, left, top, width,
-                           height, mime_type="audio/mp3")
