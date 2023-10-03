@@ -235,7 +235,17 @@ def process_pptx_split(usermail, project, filename, folder):
 
     result = process_queue_split(len(prs.slides), queue, prs, stop_event)
 
-    return result
+    return result_to_zip_stream(result)
+
+
+def result_to_zip_stream(result):
+    try:
+        stream = io.BytesIO()
+        print("TODO")
+        return stream
+    except Exception as e:
+        raise ElaborationException(
+            f"Error while crafting the preview zip: {str(e)}")
 
 
 def process_queue_split(slides_number, queue, prs, stop_event):
