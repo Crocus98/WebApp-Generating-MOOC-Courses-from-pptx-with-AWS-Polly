@@ -2,6 +2,8 @@ import shutil
 import base64
 import os
 import io
+from io import BytesIO
+import zipfile
 from pdf2image import convert_from_bytes, convert_from_path
 from pydub import AudioSegment
 import tempfile
@@ -87,56 +89,12 @@ def audiosegment_to_stream(audio_segment):
             f"Exception while converting audio to stream: {str(e)}")
 
 
-def pdf_to_images(pdf_buffer):
-    try:
-        images = convert_from_bytes(pdf_buffer.getvalue())
-        streams = []
-        for image in images:
-            stream = io.BytesIO()
-            image.save(stream, format='JPEG')
-            stream.seek(0)
-            streams.append(stream)
-        return streams
-    except Exception as e:
-        raise ElaborationException(
-            f"Error while extracting images from pdf file for preview.{str(e)}")
-
-
 def get_notes_from_slide(slide, slide_index, queue):
     notes_text = check_slide_have_notes(slide.notes_slide)
     if not notes_text:
         queue.put([None, True, slide_index])
         return None
     return notes_text
-
-
-def pptx_to_pdf(pptx_buffer, folder):
-    try:
-        temp_file = tempfile.NamedTemporaryFile(
-            suffix=".pptx", delete=False, dir=folder)
-        temp_file.write(pptx_buffer.getvalue())
-
-        temp_file_path = temp_file.name
-        pdf_temp_file_path = temp_file_path.replace(".pptx", ".pdf")
-
-        command = f"{path_to_libreoffice} --headless --convert-to pdf --outdir \"{os.path.dirname(temp_file_path)}\" \"{temp_file_path}\""
-        process = subprocess.Popen(
-            command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
-        process.communicate(timeout=60)
-        if process.returncode != 0:
-            raise ElaborationException(
-                "Error converting PPTX to PDF using LibreOffice. Command failed.")
-        output_pdf_buffer = BytesIO()
-
-        with open(pdf_temp_file_path, 'rb') as file:
-            output_pdf_buffer.write(file.read())
-
-        return output_pdf_buffer
-    except Exception as e:
-        raise ElaborationException(
-            f"Error while converting pptx to pdf to extract preview images: {str(e)}")
-    finally:
-        temp_file.close()
 
 
 def generate_tts(polly, text, voice_id):

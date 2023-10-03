@@ -61,8 +61,73 @@ def init_polly():
 s3_singleton = S3Singleton(
     aws_access_key_id, aws_secret_access_key, region, bucket_name)
 half_sec_silence = AudioSegment.silent(duration=500)
-max_workers = 12
+max_workers = 20
 executor = ThreadPoolExecutor(max_workers=max_workers)
+
+
+def pptx_to_pdf(pptx_buffer, folder, stop_event):
+    try:
+        if (stop_event.is_set()):
+            return
+        temp_file = tempfile.NamedTemporaryFile(
+            suffix=".pptx", delete=False, dir=folder)
+        temp_file.write(pptx_buffer.getvalue())
+
+        temp_file_path = temp_file.name
+        pdf_temp_file_path = temp_file_path.replace(".pptx", ".pdf")
+
+        if (stop_event.is_set()):
+            return
+        command = f"{path_to_libreoffice} --headless --convert-to pdf --outdir \"{os.path.dirname(temp_file_path)}\" \"{temp_file_path}\""
+        process = subprocess.Popen(
+            command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+        process.communicate(timeout=60)
+        if process.returncode != 0:
+            raise ElaborationException(
+                "Error converting PPTX to PDF using LibreOffice. Command failed.")
+        if (stop_event.is_set()):
+            return
+        output_pdf_buffer = BytesIO()
+
+        with open(pdf_temp_file_path, 'rb') as file:
+            output_pdf_buffer.write(file.read())
+
+        return output_pdf_buffer
+    except Exception as e:
+        stop_event.set()
+        raise ElaborationException(
+            f"Error while converting pptx to pdf to extract preview images: {str(e)}")
+    finally:
+        temp_file.close()
+
+
+def pdf_to_images(pdf_buffer, stop_event):
+    try:
+        if (stop_event.is_set()):
+            return
+        images = convert_from_bytes(pdf_buffer.getvalue())
+        streams = []
+        if (stop_event.is_set()):
+            return
+        for image in images:
+            stream = io.BytesIO()
+            image.save(stream, format='PNG')
+            stream.seek(0)
+            streams.append(stream)
+        return streams
+    except Exception as e:
+        stop_event.set()
+        raise ElaborationException(
+            f"Error while extracting images from pdf file for preview.{str(e)}")
+
+
+def pptx_to_images(pptx_buffer, folder, stop_event, queue):
+    try:
+        return pdf_to_images(pptx_to_pdf(pptx_buffer, folder, stop_event), stop_event)
+    except:
+        stop_event.set()
+        queue.put(None)
+        raise e
 
 
 def download_file_from_s3(usermail, project, filename):
@@ -220,28 +285,34 @@ def process_preview(text):
 
 
 def process_pptx_split(usermail, project, filename, folder):
-    pptx_buffer = download_file_from_s3(usermail, project, filename)
-    prs = Presentation(pptx_buffer)
-    pdf_buffer = pptx_to_pdf(pptx_buffer, folder)
-    images = pdf_to_images(pdf_buffer)
+    try:
+        pptx_buffer = download_file_from_s3(usermail, project, filename)
+        stop_event = Event()
+        queue = Queue()
+        images_future = executor.submit(
+            pptx_to_images, pptx_buffer, folder, stop_event, queue)
+        prs = Presentation(pptx_buffer)
+        for slide_index, slide in enumerate(prs.slides):
+            notes_text = check_slide_have_notes(slide.notes_slide)
+            executor.submit(convert_text_to_audio_and_queue_data,
+                            slide_index, notes_text, queue, stop_event, folder)
+        result = process_queue_split(len(prs.slides), queue, prs, stop_event)
+        images = images_future.result()
+        return result_to_zip_stream(result, images)
+    except Exception as e:
+        images_future.result()
+        raise e
 
-    queue = Queue()
-    stop_event = Event()
 
-    for slide_index, (slide, image) in enumerate(zip(prs.slides, images)):
-        notes_text = check_slide_have_notes(slide.notes_slide)
-        executor.submit(convert_text_to_audio_and_queue_data,
-                        slide_index, notes_text, image, queue, stop_event, folder)
-
-    result = process_queue_split(len(prs.slides), queue, prs, stop_event)
-
-    return result_to_zip_stream(result)
-
-
-def result_to_zip_stream(result):
+def result_to_zip_stream(result, images):
     try:
         stream = io.BytesIO()
-        print("TODO")
+        with ZipFile(stream, "w") as zf:
+            for i, (item, image) in enumerate(zip(result, images)):
+                audio_buffer = item["audio_buffer"]
+                if (audio_buffer):
+                    zf.writestr(f"audio_{i}.mp3", audio_buffer)
+                zf.writestr(f"slide_{i}.png", image.getvalue())
         return stream
     except Exception as e:
         raise ElaborationException(
@@ -250,18 +321,20 @@ def result_to_zip_stream(result):
 
 def process_queue_split(slides_number, queue, prs, stop_event):
     count = 0
-    results = []
+    results = [None for _ in range(slides_number)]
     while count < slides_number:
         try:
-            # [slide_index, notes_text, audio_stream, image_stream, success, error_type, error_message]
+            # [slide_index, notes_text, audio_stream, success, error_type, error_message]
             data = queue.get(timeout=20)
+            if (data is None):
+                raise ElaborationException(
+                    "Exception happende while elaborating images")  # Yeah images
             result = {
                 'slide_index': data[0],
                 'slide_notes': data[1],
                 'audio_buffer': data[2].getvalue() if data[2] is not None else None,
-                'img_buffer': data[3].getvalue(),
-                'error_type': data[5] if not data[4] else None,
-                'error_message': data[6] if not data[4] else None
+                'error_type': data[4] if not data[3] else None,
+                'error_message': data[5] if not data[3] else None
             }
             results[data[0]] = result
             count += 1
@@ -272,21 +345,24 @@ def process_queue_split(slides_number, queue, prs, stop_event):
         except Exception as e:
             stop_event.set()
             raise ElaborationException(
-                "Error while processing queue for slides preview.")
+                f"Error while processing queue for slides preview: {str(e)}")
     return results
 
 
-def convert_text_to_audio_and_queue_data(slide_index, notes_text, image, queue, stop_event, folder):
+def convert_text_to_audio_and_queue_data(slide_index, notes_text, queue, stop_event, folder):
     try:
         if stop_event.is_set():
+            return
+        if (not notes_text):
+            queue.put([slide_index, None,
+                       notes_text, True])
             return
         parsed_ssml = check_correct_validate_parse_text(notes_text)
         if stop_event.is_set():
             return
-        audio = process_parsed_ssml(parsed_ssml)
-        queue.put([slide_index, audio_stream, image,
-                  notes_text, True])
+        audio_stream = process_parsed_ssml(parsed_ssml)
+        queue.put([slide_index, notes_text, audio_stream, True])
     except Exception as e:
-        # [slide_index,notes_text audio_stream, image_stream, success, error_type, error_message]
-        queue.put([slide_index, None, image, notes_text, False, type(
+        # [slide_index, notes_text, audio_stream, success, error_type, error_message]
+        queue.put([slide_index, notes_text, None,  False, type(
             e).__name__, "Audio Processing Error: " + str(e)])
