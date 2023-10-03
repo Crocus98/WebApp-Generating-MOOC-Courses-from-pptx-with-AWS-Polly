@@ -86,63 +86,65 @@ def audiosegment_to_stream(audio_segment):
         raise ElaborationException(
             f"Exception while converting audio to stream: {str(e)}")
 
-# END
-
-
-def image_to_base64(image):
-    try:
-        image_bytes = io.BytesIO()
-        image.save(image_bytes, format='JPEG')
-        return base64.b64encode(image_bytes.getvalue()).decode('utf-8')
-    except Exception as e:
-        raise ElaborationException(
-            f"Exception while converting image to base64: {str(e)}")
-
-
-def split_input_path(input_path):
-    usermail, filename = input_path.split('/', 1)
-    return usermail, filename
-
 
 def pdf_to_images(pdf_buffer):
-    # Convert the PDF bytes to Pillow images
-    images = convert_from_bytes(pdf_buffer.getvalue())
-
-    # Convert each Pillow image to a BytesIO buffer containing the JPEG data
-    buffers = []
-    for image in images:
-        buffer = io.BytesIO()
-        image.save(buffer, format='JPEG')
-        buffer.seek(0)  # Important! Reset the buffer's position to the start
-        buffers.append(buffer)
-
-    return buffers
-
-
-def is_pptx_file(file_path):
-    _, file_extension = os.path.splitext(file_path)
-    return file_extension.lower() == ".pptx"
+    try:
+        images = convert_from_bytes(pdf_buffer.getvalue())
+        streams = []
+        for image in images:
+            stream = io.BytesIO()
+            image.save(stream, format='JPEG')
+            stream.seek(0)
+            streams.append(stream)
+        return streams
+    except Exception as e:
+        raise ElaborationException(
+            f"Error while extracting images from pdf file for preview.{str(e)}")
 
 
-def file_ispptx_exists_readpermission(file_path):
-    return is_pptx_file and os.path.exists(file_path) and os.access(file_path, os.R_OK)
+def get_notes_from_slide(slide, slide_index, queue):
+    notes_text = check_slide_have_notes(slide.notes_slide)
+    if not notes_text:
+        queue.put([None, True, slide_index])
+        return None
+    return notes_text
 
 
-def slide_split_data(index, image_base64, audio_base64):
-    return {
-        "slide_id": index,
-        "image": {
-            "data": image_base64,
-            "filename": f"slide_{index}.jpg"
-        },
-        "tts": {
-            "data": audio_base64,
-            "filename": f"slide_{index}.mp3"
-        } if audio_base64 is not None else None
-    }
+def pptx_to_pdf(pptx_buffer, folder):
+    try:
+        temp_file = tempfile.NamedTemporaryFile(
+            suffix=".pptx", delete=False, dir=folder)
+        temp_file.write(pptx_buffer.getvalue())
+
+        temp_file_path = temp_file.name
+        pdf_temp_file_path = temp_file_path.replace(".pptx", ".pdf")
+
+        command = f"{path_to_libreoffice} --headless --convert-to pdf --outdir \"{os.path.dirname(temp_file_path)}\" \"{temp_file_path}\""
+        process = subprocess.Popen(
+            command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+        process.communicate(timeout=60)
+        if process.returncode != 0:
+            raise ElaborationException(
+                "Error converting PPTX to PDF using LibreOffice. Command failed.")
+        output_pdf_buffer = BytesIO()
+
+        with open(pdf_temp_file_path, 'rb') as file:
+            output_pdf_buffer.write(file.read())
+
+        return output_pdf_buffer
+    except Exception as e:
+        raise ElaborationException(
+            f"Error while converting pptx to pdf to extract preview images: {str(e)}")
+    finally:
+        temp_file.close()
 
 
-def extract_image_from_slide(index, folder, image):
-    image_path = os.path.join(folder, f'slide_{index}.jpg')
-    image.save(image_path)
-    return image_to_base64(image)
+def generate_tts(polly, text, voice_id):
+    response = polly.polly.synthesize_speech(
+        VoiceId=voice_id, OutputFormat='mp3', Text=text, TextType='ssml', Engine='neural')
+
+    if not response['ResponseMetadata']['HTTPStatusCode'] == 200:
+        raise AmazonException(
+            f"Polly failed to elaborate tts. Response is not 200.")
+    audio_data = response['AudioStream'].read()
+    return AudioSegment.from_mp3(io.BytesIO(audio_data))

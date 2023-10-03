@@ -77,19 +77,19 @@ def process_slides_request():
         usermail = data['email']
         project = data['projectName']
         filename = data['filename']
-        result = process_pptx_split(usermail, project, filename)
+        folder = create_folder(str(uuid.uuid4()))
+        result = process_pptx_split(usermail, project, filename, folder)
         return send_file(result, download_name="archive.zip", as_attachment=True), 200
     except UserParameterException as e:
         return jsonify({"message": f"Error: {str(e)}"}), 400
     except ElaborationException as e:
-        traceback.print_exc()
         return jsonify({"message": f"Error: {str(e)}"}), 500
     except AmazonException as e:
-        traceback.print_exc()
         return jsonify({"message": f"Error: {str(e)}"}), 502
     except Exception as e:
-        traceback.print_exc()
         return jsonify({"message": f"Error: {str(e)}"}), 500
+    finally:
+        delete_folder(folder)
 
 
 if __name__ == "__main__":
