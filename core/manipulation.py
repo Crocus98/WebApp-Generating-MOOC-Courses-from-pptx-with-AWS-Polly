@@ -243,22 +243,16 @@ def process_queue_split(slides_number, queue, prs, stop_event):
     results = []
     while count < slides_number:
         try:
-            result = {}
             # [slide_index, notes_text, audio_stream, image_stream, success, error_type, error_message]
             data = queue.get(timeout=20)
-            result['slide_index'] = data[0]
-            result['slide_notes'] = data[1]
-            if (data[2] is not None):
-                result['audio_buffer'] = data[2].getvalue()
-            else:
-                result['audio_buffer'] = None
-            result['img_buffer'] = data[3].getvalue()
-            if (data[4] == False):
-                result["error_type"] = data[5]
-                result["error_message"] = data[6]
-            else:
-                result["error_type"] = None
-                result["error_message"] = None
+            result = {
+                'slide_index': data[0],
+                'slide_notes': data[1],
+                'audio_buffer': data[2].getvalue() if data[2] is not None else None,
+                'img_buffer': data[3].getvalue(),
+                'error_type': data[5] if not data[4] else None,
+                'error_message': data[6] if not data[4] else None
+            }
             results[data[0]] = result
             count += 1
         except Empty:
@@ -267,7 +261,8 @@ def process_queue_split(slides_number, queue, prs, stop_event):
                 "Unexpeceted critical error. Slides Processing Threads for preview are not filling the queue correctly. Timeout reached.")
         except Exception as e:
             stop_event.set()
-            raise e
+            raise ElaborationException(
+                "Error while processing queue for slides preview.")
     return results
 
 
