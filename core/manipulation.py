@@ -61,7 +61,7 @@ def init_polly():
 s3_singleton = S3Singleton(
     aws_access_key_id, aws_secret_access_key, region, bucket_name)
 half_sec_silence = AudioSegment.silent(duration=500)
-max_workers = 20
+max_workers = 8
 executor = ThreadPoolExecutor(max_workers=max_workers)
 
 
