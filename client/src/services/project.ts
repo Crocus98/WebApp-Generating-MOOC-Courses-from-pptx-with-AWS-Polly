@@ -4,8 +4,23 @@ import {
   getSlideNotes,
   sortFilenamesBySlideNumber,
   unzipPowerpoint,
+  zipPowerpoint,
 } from "./ppt";
 import { Buffer } from "buffer";
+
+export const createProject = async (projectName: string, pptx: File) => {
+  const fd = new FormData();
+
+  const zipFile = await zipPowerpoint(pptx);
+
+  fd.append("file", zipFile);
+  fd.append("projectName", projectName);
+
+  await axios.post("/v1/public/project", {
+    projectName,
+  });
+  await axios.post("/v1/public/upload", fd);
+};
 
 export const retrieveProject = async (
   projectName?: string

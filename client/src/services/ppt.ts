@@ -19,18 +19,35 @@ export const getSlideNotes = async (zip: JSZip): Promise<string[]> => {
   const fileNames = sortFilenamesBySlideNumber(
     Object.keys(zip.files).filter((fn) => fn.includes("notesSlides/notesSlide"))
   );
-  console.log(fileNames);
+  const slideCounts = Object.keys(zip.files).filter((fn) =>
+    fn.includes("ppt/slides/slide")
+  ).length;
 
-  let projectNotes: string[] = [];
+  let projectNotes: string[] = new Array(slideCounts).fill("");
 
   for (const fileName of fileNames) {
     try {
       const xml = await zip.file(fileName)?.async("string");
+
       if (!xml) throw new Error("No xml content found");
 
       const slideNotesDoc = parser.parseFromString(xml, "text/xml");
 
-      const txBody = slideNotesDoc.getElementsByTagName("p:txBody").item(0);
+      const txBodies = slideNotesDoc.getElementsByTagName("p:txBody");
+
+      const slideNumberReference = txBodies
+        .item(txBodies.length - 1)
+        ?.getElementsByTagName("a:t")
+        .item(0)?.textContent;
+
+      if (slideNumberReference === null)
+        throw new Error("No slide number reference found");
+      else if (isNaN(toInteger(slideNumberReference)))
+        throw new Error("Invalid slide number reference");
+
+      const slideNumber = toInteger(slideNumberReference);
+
+      const txBody = txBodies.item(0);
 
       if (!txBody) throw new Error("No txBody found");
 
@@ -45,11 +62,10 @@ export const getSlideNotes = async (zip: JSZip): Promise<string[]> => {
             (textTag, currentValue) => decode(textTag) + currentValue,
             ""
           );
-        //console.log(slideNotes);
         if (i < paragraphs.length - 1) slideNotes += "\n";
       }
 
-      projectNotes.push(slideNotes);
+      projectNotes[slideNumber - 1] = slideNotes;
     } catch (e) {
       console.log("An error occured while parsing slide notes: ", fileName);
     }
@@ -65,17 +81,25 @@ export const buildProject = async (
     Object.keys(zip.files).filter((fn) => fn.includes("notesSlides/notesSlide"))
   );
 
-  if (fileNames.length !== notes.length) throw new Error("Invalid notes array");
+  const xml = await zip.file(fileNames[0])?.async("string");
+  if (!xml) throw new Error("can't open xml at " + 0);
 
-  for (let i = 0; i < fileNames.length; i++) {
-    const xml = await zip.file(fileNames[i])?.async("string");
-
-    if (!xml) throw new Error("can't open xml at " + fileNames[i]);
-    // Extract slide notes from xml using <a:t> tags
-
+  for (let i = 0; i < notes.length; i++) {
     const slideNotesDoc = parser.parseFromString(xml, "text/xml");
 
-    const txBody = slideNotesDoc.getElementsByTagName("p:txBody").item(0);
+    const txBodies = slideNotesDoc.getElementsByTagName("p:txBody");
+
+    const slideNumberReference = txBodies
+      .item(txBodies.length - 1)
+      ?.getElementsByTagName("a:t")
+      .item(0);
+
+    if (slideNumberReference == null)
+      throw new Error("No slide number reference found");
+
+    slideNumberReference.textContent = `${i + 1}`;
+
+    const txBody = txBodies.item(0);
 
     if (!txBody) throw new Error("No txBody found");
 
@@ -94,7 +118,56 @@ export const buildProject = async (
 
     const serializedSlideNotesXml = serializer.serializeToString(slideNotesDoc);
 
-    await zip.file(fileNames[i], serializedSlideNotesXml);
+    await zip.file(
+      `ppt/notesSlides/notesSlide${i + 1}.xml`,
+      serializedSlideNotesXml
+    );
+    await zip.file(
+      `ppt/notesSlides/_rels/notesSlide${i + 1}.xml.rels`,
+      createRelationship(i + 1)
+    );
+  }
+
+  const contentTypesXml = await zip
+    .file("[Content_Types].xml")
+    ?.async("string");
+  if (contentTypesXml) {
+    const contentTypesDoc = parser.parseFromString(contentTypesXml, "text/xml");
+    const types = contentTypesDoc.getElementsByTagName("Types")[0];
+    if (types == null) throw new Error("No types found");
+    const overrideElements = types.getElementsByTagName("Override");
+    const elementsList: number[] = [];
+    for (let i = 0; i < overrideElements.length; i++) {
+      const element = overrideElements.item(i);
+      if (element!.getAttribute("PartName")?.includes("notesSlides")) {
+        const partName = element!.getAttribute("PartName")!;
+
+        elementsList.push(
+          toInteger(
+            partName.substring(
+              partName.lastIndexOf("notesSlide") + 10,
+              partName.indexOf(".xml")
+            )
+          )
+        );
+      }
+    }
+    if (elementsList.length !== notes.length) {
+      for (let i = 0; i < notes.length; i++) {
+        if (!elementsList.includes(i + 1)) {
+          const contentTypePart = parser.parseFromString(
+            createContentTypePart(i + 1),
+            "text/xml"
+          );
+          types.appendChild(
+            contentTypePart.getElementsByTagName("Override")[0]
+          );
+        }
+      }
+    }
+    const serializedContentTypesXml =
+      serializer.serializeToString(contentTypesDoc);
+    await zip.file("[Content_Types].xml", serializedContentTypesXml);
   }
   return await zip.generateAsync({ type: "blob" });
 };
@@ -127,6 +200,23 @@ const createParagraph = (text: string) =>
      </a:p>
   </p:notes>`;
 
+const createRelationship = (
+  slideNumber: number
+) => `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+    <Relationship Id="rId2"
+        Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide"
+        Target="../slides/slide${slideNumber}.xml" />
+    <Relationship Id="rId1"
+        Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/notesMaster"
+        Target="../notesMasters/notesMaster1.xml" />
+</Relationships>`;
+
+const createContentTypePart = (
+  slideNumber: number
+) => `<Override PartName="/ppt/notesSlides/notesSlide${slideNumber}.xml"
+ContentType="application/vnd.openxmlformats-officedocument.presentationml.notesSlide+xml" />`;
+
 export const zipPowerpoint = async (file: File) => {
   const fileNameWithoutExtension = file.name.substring(
     0,
@@ -143,11 +233,33 @@ export const zipPowerpoint = async (file: File) => {
 
 export const unzipPowerpoint = async (data: ArrayBuffer) => {
   const containerZip = await JSZip().loadAsync(data);
-  console.log(Object.keys(containerZip.files));
   const fileName = Object.keys(containerZip.files)[0];
-  console.log(fileName);
   if (!fileName) throw new Error("No zip file found inside zip");
   const blob = await containerZip.file(fileName)?.async("blob");
   if (!blob) throw new Error("Can't read zip file inside zip");
   return blob;
+};
+
+export const isPPTXValid = async (file: File): Promise<string | boolean> => {
+  const zip = new JSZip().loadAsync(file);
+
+  const notesLength = Object.keys((await zip).files).filter((fn) =>
+    fn.includes("notesSlides/notesSlide")
+  ).length;
+  const slideLength = Object.keys((await zip).files).filter((fn) =>
+    fn.includes("slides/slide")
+  ).length;
+
+  if (slideLength === 0) {
+    return "No slide found in the powerpoint";
+  }
+  if (slideLength > 100) {
+    return "Too many slides in the powerpoint. Please use a powerpoint with less than 100 slides";
+  }
+
+  if (notesLength !== slideLength) {
+    return "Some slides are missing notes. Please add notes to all slides";
+  }
+
+  return false;
 };

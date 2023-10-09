@@ -10,11 +10,12 @@ import ProjectCreationModal from "../components/ProjectCreationModal";
 import FormInput from "../components/FormInput";
 import FileInput from "../components/FileInput";
 import { SubmitHandler, useForm } from "react-hook-form";
-import { set } from "lodash";
+import { isString, set } from "lodash";
 import Button from "../components/Button";
 import ProjectItem from "../components/ProjectItem";
 import JSZip from "jszip";
-import { zipPowerpoint } from "../services/ppt";
+import { isPPTXValid, zipPowerpoint } from "../services/ppt";
+import { createProject } from "../services/project";
 
 type ProjectForm = {
   projectName: string;
@@ -55,19 +56,14 @@ export default function ProjectList({}: Props) {
       return setGenericError("Per favore inserisci un file");
     }
 
+    const error = await isPPTXValid(file);
+    if (error) {
+      return setGenericError(isString(error) ? error : "Errore sconosciuto");
+    }
+
     setLoading(true);
     try {
-      const fd = new FormData();
-
-      const zipFile = await zipPowerpoint(file);
-
-      fd.append("file", zipFile);
-      fd.append("projectName", projectName);
-
-      await axios.post("/v1/public/project", {
-        projectName,
-      });
-      await axios.post("/v1/public/upload", fd);
+      await createProject(projectName, file);
       navigate(`/project/${projectName}`);
       setLoading(false);
     } catch (err) {
