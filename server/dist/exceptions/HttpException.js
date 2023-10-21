@@ -9,8 +9,8 @@ class HttpException extends Error {
     sendError(res) {
         res.status(this.status || 500).json({
             error: {
-                message: this.message
-            }
+                message: this.message,
+            },
         });
     }
 }

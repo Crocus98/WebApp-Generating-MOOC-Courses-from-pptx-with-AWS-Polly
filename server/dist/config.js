@@ -12,15 +12,6 @@ class Config {
         return this.instance;
     }
     constructor() {
-        this.DB_AUTH = {
-            NAME: "",
-            SCHEMA: "",
-            USER: "",
-            PASS: "",
-            HOST: "",
-            PORT: 5555,
-            DIALECT: "",
-        };
         this.DB_STRING = "";
         this.JWT_SECRET = "";
         this.AWS_CONFIG = {
@@ -31,7 +22,7 @@ class Config {
         };
         this.MICROSERVICE_CONFIG = {
             MICROSERVICE_HOST: "",
-            MICROSERVICE_PORT: 5001
+            MICROSERVICE_PORT: 5001,
         };
         const env = dotenv_1.default.config();
         if (env.error)
@@ -42,51 +33,8 @@ class Config {
         this.LOG_LEVEL = this.parseLogLevel();
         this.SERVER_PORT = this.parseServerPort() || 3000;
         this.JWT_SECRET = this.parseJWTSecret();
-        this.DB_AUTH = this.parseDBConfig();
         this.AWS_CONFIG = this.parseAWSConfig();
         this.MICROSERVICE_CONFIG = this.parseMicroserviceConfig();
-    }
-    parseDBConfig() {
-        const DB_HOST = process.env.DB_HOST;
-        if (_utils_1.default.isUndefinedOrEmpty(DB_HOST))
-            (0, _logger_1.exitLog)(`Missing or Bad DB_HOST in .env`);
-        const DB_NAME = process.env.DB_NAME;
-        if (_utils_1.default.isUndefinedOrEmpty(DB_NAME))
-            (0, _logger_1.exitLog)(`Missing or Bad DB_NAME in .env`);
-        const DB_USER = process.env.DB_USER;
-        if (_utils_1.default.isUndefinedOrEmpty(DB_USER))
-            (0, _logger_1.exitLog)(`Missing or Bad DB_USER in .env`);
-        const DB_PASS = process.env.DB_PASS;
-        if (_utils_1.default.isUndefinedOrEmpty(DB_PASS))
-            (0, _logger_1.exitLog)(`Missing or Bad DB_PASS in .env`);
-        const DB_DIALECT = process.env.DB_DIALECT;
-        if (_utils_1.default.isUndefinedOrEmpty(DB_DIALECT))
-            (0, _logger_1.exitLog)(`Missing or Bad DB_DIALECT in .env`);
-        const DB_SCHEMA = process.env.DB_SCHEMA;
-        if (_utils_1.default.isUndefinedOrEmpty(DB_SCHEMA))
-            (0, _logger_1.exitLog)(`CHEMA in .env`);
-        let DB_PORT = 5555;
-        const __DB_PORT = process.env.DB_PORT;
-        if (!_utils_1.default.isUndefinedOrEmpty(__DB_PORT)) {
-            const port = parseInt(`${__DB_PORT}`);
-            if (isNaN(port))
-                (0, _logger_1.exitLog)(`Bad DB_PORT in .env`);
-            DB_PORT = port;
-        }
-        const __DB_STRING = process.env.DB_STRING;
-        let DB_STRING = `${DB_DIALECT}://${DB_USER}:${DB_PASS}@${DB_HOST}:${DB_PORT}/${DB_NAME}?schema=${DB_SCHEMA}`;
-        console.log(__DB_STRING, DB_STRING);
-        if (_utils_1.default.isUndefinedOrEmpty(__DB_STRING) || __DB_STRING != DB_STRING)
-            (0, _logger_1.exitLog)(`Missing or Bad DB_STRING in .env`);
-        return {
-            NAME: DB_NAME,
-            SCHEMA: DB_NAME,
-            USER: DB_USER,
-            PASS: DB_PASS,
-            HOST: DB_HOST,
-            DIALECT: DB_DIALECT,
-            PORT: DB_PORT,
-        };
     }
     parseAWSConfig() {
         const AWS_ACCESS_KEY_ID = process.env.AWS_ACCESS_KEY_ID;
@@ -136,8 +84,8 @@ class Config {
             MICROSERVICE_PORT = port;
         }
         return {
-            MICROSERVICE_HOST: process.env.MICROSERVICE_URL,
-            MICROSERVICE_PORT: MICROSERVICE_PORT
+            MICROSERVICE_HOST: MICROSERVICE_HOST,
+            MICROSERVICE_PORT: MICROSERVICE_PORT,
         };
     }
     parseLogLevel() {

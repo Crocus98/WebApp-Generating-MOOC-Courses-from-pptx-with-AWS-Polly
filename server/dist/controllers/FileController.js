@@ -15,7 +15,6 @@ const NotFoundException_1 = tslib_1.__importDefault(require("@/exceptions/NotFou
 const uploadFile = (req, res) => tslib_1.__awaiter(void 0, void 0, void 0, function* () {
     try {
         const file = req.file;
-        console.log(file);
         const projectName = req.body.projectName;
         const user = res.locals.user;
         if (!projectName) {
@@ -24,18 +23,16 @@ const uploadFile = (req, res) => tslib_1.__awaiter(void 0, void 0, void 0, funct
         if (!file) {
             throw new FileException_1.default("No file uploaded.");
         }
-        if (!file.originalname.endsWith(".pptx")) {
-            throw new FileException_1.default("File must be a PowerPoint (.pptx) file.");
+        if (!file.originalname.endsWith(".zip")) {
+            throw new FileException_1.default("File must be a PowerPoint zipped (.zip) file.");
         }
         if (!(yield ProjectService.findProjectByProjectName(projectName, user))) {
             throw new ParameterException_1.default("Project name not valid.");
         }
-        console.log("Uploading file to storage...");
         yield FileService.uploadFileToStorage(file, projectName, user.email);
         return res.status(200).send(`File ${file.originalname} uploaded to S3.`);
     }
     catch (error) {
-        console.log(error);
         if (error instanceof FileException_1.default) {
             return res.status(400).send(_utils_1.default.getErrorMessage(error));
         }
@@ -119,6 +116,9 @@ const elaborateFile = (req, res) => tslib_1.__awaiter(void 0, void 0, void 0, fu
         }
         else if (error instanceof ElaborationException_1.default) {
             return res.status(502).send(_utils_1.default.getErrorMessage(error));
+        }
+        else if (error instanceof ParameterException_1.default) {
+            return res.status(400).send(_utils_1.default.getErrorMessage(error));
         }
         return res.status(500).send(_utils_1.default.getErrorMessage(error));
     }

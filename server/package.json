@@ -9,7 +9,7 @@
     "lint": "eslint ./src --ext .ts",
     "service:start": "set NODE_ENV=production&&node -r ts-node/register/transpile-only -r tsconfig-paths/register ./dist/app.js",
     "service:build": "npm run build",
-    "service:runProd": "npx prisma db push && npm run build && npm run service:start"
+    "service:runProd": "npm run service:start"
   },
   "author": "AI-Assisted-Polimi",
   "license": "ISC",

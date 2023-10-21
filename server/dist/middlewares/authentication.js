@@ -9,7 +9,7 @@ const JwtExceptions_1 = tslib_1.__importDefault(require("@/exceptions/JwtExcepti
 const auth = (req, res, next) => tslib_1.__awaiter(void 0, void 0, void 0, function* () {
     var _a;
     try {
-        const token = (_a = req.header('Authorization')) === null || _a === void 0 ? void 0 : _a.replace('Bearer ', '');
+        const token = (_a = req.header("Authorization")) === null || _a === void 0 ? void 0 : _a.replace("Bearer ", "");
         if (!token) {
             throw new JwtExceptions_1.default("Missing token");
         }

@@ -62,8 +62,7 @@ const register = (name, surname, email, password, tokenValue) => tslib_1.__await
         return result;
     }
     catch (error) {
-        if (error instanceof library_1.PrismaClientKnownRequestError &&
-            error.code === "P2002") {
+        if (error instanceof library_1.PrismaClientKnownRequestError && error.code === "P2002") {
             return [null, "User already exists with this email"];
         }
         return [null, "An unexpected error occurred while registering the user."];
@@ -87,10 +86,7 @@ const handleAdminPermissions = (user, handledUserMail, setAdmin) => tslib_1.__aw
         const result = yield _prisma_1.default.PRISMA.$transaction(() => tslib_1.__awaiter(void 0, void 0, void 0, function* () {
             const handledUser = yield (0, exports.getUserByMail)(handledUserMail);
             if (!handledUser) {
-                return [
-                    false,
-                    "The user you are trying to assign admin permissions doesn't exist",
-                ];
+                return [false, "The user you are trying to assign admin permissions doesn't exist"];
             }
             const updatedUser = yield _prisma_1.default.PRISMA.user.update({
                 where: { id: handledUser.id },
@@ -101,10 +97,7 @@ const handleAdminPermissions = (user, handledUserMail, setAdmin) => tslib_1.__aw
         return result;
     }
     catch (error) {
-        return [
-            false,
-            "An unexpected error occurred while assigning admin permissions.",
-        ];
+        return [false, "An unexpected error occurred while assigning admin permissions."];
     }
 });
 exports.handleAdminPermissions = handleAdminPermissions;

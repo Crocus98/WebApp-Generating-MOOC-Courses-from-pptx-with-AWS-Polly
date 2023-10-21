@@ -7,7 +7,6 @@ const _config_1 = tslib_1.__importDefault(require("@config"));
 const UserException_1 = tslib_1.__importDefault(require("@/exceptions/UserException"));
 const jsonwebtoken_1 = tslib_1.__importDefault(require("jsonwebtoken"));
 const _utils_1 = tslib_1.__importDefault(require("@utils"));
-const ProjectService = tslib_1.__importStar(require("@services/ProjectService"));
 const login = (req, res) => tslib_1.__awaiter(void 0, void 0, void 0, function* () {
     try {
         let { email, password } = req.body;
@@ -24,11 +23,9 @@ const login = (req, res) => tslib_1.__awaiter(void 0, void 0, void 0, function* 
             throw new UserException_1.default("Invalid credentials");
         }
         const token = jsonwebtoken_1.default.sign({ email: user.email }, _config_1.default.JWT_SECRET, {
-            expiresIn: "2 days",
+            expiresIn: "6h",
         });
-        res
-            .status(200)
-            .send({ email, name: user.name, surname: user.surname, token });
+        res.status(200).send({ email, name: user.name, surname: user.surname, token });
     }
     catch (error) {
         if (error instanceof UserException_1.default) {
@@ -62,8 +59,6 @@ const register = (req, res) => tslib_1.__awaiter(void 0, void 0, void 0, functio
         if (!user) {
             throw new UserException_1.default(message);
         }
-        if (typeof user === "object")
-            yield ProjectService.createProject("default", user);
         res.status(200).send("Inserted successfully");
     }
     catch (error) {

@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.updateSettings = exports.deleteProject = exports.createProject = exports.getSettings = exports.listProjects = void 0;
+exports.deleteProject = exports.createProject = exports.listProjects = void 0;
 const tslib_1 = require("tslib");
 const ProjectService = tslib_1.__importStar(require("@services/ProjectService"));
 const FileService = tslib_1.__importStar(require("@services/FileService"));
@@ -16,36 +16,12 @@ const listProjects = (req, res) => tslib_1.__awaiter(void 0, void 0, void 0, fun
     }
     catch (error) {
         if (error instanceof DatabaseException_1.default) {
-            res.status(500).send(_utils_1.default.getErrorMessage(error));
+            return res.status(500).send(_utils_1.default.getErrorMessage(error));
         }
         return res.status(500).send(_utils_1.default.getErrorMessage(error));
     }
 });
 exports.listProjects = listProjects;
-const getSettings = (req, res) => tslib_1.__awaiter(void 0, void 0, void 0, function* () {
-    try {
-        const user = res.locals.user;
-        const projectName = req.params.projectName;
-        if (!projectName) {
-            throw new ParameterException_1.default("No project name provided.");
-        }
-        const project = yield ProjectService.findProjectByProjectName(projectName, user);
-        if (!project) {
-            throw new ParameterException_1.default("Project not found.");
-        }
-        return res.status(200).send(project);
-    }
-    catch (error) {
-        if (error instanceof DatabaseException_1.default) {
-            res.status(500).send(_utils_1.default.getErrorMessage(error));
-        }
-        else if (error instanceof ParameterException_1.default) {
-            res.status(400).send(_utils_1.default.getErrorMessage(error));
-        }
-        return res.status(500).send(_utils_1.default.getErrorMessage(error));
-    }
-});
-exports.getSettings = getSettings;
 const createProject = (req, res) => tslib_1.__awaiter(void 0, void 0, void 0, function* () {
     try {
         const user = res.locals.user;
@@ -58,10 +34,10 @@ const createProject = (req, res) => tslib_1.__awaiter(void 0, void 0, void 0, fu
     }
     catch (error) {
         if (error instanceof DatabaseException_1.default) {
-            res.status(500).send(_utils_1.default.getErrorMessage(error));
+            return res.status(500).send(_utils_1.default.getErrorMessage(error));
         }
         else if (error instanceof ParameterException_1.default) {
-            res.status(400).send(_utils_1.default.getErrorMessage(error));
+            return res.status(400).send(_utils_1.default.getErrorMessage(error));
         }
         return res.status(500).send(_utils_1.default.getErrorMessage(error));
     }
@@ -84,39 +60,15 @@ const deleteProject = (req, res) => tslib_1.__awaiter(void 0, void 0, void 0, fu
     }
     catch (error) {
         if (error instanceof DatabaseException_1.default) {
-            res.status(500).send(_utils_1.default.getErrorMessage(error));
+            return res.status(500).send(_utils_1.default.getErrorMessage(error));
         }
         else if (error instanceof ParameterException_1.default) {
-            res.status(400).send(_utils_1.default.getErrorMessage(error));
+            return res.status(400).send(_utils_1.default.getErrorMessage(error));
         }
         else if (error instanceof StorageException_1.default) {
-            res.status(500).send(_utils_1.default.getErrorMessage(error));
+            return res.status(500).send(_utils_1.default.getErrorMessage(error));
         }
         return res.status(500).send(_utils_1.default.getErrorMessage(error));
     }
 });
 exports.deleteProject = deleteProject;
-const updateSettings = (req, res) => tslib_1.__awaiter(void 0, void 0, void 0, function* () {
-    try {
-        const user = res.locals.user;
-        const projectName = req.params.projectName;
-        if (!projectName) {
-            throw new ParameterException_1.default("No project name provided.");
-        }
-        const project = yield ProjectService.findProjectByProjectName(projectName, user);
-        if (!project) {
-            throw new ParameterException_1.default("Project not found.");
-        }
-        return res.status(200).send("Project settings updated successfully.");
-    }
-    catch (error) {
-        if (error instanceof DatabaseException_1.default) {
-            res.status(500).send(_utils_1.default.getErrorMessage(error));
-        }
-        else if (error instanceof ParameterException_1.default) {
-            res.status(400).send(_utils_1.default.getErrorMessage(error));
-        }
-        return res.status(500).send(_utils_1.default.getErrorMessage(error));
-    }
-});
-exports.updateSettings = updateSettings;

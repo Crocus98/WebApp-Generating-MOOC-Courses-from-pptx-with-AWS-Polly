@@ -17,14 +17,11 @@ const getAudioPreview = (req, res) => tslib_1.__awaiter(void 0, void 0, void 0, 
             throw new ParameterException_1.default("No text for the preview provided.");
         }
         const result = yield PreviewService.elaborateAudioPreview(text);
-        if (!result) {
-            throw new PreviewException_1.default("Could not elaborate audio preview.");
-        }
-        if (result instanceof stream_1.Readable) {
-            result.once("error", () => {
+        if (result.data instanceof stream_1.Readable) {
+            result.data.once("error", () => {
                 throw new PreviewException_1.default("Error while reading audio preview file.");
             });
-            result.pipe(res);
+            result.data.pipe(res);
         }
         else {
             throw new PreviewException_1.default("File not readable.");
@@ -52,17 +49,14 @@ const getSlidesPreview = (req, res) => tslib_1.__awaiter(void 0, void 0, void 0,
             throw new DatabaseException_1.default("Project name does not correspond to any existing project.");
         }
         const result = yield PreviewService.elaborateSlidesPreview(user.email, projectName);
-        if (!result) {
-            throw new PreviewException_1.default("Slides preview not empty or not available.");
-        }
-        if (result instanceof stream_1.Readable) {
-            result.once("error", () => {
-                throw new StorageException_1.default("Error while reading JSON of files.");
+        if (result.data instanceof stream_1.Readable) {
+            result.data.once("error", () => {
+                throw new StorageException_1.default("Error while piping core elaboration");
             });
-            result.pipe(res);
+            result.data.pipe(res);
         }
         else {
-            throw new StorageException_1.default("JSON of files not readable.");
+            throw new StorageException_1.default("Can't read elaborated slides");
         }
     }
     catch (error) {
@@ -71,6 +65,9 @@ const getSlidesPreview = (req, res) => tslib_1.__awaiter(void 0, void 0, void 0,
         }
         else if (error instanceof ParameterException_1.default) {
             return res.status(400).send(_utils_1.default.getErrorMessage(error));
+        }
+        else if (error instanceof StorageException_1.default) {
+            return res.status(502).send(_utils_1.default.getErrorMessage(error));
         }
         return res.status(500).send(_utils_1.default.getErrorMessage(error));
     }

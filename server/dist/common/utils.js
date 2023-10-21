@@ -11,7 +11,7 @@ class Utils {
             return null;
         email = email.trim().toLowerCase();
         const regex = /^\S+@\S+\.\S+$/;
-        return (regex.test(email)) ? email : null;
+        return regex.test(email) ? email : null;
     }
     static parsePassword(password) {
         if (this.isUndefinedOrEmpty(password) || password.length < 8)
@@ -19,7 +19,7 @@ class Utils {
         return password;
     }
     static isUndefinedOrEmpty(value) {
-        return (value === undefined || value.trim().length === 0);
+        return value === undefined || value.trim().length === 0;
     }
 }
 exports.default = Utils;

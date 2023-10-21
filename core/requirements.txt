@@ -1,8 +1,8 @@
 boto3==1.28.10
 Flask==2.3.2
+lxml==4.9.1
 pdf2image==1.16.3
 pydub==0.25.1
 python-dotenv==1.0.0
+python_pptx==0.6.21
 waitress==2.1.2
-python-pptx==0.6.21
-ffmpeg-python==0.2.0
