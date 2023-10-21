@@ -43,9 +43,14 @@ export const getSlidesPreview = async (req: Request, res: Response) => {
       throw new ParameterException("No project name provided.");
     }
     if (!ProjectService.findProjectByProjectName(projectName, user)) {
-      throw new DatabaseException("Project name does not correspond to any existing project.");
+      throw new DatabaseException(
+        "Project name does not correspond to any existing project."
+      );
     }
-    const result = await PreviewService.elaborateSlidesPreview(user.email, projectName);
+    const result = await PreviewService.elaborateSlidesPreview(
+      user.email,
+      projectName
+    );
     if (result.data instanceof Readable) {
       result.data.once("error", () => {
         throw new StorageException("Error while piping core elaboration");
@@ -55,6 +60,7 @@ export const getSlidesPreview = async (req: Request, res: Response) => {
       throw new StorageException("Can't read elaborated slides");
     }
   } catch (error) {
+    console.log(error);
     if (error instanceof PreviewException) {
       return res.status(502).send(utils.getErrorMessage(error));
     } else if (error instanceof ParameterException) {

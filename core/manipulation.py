@@ -164,7 +164,9 @@ def pptx_to_pdf(pptx_file_path):
         os.remove(output_pdf_path)
 
     #command = f"{path_to_libreoffice} --headless --convert-to pdf --outdir \"{output_folder}\" \"{pptx_file_path}\""
-    command = f"/instdir/program/soffice --headless --invisible --nodefault --nofirststartwizard --nolockcheck --nologo --norestore --convert-to pdf --outdir \"{output_folder}\" \"{pptx_file_path}\""
+    #command = f"instdir/program/soffice.bin --headless --invisible --nodefault --nofirststartwizard --nolockcheck --nologo --norestore --convert-to pdf --outdir \"{output_folder}\" \"{pptx_file_path}\""
+    command = f"soffice --headless --invisible --nodefault --nofirststartwizard --nolockcheck --nologo --norestore --convert-to pdf --outdir \"{output_folder}\" \"{pptx_file_path}\""
+
 
     process = subprocess.Popen(
         command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)

@@ -29,13 +29,20 @@ class ElaborationWrapper {
     );
     this.axiosInstance = axios.create({
       baseURL:
-        "http://" + config.MICROSERVICE_CONFIG.MICROSERVICE_HOST + ":" + config.MICROSERVICE_CONFIG.MICROSERVICE_PORT,
+        "http://" +
+        config.MICROSERVICE_CONFIG.MICROSERVICE_HOST +
+        ":" +
+        config.MICROSERVICE_CONFIG.MICROSERVICE_PORT,
     });
   }
 
   public async elaborateFile(project: Project, email: string) {
     try {
-      const filename = await storageWrapper.getFileNameFromStorageByUserEmailAndProject(email, project.name);
+      const filename =
+        await storageWrapper.getFileNameFromStorageByUserEmailAndProject(
+          email,
+          project.name
+        );
 
       /* LAMBDA DISMISSED IN FAVOR OF MICROSERVICE
       const funcName = "lambda_handler";
@@ -71,7 +78,9 @@ class ElaborationWrapper {
       } else if (error instanceof AwsS3Exception) {
         throw new AwsS3Exception(error.message);
       } else {
-        throw new MicroserviceException("Unexpected error. Microservice could not elaborate file.");
+        throw new MicroserviceException(
+          "Unexpected error. Microservice could not elaborate file."
+        );
       }
     }
   }
@@ -93,7 +102,11 @@ class ElaborationWrapper {
       return parsedResult.body;
       */
 
-      return await this.axiosInstance.post("/process-text", { text: text }, { responseType: "stream" });
+      return await this.axiosInstance.post(
+        "/process-text",
+        { text: text },
+        { responseType: "stream" }
+      );
       /*.catch((error) => {
           
         });*/
@@ -103,6 +116,7 @@ class ElaborationWrapper {
       }
       return result.data;*/
     } catch (error) {
+      console.log(error);
       if (error instanceof AxiosError) {
         let message = await this.decodeBuffer(error.response?.data);
         let errorMessage = JSON.parse(message);
@@ -111,7 +125,9 @@ class ElaborationWrapper {
         }
         throw new MicroserviceException(errorMessage.message);
       } else {
-        throw new MicroserviceException("Unexpected error. Microservice could not elaborate text to preview.");
+        throw new MicroserviceException(
+          "Unexpected error. Microservice could not elaborate text to preview."
+        );
       }
     }
   }
@@ -129,14 +145,20 @@ class ElaborationWrapper {
         resolve(errorMessage);
       });
       data.on("error", () => {
-        reject("Impossible parse stream containing error message from python server.");
+        reject(
+          "Impossible parse stream containing error message from python server."
+        );
       });
     });
   }
 
   public async elaborateSlidesPreview(email: string, projectName: string) {
     try {
-      const filename = await storageWrapper.getFileNameFromStorageByUserEmailAndProject(email, projectName);
+      const filename =
+        await storageWrapper.getFileNameFromStorageByUserEmailAndProject(
+          email,
+          projectName
+        );
       return await this.axiosInstance.post(
         "/process-slides",
         {
@@ -147,6 +169,8 @@ class ElaborationWrapper {
         { responseType: "stream" }
       );
     } catch (error) {
+      console.log(error);
+
       if (error instanceof AxiosError) {
         let message = await this.decodeBuffer(error.response?.data);
         let errorMessage = JSON.parse(message);
@@ -157,7 +181,9 @@ class ElaborationWrapper {
       } else if (error instanceof AwsS3Exception) {
         throw new AwsS3Exception(error.message);
       } else {
-        throw new MicroserviceException("Unexpected error. Microservice could not elaborate file.");
+        throw new MicroserviceException(
+          "Unexpected error. Microservice could not elaborate file."
+        );
       }
     }
   }
@@ -182,7 +208,8 @@ class ElaborationWrapper {
   }*/
 
   static getInstance(): ElaborationWrapper {
-    if (!this.elaborationWrapper) this.elaborationWrapper = new ElaborationWrapper();
+    if (!this.elaborationWrapper)
+      this.elaborationWrapper = new ElaborationWrapper();
     return this.elaborationWrapper;
   }
 }
