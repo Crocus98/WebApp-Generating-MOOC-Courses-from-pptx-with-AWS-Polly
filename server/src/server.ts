@@ -32,16 +32,7 @@ class Server {
     this.app.use(
       helmet({
         // Disable https preference for development:
-        contentSecurityPolicy:
-          process.env.NODE_ENV === "development"
-            ? false
-            : {
-                directives: {
-                  "script-src": ["'self'"],
-                  "img-src": ["'self'", "data:"],
-                  "connect-src": ["'self'"],
-                },
-              },
+        contentSecurityPolicy: false,
         crossOriginOpenerPolicy: false,
       })
     );
