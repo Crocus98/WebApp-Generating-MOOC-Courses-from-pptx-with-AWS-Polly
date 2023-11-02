@@ -2,13 +2,18 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import React from "react";
 import colors from "../style/colors";
 import styled from "styled-components";
+import { SizeProp } from "@fortawesome/fontawesome-svg-core";
 
-type Props = {};
+type Props = { size?: SizeProp };
 
-export default function LoadingWidget({}: Props) {
+export default function LoadingWidget({ size = "3x" }: Props) {
   return (
     <Container>
-      <FontAwesomeIcon className="rotate-spinner" icon={"spinner"} size="3x" />
+      <FontAwesomeIcon
+        className="rotate-spinner"
+        icon={"spinner"}
+        size={size}
+      />
     </Container>
   );
 }

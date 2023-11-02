@@ -4,6 +4,7 @@ import elaborationWrapper from "@elaboration-wrapper";
 import PreviewException from "@/exceptions/PreviewException";
 import MicroserviceException from "@/exceptions/MicroserviceException";
 import ParameterException from "@/exceptions/ParameterException";
+import { ResponseType } from "axios";
 
 export const elaborateAudioPreview = async (text: string) => {
   try {
@@ -22,10 +23,19 @@ export const elaborateAudioPreview = async (text: string) => {
 
 export const elaborateSlidesPreview = async (
   email: string,
-  projectName: string
+  projectName: string,
+  includeAudio = true,
+  includeImages = true,
+  responseType?: ResponseType
 ) => {
   try {
-    return await elaborationWrapper.elaborateSlidesPreview(email, projectName);
+    return await elaborationWrapper.elaborateSlidesPreview(
+      email,
+      projectName,
+      includeAudio,
+      includeImages,
+      responseType
+    );
   } catch (error) {
     console.log(error);
     if (error instanceof MicroserviceException) {

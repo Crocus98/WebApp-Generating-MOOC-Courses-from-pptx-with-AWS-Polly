@@ -8,6 +8,7 @@ import { AuthContext, isAuthenticated } from "./AuthContext";
 import Generator from "../views/Generator";
 import ProjectList from "../views/ProjectList";
 import Editor from "../views/Editor";
+import Help from "../views/Help";
 
 type Props = {};
 
@@ -63,6 +64,7 @@ export default function Router({}: Props) {
           </RequireAuth>
         }
       />
+
       <Route path="/" element={<MainLayout />}>
         <Route
           index
@@ -89,8 +91,7 @@ export default function Router({}: Props) {
             </StrictlyAnonymous>
           }
         />
-        <Route path="generator" element={<Generator />} />
-
+        <Route path="help" element={<Help />} />
         <Route path="*" element={<>404</>} />
       </Route>
     </Routes>

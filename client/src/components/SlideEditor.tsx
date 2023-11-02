@@ -13,6 +13,7 @@ import VoicePreviewBar from "./VoicePreviewBar";
 import { retrievePreview } from "../services/project";
 import ErrorAlert from "./ErrorAlert";
 import { AxiosError } from "axios";
+import Button from "./Button";
 
 type Props = {
   dispatch: React.Dispatch<EditorAction>;
@@ -33,7 +34,7 @@ type Props = {
   };
 };
 
-const EDITOR_WIDTH = 600;
+export const EDITOR_WIDTH = 600;
 
 export default function SlideEditor({
   slideNumber,
@@ -160,6 +161,11 @@ export default function SlideEditor({
               color={colors.purple}
               onClick={selectQuickAction}
             />
+            <div style={{ flex: 2 }}></div>
+            <HelpButton href="/help" target="_blank" rel="noreferrer">
+              <FontAwesomeIcon icon={"info"} />
+              Help
+            </HelpButton>
           </ToolbarContainer>
           <NotesEditor
             ref={input}
@@ -221,6 +227,7 @@ const SlidePreview = styled.div`
 
 const SlidePreviewImage = styled.img`
   height: 250px;
+  max-width: 600px;
 `;
 
 const VoicePreviewContainer = styled.div`
@@ -303,3 +310,24 @@ const createVoiceOptions = () =>
   }));
 
 const VOICE_OPTIONS = createVoiceOptions();
+
+const HelpButton = styled.a`
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: row;
+  gap: 10px;
+  padding: 0 12px;
+  text-align: center;
+  color: ${colors.white};
+  font-size: 15px;
+  border: none;
+  border-radius: 4px;
+  height: 29px;
+  background-color: ${colors.green};
+
+  &:hover {
+    cursor: pointer;
+    background-color: ${colors.darkGrey};
+  }
+`;

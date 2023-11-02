@@ -16,6 +16,8 @@ export default function ProjectCreationModal({
     <Modal
       isOpen={isOpen}
       onRequestClose={onClose}
+      shouldCloseOnEsc={true}
+      shouldCloseOnOverlayClick={true}
       style={{
         overlay: {
           display: "flex",

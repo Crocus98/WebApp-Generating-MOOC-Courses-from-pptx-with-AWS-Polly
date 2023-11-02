@@ -16,7 +16,8 @@ path.get("/me", auth, UserController.userData);
 path.get("/download/:projectName", auth, FileController.downloadFile); // parameter: original ((true/false) default: false)
 path.get("/list", auth, ProjectController.listProjects);
 //path.get("/project/:projectName", auth, ProjectController.getSettings); //TODO or TODELETE
-path.get("/slides/:projectName", auth, PreviewController.getSlidesPreview);
+path.get("/slides/:projectName", auth, FileController.getSlidesPreview);
+path.get("/audio/:projectName", auth, PreviewController.getAllAudioPreview);
 /** POST */
 path.post("/login", UserController.login);
 path.post("/register", UserController.register);

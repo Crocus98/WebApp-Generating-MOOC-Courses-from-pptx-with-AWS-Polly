@@ -7,8 +7,7 @@ import { Project } from "@prisma/client";
 import storageWrapper from "@storage-wrapper";
 import AwsS3Exception from "@/exceptions/AwsS3Exception";
 import ParameterException from "@/exceptions/ParameterException";
-import axios, { Axios, AxiosError, AxiosInstance } from "axios";
-import { error } from "console";
+import axios, { AxiosError, AxiosInstance, ResponseType } from "axios";
 
 class ElaborationWrapper {
   private static elaborationWrapper?: ElaborationWrapper;
@@ -118,8 +117,14 @@ class ElaborationWrapper {
     } catch (error) {
       console.log(error);
       if (error instanceof AxiosError) {
-        let message = await this.decodeBuffer(error.response?.data);
-        let errorMessage = JSON.parse(message);
+        let errorMessage = {
+          message:
+            "Unexpected error. Microservice could not elaborate text to preview.",
+        };
+        if (error.response?.data instanceof Buffer) {
+          const message = await this.decodeBuffer(error.response?.data);
+          errorMessage = JSON.parse(message);
+        }
         if (error.response?.status == 400) {
           throw new ParameterException(errorMessage.message);
         }
@@ -152,7 +157,13 @@ class ElaborationWrapper {
     });
   }
 
-  public async elaborateSlidesPreview(email: string, projectName: string) {
+  public async elaborateSlidesPreview(
+    email: string,
+    projectName: string,
+    includeAudio: boolean,
+    includeImages: boolean,
+    responseType: ResponseType = "stream"
+  ) {
     try {
       const filename =
         await storageWrapper.getFileNameFromStorageByUserEmailAndProject(
@@ -165,12 +176,12 @@ class ElaborationWrapper {
           email: email,
           projectName: projectName,
           filename: filename,
+          includeAudio,
+          includeImages,
         },
-        { responseType: "stream" }
+        { responseType: responseType }
       );
     } catch (error) {
-      console.log(error);
-
       if (error instanceof AxiosError) {
         let message = await this.decodeBuffer(error.response?.data);
         let errorMessage = JSON.parse(message);

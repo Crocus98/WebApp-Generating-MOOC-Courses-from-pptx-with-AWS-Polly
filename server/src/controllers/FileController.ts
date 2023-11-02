@@ -10,6 +10,8 @@ import DatabaseException from "@/exceptions/DatabaseException";
 import * as ProjectService from "@services/ProjectService";
 import { Readable } from "stream";
 import NotFound from "@/exceptions/NotFoundException";
+import { elaborateSlidesPreview } from "@/services/PreviewService";
+import storageWrapper from "@/common/storageWrapper";
 
 export const uploadFile = async (req: Request, res: Response) => {
   try {
@@ -30,7 +32,31 @@ export const uploadFile = async (req: Request, res: Response) => {
       throw new ParameterException("Project name not valid.");
     }
 
-    await FileService.uploadFileToStorage(file, projectName, user.email);
+    await FileService.uploadFileToStorage(
+      file.buffer,
+      projectName,
+      user.email,
+      file.originalname
+    );
+
+    try {
+      const previewResponse = await elaborateSlidesPreview(
+        user.email,
+        projectName,
+        false,
+        true,
+        "arraybuffer"
+      );
+      const previewBuffer = await Buffer.from(previewResponse.data, "binary");
+      await storageWrapper.uploadFileToStorage(
+        previewBuffer,
+        user.email,
+        projectName,
+        "preview/slides_preview.zip"
+      );
+    } catch (error) {
+      console.log(error);
+    }
 
     return res.status(200).send(`File ${file.originalname} uploaded to S3.`);
   } catch (error) {
@@ -62,7 +88,11 @@ export const downloadFile = async (req: Request, res: Response) => {
     if (parameter && parameter === "true") {
       original = true;
     }
-    const file = await FileService.downloadFileFromStorage(user.email, projectName, original);
+    const file = await FileService.downloadFileFromStorage(
+      user.email,
+      projectName,
+      original ? "original" : "edited"
+    );
 
     if (file instanceof Readable) {
       file.once("error", () => {
@@ -94,7 +124,10 @@ export const elaborateFile = async (req: Request, res: Response) => {
     if (!projectName) {
       throw new ParameterException("No project name provided.");
     }
-    const project = await ProjectService.findProjectByProjectName(projectName, user);
+    const project = await ProjectService.findProjectByProjectName(
+      projectName,
+      user
+    );
     if (!project) {
       throw new ParameterException("Project name not valid.");
     }
@@ -109,6 +142,46 @@ export const elaborateFile = async (req: Request, res: Response) => {
       return res.status(502).send(utils.getErrorMessage(error));
     } else if (error instanceof ParameterException) {
       return res.status(400).send(utils.getErrorMessage(error));
+    }
+    return res.status(500).send(utils.getErrorMessage(error));
+  }
+};
+
+export const getSlidesPreview = async (req: Request, res: Response) => {
+  try {
+    const user = res.locals.user as User;
+    const projectName = req.params.projectName;
+    if (!projectName) {
+      throw new ParameterException("No project name provided.");
+    }
+    if (!(await ProjectService.findProjectByProjectName(projectName, user))) {
+      throw new NotFound("Project name not valid.");
+    }
+
+    const file = await FileService.downloadFileFromStorage(
+      user.email,
+      projectName,
+      "preview"
+    );
+
+    if (file instanceof Readable) {
+      file.once("error", () => {
+        throw new StorageException("Error while reading file.");
+      });
+      file.pipe(res);
+    } else {
+      throw new StorageException("File not readable.");
+    }
+  } catch (error) {
+    console.log(error);
+    if (error instanceof StorageException) {
+      return res.status(502).send(utils.getErrorMessage(error));
+    } else if (error instanceof ParameterException) {
+      return res.status(400).send(utils.getErrorMessage(error));
+    } else if (error instanceof DatabaseException) {
+      return res.status(500).send(utils.getErrorMessage(error));
+    } else if (error instanceof NotFound) {
+      return res.status(404).send(utils.getErrorMessage(error));
     }
     return res.status(500).send(utils.getErrorMessage(error));
   }

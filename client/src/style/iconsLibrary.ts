@@ -15,6 +15,7 @@ import {
   faTriangleExclamation,
   faCopyright,
   faTimes,
+  faInfo,
 } from "@fortawesome/free-solid-svg-icons";
 
 library.add(
@@ -32,5 +33,6 @@ library.add(
   faBolt,
   faTriangleExclamation,
   faCopyright,
-  faTimes
+  faTimes,
+  faInfo
 );

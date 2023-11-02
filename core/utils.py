@@ -1,3 +1,4 @@
+from lxml import etree
 from pdf2image import convert_from_path
 from pydub import AudioSegment
 from pptx.util import Inches
@@ -7,6 +8,7 @@ import shutil
 import base64
 import os
 import io
+import tempfile
 
 
 def delete_folder(folder):
@@ -25,6 +27,7 @@ def audiosegment_to_base64(audio_segment):
     except Exception as e:
         raise ElaborationException(
             f"Exception while converting audio to base64: {str(e)}")
+
 
 def audiosegment_to_stream(audio_segment):
     try:
@@ -107,8 +110,6 @@ def check_correct_validate_parse_text(notes_text):
     except Exception as e:
         raise UserParameterException(e)
 
-        
-
 
 def slide_split_data(index, image_base64, audio_base64):
     return {
@@ -130,6 +131,15 @@ def extract_image_from_slide(index, folder, image):
     return image_to_base64(image)
 
 
-def add_audio_to_slide(slide, filename):
+def add_audio_to_slide(slide, file):
     left, top, width, height = Inches(-1.5), Inches(2.5), Inches(1), Inches(1)
-    slide.shapes.add_movie(filename, left, top, width, height, mime_type="audio/mp3", poster_frame_image=None)
+    with tempfile.NamedTemporaryFile(suffix='.mp3') as temp:
+        file.seek(0)
+        temp.write(file.read())
+        movie = slide.shapes.add_movie(temp.name, left, top, width,
+                                       height, mime_type="audio/mp3", poster_frame_image=None)
+        tree = movie._element.getparent().getparent().getnext().getnext()
+        timing = [el for el in tree.iterdescendants(
+        ) if etree.QName(el).localname == 'cond'][0]
+        timing.set('delay', '0')
+        temp.flush()

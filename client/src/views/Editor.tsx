@@ -397,6 +397,7 @@ export default function Editor({}: Props) {
             slidePreviews={state.slides}
             focus={state.slideFocus}
             onFocus={onFocusChange}
+            projectName={projectName!}
           />
           <SlideEditor
             dispatch={dispatch}
@@ -441,7 +442,7 @@ const Container = styled.div`
 const EditorContainer = styled.div`
   display: grid;
   grid-template-columns: auto 1fr;
-  grid-template-rows: 1fr;
+  grid-template-rows: 100%;
   flex: 1;
   overflow: hidden;
 `;

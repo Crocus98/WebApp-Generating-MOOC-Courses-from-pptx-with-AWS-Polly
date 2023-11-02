@@ -112,6 +112,7 @@ export default function ProjectList({}: Props) {
               setGenericError(null);
             }}
             style={{ alignSelf: "center" }}
+            loading={loading}
           />
           {genericError && <ErrorText>{genericError}</ErrorText>}
           <Button

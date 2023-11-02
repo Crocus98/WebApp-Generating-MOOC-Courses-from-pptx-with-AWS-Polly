@@ -11,13 +11,15 @@ import ParameterException from "@/exceptions/ParameterException";
 export const uploadFileToStorage = async (
   file: any,
   projectName: string,
-  email: string
+  email: string,
+  filename: string
 ) => {
   try {
     await storageWrapper.uploadFileToStorageAndDeleteOldOnes(
       file,
       projectName,
-      email
+      email,
+      filename
     );
   } catch (error) {
     if (error instanceof AwsS3Exception) {
@@ -32,13 +34,13 @@ export const uploadFileToStorage = async (
 export const downloadFileFromStorage = (
   email: string,
   projectName: string,
-  original = false
+  fileType: "original" | "edited" | "preview"
 ): Promise<GetObjectCommandOutput> => {
   try {
     const file = storageWrapper.getFileFromStorage(
       email,
       projectName,
-      original
+      fileType
     );
     return file;
   } catch (error) {

@@ -22,6 +22,19 @@ export const createProject = async (projectName: string, pptx: File) => {
   await axios.post("/v1/public/upload", fd);
 };
 
+export const editProject = async (projectName: string, pptx: File) => {
+  const fd = new FormData();
+  const zipFile = await zipPowerpoint(pptx);
+  fd.append("file", zipFile);
+  fd.append("projectName", projectName);
+
+  await axios.post("/v1/public/upload", fd);
+};
+
+export const deleteProject = async (projectName: string) => {
+  await axios.delete("/v1/public/delete/" + projectName);
+};
+
 export const retrieveProject = async (
   projectName?: string
 ): Promise<{
@@ -63,7 +76,10 @@ export const retrieveProject = async (
 
   const notes = await getSlideNotes(zip);
 
-  const [slides, audios] = await retrieveSlidesAndPreviews(projectName);
+  const [slides, audios] = await retrieveSlidesAndPreviews(
+    projectName,
+    notes.length
+  );
 
   return { audios, notes, slides, projectZip: zip };
 };
@@ -93,23 +109,46 @@ export const downloadProject = async (projectName: string) => {
   URL.revokeObjectURL(href);
 };
 
-export const retrieveSlidesAndPreviews = async (projectName: string) => {
-  const downloadRes = await axios.get("/v1/public/slides/" + projectName, {
-    responseType: "blob",
-  });
-  const zip = await JSZip().loadAsync(downloadRes.data);
-  const fileNames = Object.keys(zip.files);
-  const slidePreviewsFilenames = sortFilenamesBySlideNumber(
-    fileNames.filter((f) => f.includes("slide"))
-  );
-  const slides = await Promise.all(
-    slidePreviewsFilenames.map((sf) => readPng64FromZip(sf, zip))
-  );
+export const retrieveSlidesAndPreviews = async (
+  projectName: string,
+  length: number
+) => {
+  const downloadRes = await Promise.allSettled([
+    axios.get("/v1/public/audio/" + projectName, {
+      responseType: "blob",
+    }),
+    axios.get("/v1/public/slides/" + projectName, {
+      responseType: "blob",
+    }),
+  ]);
+  console.log(downloadRes);
 
-  const audioPreviews = new Array(slides.length).fill(null);
-  await Promise.all(
-    audioPreviews.map((_, i) => fillAudioPreviewAtIndex(audioPreviews, i, zip))
-  );
+  let slides = new Array(length).fill(null);
+
+  const imageRes =
+    downloadRes[1].status === "fulfilled" ? downloadRes[1] : null;
+  if (imageRes) {
+    const zip = await JSZip().loadAsync(imageRes.value.data);
+    const fileNames = Object.keys(zip.files);
+    const slidePreviewsFilenames = sortFilenamesBySlideNumber(
+      fileNames.filter((f) => f.includes("slide"))
+    );
+    slides = await Promise.all(
+      slidePreviewsFilenames.map((sf) => readPng64FromZip(sf, zip))
+    );
+  }
+
+  const audioPreviews = new Array(length).fill(null);
+  const audioRes =
+    downloadRes[0].status === "fulfilled" ? downloadRes[0] : null;
+  if (audioRes) {
+    const zipAudio = await JSZip().loadAsync(audioRes.value.data);
+    await Promise.all(
+      audioPreviews.map((_, i) =>
+        fillAudioPreviewAtIndex(audioPreviews, i, zipAudio)
+      )
+    );
+  }
   return [slides, audioPreviews];
 };
 

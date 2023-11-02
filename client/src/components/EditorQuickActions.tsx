@@ -9,6 +9,7 @@ type Props = {
   onClick: (action: string) => void;
   name: string;
   color: string;
+  disabled?: boolean;
 };
 
 export default function EditorQuickActions({
@@ -16,6 +17,7 @@ export default function EditorQuickActions({
   onClick,
   name,
   color,
+  disabled = false,
 }: Props) {
   const ref = useRef(null);
   const [showDropdown, setShowDropdown] = useState(false);
@@ -26,8 +28,8 @@ export default function EditorQuickActions({
 
   useOnClickOutside(ref, handleClickOutside);
 
-  const onMouseEnter = () => setShowDropdown(true);
-  const onMouseLeave = () => setShowDropdown(false);
+  const onMouseEnter = () => setShowDropdown(!disabled && true);
+  const onMouseLeave = () => setShowDropdown(!disabled && false);
 
   return (
     <ActionContainer onMouseEnter={onMouseEnter} onMouseLeave={onMouseLeave}>
@@ -56,6 +58,7 @@ export default function EditorQuickActions({
       <ActionButton
         style={{ backgroundColor: color }}
         onClick={() => setShowDropdown(true)}
+        disabled={disabled}
       >
         <FontAwesomeIcon
           icon={showDropdown ? "chevron-down" : "chevron-right"}
@@ -123,3 +126,4 @@ const ActionButton = styled.button`
     cursor: pointer;
   }
 `;
+

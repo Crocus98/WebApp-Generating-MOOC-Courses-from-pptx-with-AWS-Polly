@@ -3,13 +3,15 @@ import styled from "styled-components";
 import colors from "../style/colors";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import Button from "./Button";
+import LoadingWidget from "./LoadingWidget";
 
 interface Props extends React.HTMLAttributes<HTMLDivElement> {
   file: File | null;
   setFile: (file: File | null) => void;
+  loading?: boolean;
 }
 
-export default function FileInput({ file, setFile, ...rest }: Props) {
+export default function FileInput({ loading, file, setFile, ...rest }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
 
   const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
@@ -33,7 +35,14 @@ export default function FileInput({ file, setFile, ...rest }: Props) {
         ref={inputRef}
         accept=".pptx"
       />
-      {!!file ? (
+      {loading ? (
+        <>
+          <LoadingWidget size="3x" />
+          <GeneratorText>
+            This may take up to 1 minute if your presentation is large
+          </GeneratorText>
+        </>
+      ) : !!file ? (
         <>
           <FontAwesomeIcon
             icon={"cloud-arrow-down"}
@@ -52,12 +61,9 @@ export default function FileInput({ file, setFile, ...rest }: Props) {
             size={"3x"}
             color={colors.darkGrey}
           />
-          <GeneratorText>
-            Drop any .pptx file in the rectangle below to generate the MOOC
-            content or
-          </GeneratorText>
+          <GeneratorText>Insert your .pptx file</GeneratorText>
           <Button type="button" onClick={selectFile}>
-            Seleziona .pptx
+            Select .pptx
           </Button>
         </>
       )}

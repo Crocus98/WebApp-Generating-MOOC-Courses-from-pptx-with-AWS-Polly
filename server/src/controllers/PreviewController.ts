@@ -35,7 +35,7 @@ export const getAudioPreview = async (req: Request, res: Response) => {
   }
 };
 
-export const getSlidesPreview = async (req: Request, res: Response) => {
+export const getAllAudioPreview = async (req: Request, res: Response) => {
   try {
     const user = res.locals.user as User;
     const projectName = req.params.projectName;
@@ -49,7 +49,9 @@ export const getSlidesPreview = async (req: Request, res: Response) => {
     }
     const result = await PreviewService.elaborateSlidesPreview(
       user.email,
-      projectName
+      projectName,
+      true,
+      false
     );
     if (result.data instanceof Readable) {
       result.data.once("error", () => {
