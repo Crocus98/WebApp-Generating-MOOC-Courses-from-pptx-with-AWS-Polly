@@ -16,6 +16,8 @@ import tempfile
 
 load_dotenv()
 
+ENVIRONMENT = os.getenv("ENVIRONMENT")
+
 
 class S3Singleton:
     _instance = None
@@ -163,10 +165,10 @@ def pptx_to_pdf(pptx_file_path):
         print(f"PDF already exists at {output_pdf_path}. Overwriting.")
         os.remove(output_pdf_path)
 
-    # Dev
-    command = f"{path_to_libreoffice} --headless --convert-to pdf --outdir \"{output_folder}\" \"{pptx_file_path}\""
-    # Prod
-    # command = f"soffice --headless --invisible --nodefault --nofirststartwizard --nolockcheck --nologo --norestore --convert-to pdf --outdir \"{output_folder}\" \"{pptx_file_path}\""
+    if ENVIRONMENT == "PROD":
+        command = f"soffice --headless --invisible --nodefault --nofirststartwizard --nolockcheck --nologo --norestore --convert-to pdf --outdir \"{output_folder}\" \"{pptx_file_path}\""
+    else:
+        command = f"{path_to_libreoffice} --headless --convert-to pdf --outdir \"{output_folder}\" \"{pptx_file_path}\""
 
     process = subprocess.Popen(
         command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)

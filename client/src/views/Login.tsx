@@ -42,6 +42,7 @@ export default function Login({}: Props) {
         name: string;
         surname: string;
         token: string;
+        admin?: boolean;
       }>("/v1/public/login", {
         email,
         password,
@@ -54,6 +55,7 @@ export default function Login({}: Props) {
           firstName: loginResponse.data.name,
           lastName: loginResponse.data.surname,
           token: loginResponse.data.token,
+          admin: !!loginResponse.data.admin,
         },
       });
       navigate("/");

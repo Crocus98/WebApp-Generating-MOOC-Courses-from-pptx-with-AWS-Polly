@@ -5,12 +5,24 @@ import HomePage from "../views/HomePage";
 import Signup from "../views/Signup";
 import Login from "../views/Login";
 import { AuthContext, isAuthenticated } from "./AuthContext";
-import Generator from "../views/Generator";
+import ReservedArea from "../views/ReservedArea";
 import ProjectList from "../views/ProjectList";
 import Editor from "../views/Editor";
 import Help from "../views/Help";
 
 type Props = {};
+
+function StrictlyAdmin({ children }: { children: JSX.Element }) {
+  const { state: authState } = useContext(AuthContext);
+  const authenticated = isAuthenticated(authState);
+  const location = useLocation();
+
+  if (!authenticated || !authState.admin) {
+    return <Navigate to="/" state={{ from: location }} replace />;
+  }
+
+  return children;
+}
 
 function StrictlyAnonymous({ children }: { children: JSX.Element }) {
   const { state: authState } = useContext(AuthContext);
@@ -89,6 +101,14 @@ export default function Router({}: Props) {
             <StrictlyAnonymous>
               <Signup />
             </StrictlyAnonymous>
+          }
+        />
+        <Route
+          path="reserved"
+          element={
+            <StrictlyAdmin>
+              <ReservedArea />
+            </StrictlyAdmin>
           }
         />
         <Route path="help" element={<Help />} />

@@ -22,6 +22,7 @@ path.get("/audio/:projectName", auth, PreviewController.getAllAudioPreview);
 path.post("/login", UserController.login);
 path.post("/register", UserController.register);
 path.post("/token", auth, UserController.generateRegistrationToken);
+path.get("/tokens", auth, UserController.getTokens);
 path.post("/upload", auth, upload.single("file"), FileController.uploadFile);
 path.post("/project", auth, ProjectController.createProject);
 path.post("/preview", auth, PreviewController.getAudioPreview);

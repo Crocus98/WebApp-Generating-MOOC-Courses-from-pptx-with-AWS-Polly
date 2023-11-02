@@ -29,7 +29,13 @@ export const login = async (req: Request, res: Response) => {
     });
 
     //successful login
-    res.status(200).send({ email, name: user.name, surname: user.surname, token });
+    res.status(200).send({
+      email,
+      name: user.name,
+      surname: user.surname,
+      token,
+      admin: user.admin,
+    });
   } catch (error) {
     if (error instanceof UserException) {
       return res.status(400).send(utils.getErrorMessage(error));
@@ -64,7 +70,13 @@ export const register = async (req: Request, res: Response) => {
       throw new UserException("Token is required");
     }
     //create user
-    const [user, message] = await UserService.register(name, surname, email, password, token);
+    const [user, message] = await UserService.register(
+      name,
+      surname,
+      email,
+      password,
+      token
+    );
 
     if (!user) {
       throw new UserException(message as string);
@@ -84,7 +96,10 @@ export const register = async (req: Request, res: Response) => {
   }
 };
 
-export const generateRegistrationToken = async (req: Request, res: Response) => {
+export const generateRegistrationToken = async (
+  req: Request,
+  res: Response
+) => {
   try {
     const user = res.locals.user as User;
     if (!user.admin) {
@@ -95,7 +110,27 @@ export const generateRegistrationToken = async (req: Request, res: Response) => 
       throw new UserException("Error generating token");
     }
     //successful login
-    res.status(200).send({ token: registrationToken });
+    res.status(200).send({ token: registrationToken.token });
+  } catch (error) {
+    if (error instanceof UserException) {
+      return res.status(401).send(utils.getErrorMessage(error));
+    }
+    return res.status(500).send(utils.getErrorMessage(error));
+  }
+};
+
+export const getTokens = async (req: Request, res: Response) => {
+  try {
+    const user = res.locals.user as User;
+    if (!user.admin) {
+      throw new UserException("You are not authorized to perform this action");
+    }
+    const tokens = await UserService.getAvailableTokens();
+    if (!tokens) {
+      throw new UserException("Error retrieving tokens");
+    }
+    //successful login
+    res.status(200).send({ tokens: tokens });
   } catch (error) {
     if (error instanceof UserException) {
       return res.status(401).send(utils.getErrorMessage(error));
@@ -113,7 +148,11 @@ export const grantAdminPermissions = async (req: Request, res: Response) => {
       throw new UserException("You are not authorized to perform this action");
     }
 
-    const [result, message] = await UserService.handleAdminPermissions(user, handledUserMail, true);
+    const [result, message] = await UserService.handleAdminPermissions(
+      user,
+      handledUserMail,
+      true
+    );
     if (!result) {
       throw new UserException(message as string);
     }
@@ -136,7 +175,11 @@ export const revokeAdminPermissions = async (req: Request, res: Response) => {
       throw new UserException("You are not authorized to perform this action");
     }
 
-    const [result, message] = await UserService.handleAdminPermissions(user, handledUserMail, false);
+    const [result, message] = await UserService.handleAdminPermissions(
+      user,
+      handledUserMail,
+      false
+    );
     if (!result) {
       throw new UserException(message as string);
     }

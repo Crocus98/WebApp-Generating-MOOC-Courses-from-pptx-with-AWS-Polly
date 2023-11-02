@@ -13,6 +13,7 @@ interface LoggedAuthState {
   email: string;
   token: string;
   expiration?: number;
+  admin?: boolean;
 }
 
 interface AnonymousAuthState {}
@@ -52,6 +53,7 @@ function authReducer(state: AuthState, action: AuthAction) {
         lastName: action.payload.lastName,
         email: action.payload.email,
         token: action.payload.token,
+        admin: action.payload.admin,
         expiration:
           action.payload.expiration || Date.now() + EXPIRATION_TIME_MS,
       };

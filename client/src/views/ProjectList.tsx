@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import MainContentContainer from "../components/MainContentContainer";
 import * as Text from "../components/Text";
 import axios, { AxiosError } from "axios";
@@ -16,6 +16,7 @@ import ProjectItem from "../components/ProjectItem";
 import JSZip from "jszip";
 import { isPPTXValid, zipPowerpoint } from "../services/ppt";
 import { createProject } from "../services/project";
+import { AuthContext, isAuthenticated } from "../components/AuthContext";
 
 type ProjectForm = {
   projectName: string;
@@ -24,6 +25,11 @@ type ProjectForm = {
 type Props = {};
 
 export default function ProjectList({}: Props) {
+  const { state: authState } = useContext(AuthContext);
+  const authenticated = isAuthenticated(authState);
+
+  const isAdmin = authenticated ? authState.admin : false;
+
   const [projects, setProjects] = useState<string[] | null>(null);
   const [createProjectModalOpen, setCreateProjectModalOpen] = useState(false);
 
@@ -125,6 +131,11 @@ export default function ProjectList({}: Props) {
           </Button>
         </form>
       </ProjectCreationModal>
+      {isAdmin && (
+        <Button to="/reserved" style={{ marginBottom: 10 }}>
+          Reserved Area
+        </Button>
+      )}
       <Text.H2>Project List</Text.H2>
       {!projects ? (
         "Loading"

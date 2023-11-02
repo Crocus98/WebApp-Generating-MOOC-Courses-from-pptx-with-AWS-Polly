@@ -39,7 +39,8 @@ export default function FileInput({ loading, file, setFile, ...rest }: Props) {
         <>
           <LoadingWidget size="3x" />
           <GeneratorText>
-            This may take up to 1 minute if your presentation is large
+            This may take a few minutes if your presentation is large. DON'T
+            LEAVE THIS PAGE.
           </GeneratorText>
         </>
       ) : !!file ? (
