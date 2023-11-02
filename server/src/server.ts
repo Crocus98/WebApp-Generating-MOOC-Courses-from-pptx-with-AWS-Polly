@@ -31,7 +31,7 @@ class Server {
     // Helmet helps you secure your Express apps by setting various HTTP headers. It's not a silver bullet, but it can help!
     this.app.use(helmet());
     this.app.use((req, res, next) => {
-      res.setHeader("Cross-Origin-Opener-Policy", "same-origin");
+      res.setHeader("Cross-Origin-Opener-Policy", "None");
       next();
     });
     this.app.use(express.json({ limit: sizeLimit }));
