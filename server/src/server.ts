@@ -43,6 +43,16 @@ class Server {
       })
     );
     */
+    this.app.use((req: Request, res: Response, next) => {
+      res.setHeader("Access-Control-Allow-Origin", "*");
+      res.setHeader(
+        "Access-Control-Allow-Headers",
+        "Content-Type, Authorization"
+      );
+      res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE");
+      res.setHeader("Referrer-Policy", "no-referrer");
+      next();
+    });
     this.app.use(express.json({ limit: sizeLimit }));
     this.app.use(express.urlencoded({ limit: sizeLimit, extended: true }));
   }
