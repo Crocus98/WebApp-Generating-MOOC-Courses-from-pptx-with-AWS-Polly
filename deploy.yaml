@@ -1,0 +1,12 @@
+services:
+  backend:
+    image: polly-server
+    restart: unless-stopped
+    ports:
+      - 80:3001
+
+  core:
+    image: polly-core
+    restart: unless-stopped
+volumes:
+  pollyvolume:

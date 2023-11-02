@@ -26,3 +26,12 @@ Per tutte le volte successive basterà far partire i servizi, il backend e i mic
 
 /services: docker-compose up
 /server: npm run start
+
+
+############################
+
+Deploy
+
+docker build -t polly-server .
+docker build -t polly-core .
+docker-compose -f deploy.yaml up
