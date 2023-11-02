@@ -29,6 +29,7 @@ class Server {
     );
     const sizeLimit = "20mb";
     // Helmet helps you secure your Express apps by setting various HTTP headers. It's not a silver bullet, but it can help!
+    /*
     this.app.use(
       helmet({
         // Disable https preference for development:
@@ -36,6 +37,7 @@ class Server {
         crossOriginOpenerPolicy: false,
       })
     );
+    */
     this.app.use(express.json({ limit: sizeLimit }));
     this.app.use(express.urlencoded({ limit: sizeLimit, extended: true }));
     this.app.disable("x-powered-by");
