@@ -24,17 +24,11 @@ class Server {
 
   private includeConfig() {
     this.app.use(
-      cors({
-        origin: "http://ec2-18-153-32-128.eu-central-1.compute.amazonaws.com/",
-      })
-    ); // Enable CORS
-    this.app.use(
       connectLogger(expressLogger, { level: config.LOG_LEVEL.levelStr })
     );
     const sizeLimit = "20mb";
     // Helmet helps you secure your Express apps by setting various HTTP headers. It's not a silver bullet, but it can help!
 
-    /*
     this.app.use(
       helmet({
         // Disable https preference for development:
@@ -42,7 +36,7 @@ class Server {
         crossOriginOpenerPolicy: false,
       })
     );
-    */
+
     this.app.use((req: Request, res: Response, next) => {
       res.setHeader("Access-Control-Allow-Origin", "*");
       res.setHeader(
