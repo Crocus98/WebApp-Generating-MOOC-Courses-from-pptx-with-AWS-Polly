@@ -15,7 +15,7 @@ class Server {
 
   constructor() {
     this.app = express();
-    this.server = new http.Server(this.app);
+    this.server = http.createServer(this.app);
   }
 
   private includeRoutes() {

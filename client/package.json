@@ -60,7 +60,7 @@
   },
   "scripts": {
     "start": "react-scripts start",
-    "build": "react-scripts build",
+    "build": "HTTPS=false react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
     "buildAtHttp": "PUBLIC_URL=http://3.74.41.94:3001 npm run build"
