@@ -104,10 +104,11 @@ class StorageWrapper {
           email,
           projectName
         );
-      const fileName = objectKeys?.find(
-        (obj) => !obj.Key?.includes("/edited/")
-      )?.Key;
-
+      const fileName = objectKeys?.find((obj) => {
+        return (
+          !obj.Key?.includes("/edited/") && !obj.Key?.includes("/preview/")
+        );
+      })?.Key;
       if (!fileName) {
         throw new AwsS3Exception("Could not get file name from S3.");
       }
