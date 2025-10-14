@@ -1,0 +1,236 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified">
+  <xs:import namespace="http://www.w3.org/XML/1998/namespace" schemaLocation="http://www.w3.org/2001/03/xml.xsd"/>
+  <xs:element name="speak">
+      <xs:complexType>
+        <xs:sequence>
+          <xs:element ref="voice" minOccurs="1" maxOccurs="unbounded"/>
+        </xs:sequence>
+      </xs:complexType>
+  </xs:element>
+
+  <!-- Define the simple type for allowed voice names -->
+  <xs:simpleType name="VoiceNameType">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="Amy"/>
+      <xs:enumeration value="Arthur"/>
+      <xs:enumeration value="Brian"/>
+      <xs:enumeration value="Joanna"/>
+      <xs:enumeration value="Ruth"/>
+      <xs:enumeration value="Matthew"/>
+      <xs:enumeration value="Stephen"/>
+      <xs:enumeration value="Bianca"/>
+      <xs:enumeration value="Adriano"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <!-- Define the voice element -->
+  <xs:element name="voice">
+    <xs:complexType mixed="true">
+      <xs:sequence>
+        <xs:choice minOccurs="0" maxOccurs="unbounded">
+          <!-- You can specify here which elements are allowed inside the voice tag -->
+          <!-- For instance, you might want to allow only text and break tags -->
+          <xs:element ref="break"/>
+          <xs:element ref="lang"/>
+          <xs:element ref="mark"/>
+          <xs:element ref="p"/>
+          <xs:element ref="phoneme"/>
+          <xs:element ref="s"/>
+          <xs:element ref="say-as"/>
+          <xs:element ref="sub"/>
+          <xs:element ref="w"/>
+          <xs:element ref="prosody"/>
+        </xs:choice>
+      </xs:sequence>
+      <xs:attribute name="voice_name" use="required" type="VoiceNameType"/>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="break">
+    <xs:complexType>
+      <xs:attribute name="strength" use="optional">
+        <xs:simpleType>
+          <xs:restriction base="xs:string">
+            <xs:enumeration value="none"/>
+            <xs:enumeration value="x-weak"/>
+            <xs:enumeration value="weak"/>
+            <xs:enumeration value="medium"/>
+            <xs:enumeration value="strong"/>
+            <xs:enumeration value="x-strong"/>
+          </xs:restriction>
+        </xs:simpleType>
+      </xs:attribute>
+      <xs:attribute name="time" use="optional" type="xs:string"/>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="lang">
+    <xs:complexType mixed="true">
+      <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:element ref="break"/>
+        <xs:element ref="lang"/>
+        <xs:element ref="mark"/>
+        <xs:element ref="phoneme"/>
+        <xs:element ref="s"/>
+        <xs:element ref="say-as"/>
+        <xs:element ref="sub"/>
+        <xs:element ref="w"/>
+        <xs:element ref="prosody"/>
+      </xs:choice>
+      <xs:attribute ref="xml:lang" use="required"/>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="mark">
+    <xs:complexType>
+      <xs:attribute name="name" use="required" type="xs:string"/>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="p">
+    <xs:complexType mixed="true">
+      <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:element ref="break"/>
+        <xs:element ref="lang"/>
+        <xs:element ref="mark"/>
+        <xs:element ref="phoneme"/>
+        <xs:element ref="s"/>
+        <xs:element ref="say-as"/>
+        <xs:element ref="sub"/>
+        <xs:element ref="w"/>
+        <xs:element ref="prosody"/>
+      </xs:choice>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="phoneme">
+    <xs:complexType mixed="true">
+      <xs:sequence>
+        <xs:any processContents="lax" minOccurs="0" maxOccurs="unbounded"/>
+      </xs:sequence>
+      <xs:attribute name="alphabet" type="xs:string" use="required"/>
+      <xs:attribute name="ph" type="xs:string" use="required"/>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="s">
+    <xs:complexType mixed="true">
+      <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:element ref="break"/>
+        <xs:element ref="lang"/>
+        <xs:element ref="mark"/>
+        <xs:element ref="phoneme"/>
+        <xs:element ref="s"/>
+        <xs:element ref="say-as"/>
+        <xs:element ref="sub"/>
+        <xs:element ref="w"/>
+        <xs:element ref="prosody"/>
+      </xs:choice>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="sub">
+    <xs:complexType>
+      <xs:simpleContent>
+        <xs:extension base="xs:string">
+          <xs:attribute name="alias" type="xs:string" use="required"/>
+        </xs:extension>
+      </xs:simpleContent>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="w">
+    <xs:complexType>
+      <xs:simpleContent>
+        <xs:extension base="xs:string">
+          <xs:attribute name="role" type="xs:string" use="required"/>
+        </xs:extension>
+      </xs:simpleContent>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="prosody">
+      <xs:complexType mixed="true">
+          <xs:choice minOccurs="0" maxOccurs="unbounded">
+              <xs:element ref="break"/>
+              <xs:element ref="lang"/>
+              <xs:element ref="mark"/>
+              <xs:element ref="p"/>
+              <xs:element ref="phoneme"/>
+              <xs:element ref="s"/>
+              <xs:element ref="say-as"/>
+              <xs:element ref="sub"/>
+              <xs:element ref="w"/>
+          </xs:choice>
+          <xs:attributeGroup ref="prosodyAttr"/>
+      </xs:complexType>
+  </xs:element>
+
+  <xs:attributeGroup name="prosodyAttr">
+      <xs:attribute name="rate" use="optional">
+          <xs:simpleType>
+                  <xs:union memberTypes="xs:string ratePercentageType"/>
+          </xs:simpleType>
+      </xs:attribute>
+      <xs:attribute name="volume" use="optional">
+          <xs:simpleType>
+                  <xs:union memberTypes="xs:string volumeDecibelType"/>
+          </xs:simpleType>
+      </xs:attribute>
+  </xs:attributeGroup>
+
+  <xs:simpleType name="ratePercentageType">
+      <xs:restriction base="xs:string">
+        <xs:enumeration value="x-slow"/>
+        <xs:enumeration value="slow"/>
+        <xs:enumeration value="medium"/>
+        <xs:enumeration value="fast"/>
+        <xs:enumeration value="x-fast"/>
+        <xs:pattern value="[1-9][0-9]*%"/>
+      </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="volumeDecibelType">
+      <xs:restriction base="xs:string">
+          <xs:enumeration value="default"/>
+          <xs:enumeration value="silent"/>
+          <xs:enumeration value="x-soft"/>
+          <xs:enumeration value="soft"/>
+          <xs:enumeration value="medium"/>
+          <xs:enumeration value="loud"/>
+          <xs:enumeration value="x-loud"/>
+          <xs:pattern value="\+?\-?[0-9]+dB"/>
+      </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="interpretAsType">
+      <xs:restriction base="xs:string">
+          <xs:enumeration value="characters" />
+          <xs:enumeration value="spell-out" />
+          <xs:enumeration value="cardinal" />
+          <xs:enumeration value="number" />
+          <xs:enumeration value="ordinal" />
+          <xs:enumeration value="digits" />
+          <xs:enumeration value="fraction" />
+          <xs:enumeration value="unit" />
+          <xs:enumeration value="date" />
+          <xs:enumeration value="time" />
+          <xs:enumeration value="address" />
+          <xs:enumeration value="expletive" />
+          <xs:enumeration value="telephone" />
+      </xs:restriction>
+  </xs:simpleType>
+
+  <xs:element name="say-as">
+      <xs:complexType>
+          <xs:simpleContent>
+              <xs:extension base="xs:string">
+                  <xs:attribute name="interpret-as" type="interpretAsType" use="required" />
+                  <xs:attribute name="format" type="xs:string" use="optional" />
+              </xs:extension>
+          </xs:simpleContent>
+      </xs:complexType>
+  </xs:element>
+
+</xs:schema>
