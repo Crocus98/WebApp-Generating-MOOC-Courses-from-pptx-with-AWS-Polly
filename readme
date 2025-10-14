@@ -1,3 +1,5 @@
+A complete web application for generating MOOC (Massive Open Online Course) content using PowerPoint presentations and AWS Polly text-to-speech.
+
 Se dovete far partire l'applicazione per la prima volta dovete:
 
 1) Far partire l'istanza di postgresql
