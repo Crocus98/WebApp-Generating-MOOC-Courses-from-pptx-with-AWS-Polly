@@ -24,7 +24,7 @@ export const auth = async (req: Request, res: Response, next: NextFunction) => {
 
     const user = await UserService.getUserByMail(email);
     if (!user) {
-      new JwtException("Wrong Jwt Payload: user not found");
+      throw new JwtException("Wrong Jwt Payload: user not found");
     }
     res.locals.user = user;
 
