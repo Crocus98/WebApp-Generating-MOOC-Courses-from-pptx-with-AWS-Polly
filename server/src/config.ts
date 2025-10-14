@@ -62,7 +62,7 @@ class Config {
     const DB_DIALECT = process.env.DB_DIALECT;
     if (utils.isUndefinedOrEmpty(DB_DIALECT)) exitLog(`Missing or Bad DB_DIALECT in .env`);
     const DB_SCHEMA = process.env.DB_SCHEMA;
-    if (utils.isUndefinedOrEmpty(DB_SCHEMA)) exitLog(`CHEMA in .env`);
+    if (utils.isUndefinedOrEmpty(DB_SCHEMA)) exitLog(`Missing or Bad DB_SCHEMA in .env`);
 
     let DB_PORT = 5555;
     const __DB_PORT = process.env.DB_PORT;
