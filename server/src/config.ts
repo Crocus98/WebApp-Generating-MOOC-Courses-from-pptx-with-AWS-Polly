@@ -81,7 +81,7 @@ class Config {
 
     return {
       NAME: DB_NAME as string,
-      SCHEMA: DB_NAME as string,
+      SCHEMA: DB_SCHEMA as string,
       USER: DB_USER as string,
       PASS: DB_PASS as string,
       HOST: DB_HOST as string,
